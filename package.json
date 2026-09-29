@@ -1,0 +1,14 @@
+{
+  "name": "campbase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "캠프베이스 - 함께 쓰는 캠핑 준비물·장비·후기 기록 (안드로이드 APK 빌드용)",
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}

@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>캠프베이스</title>
+<meta name="theme-color" content="#2f6f4f">
+<meta name="description" content="함께 쓰는 캠핑 준비물·장비·후기 기록">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="캠프베이스">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#2f6f4f; --brand-dark:#1f4d36; --accent:#d98e2f; --good:#2f9e5e; --warn:#c98a2c; --bad:#c1503f;
+    --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee7; --border:#e4e1d8; --text:#1f2420; --text-dim:#6b6f68;
+    --radius:14px;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#141815; --surface:#1c211d; --surface-2:#232821; --border:#333a32; --text:#eceae3; --text-dim:#9aa199;
+      --brand:#4d9b74; --brand-dark:#3a7f5c; --accent:#e3a54f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#141815; --surface:#1c211d; --surface-2:#232821; --border:#333a32; --text:#eceae3; --text-dim:#9aa199;
+    --brand:#4d9b74; --brand-dark:#3a7f5c; --accent:#e3a54f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:"Work Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif;}
+  .disp{font-family:"Fraunces",serif;}
+  .num{font-family:"JetBrains Mono",monospace;}
+  button, input, select, textarea{font-family:inherit;color:inherit;}
+  #app{display:flex;height:100vh;overflow:hidden;}
+
+  /* ---- sidebar ---- */
+  #sidebar{width:216px;min-width:216px;background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;padding:16px 12px;}
+  .brand{display:flex;align-items:center;gap:9px;padding:6px 8px 18px;}
+  .brand-badge{width:30px;height:30px;border-radius:9px;background:var(--brand);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex:none;}
+  .brand-badge svg{width:18px;height:18px;}
+  .brand-name{font-family:"Fraunces",serif;font-weight:700;font-size:16px;}
+  .brand-sub{font-size:10.5px;color:var(--text-dim);}
+  nav#nav{display:flex;flex-direction:column;gap:2px;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;
+    color:var(--text-dim);cursor:pointer;border:1px solid transparent;font-size:14px;font-weight:500;
+    transition:background .12s ease,color .12s ease;}
+  .nav-item svg{width:18px;height:18px;flex:none;}
+  .nav-item:hover{background:var(--surface-2);color:var(--text);}
+  .nav-item.active{background:var(--brand);color:#fff;}
+  .nav-spacer{flex:1;}
+  .nav-foot{font-size:11px;color:var(--text-dim);padding:10px 10px 2px;line-height:1.5;}
+  .dot-status{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-right:5px;position:relative;top:-1px;}
+  .dot-status.local{background:var(--warn);}
+  .dot-status.err{background:var(--bad);}
+
+  /* ---- main ---- */
+  #main-wrap{flex:1;min-width:0;display:flex;flex-direction:column;}
+  #topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--border);
+    background:var(--bg);position:sticky;top:0;z-index:5;}
+  #topbar h2{margin:0;font-size:21px;}
+  #main{flex:1;overflow-y:auto;padding:22px 26px 60px;}
+  .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .section-head h1{font-size:20px;margin:0 0 4px;}
+  .section-desc{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.5;}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .grid{display:grid;gap:14px;}
+  .empty{color:var(--text-dim);font-size:13px;padding:18px 4px;text-align:center;}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);
+    color:var(--text);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .btn svg{width:15px;height:15px;}
+  .btn:hover{background:var(--surface-2);}
+  .btn-accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .btn-ghost{background:transparent;}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+  .btn-danger{color:var(--bad);}
+  .btn-danger-solid{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .btn-danger-solid:hover{opacity:.9;}
+
+  .tag{display:inline-block;background:var(--surface-2);color:var(--text-dim);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;}
+  .tag.accent{background:color-mix(in srgb, var(--accent) 20%, transparent);color:var(--accent);}
+
+  /* ---- home ---- */
+  .weather-widget{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg, color-mix(in srgb, var(--brand) 14%, transparent), transparent);
+    border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;flex-wrap:wrap;}
+  .weather-widget .temp{font-family:"Fraunces",serif;font-size:32px;font-weight:600;}
+  .weather-widget .loc{font-weight:700;font-size:14px;}
+  .weather-widget .desc{font-size:12px;color:var(--text-dim);}
+  .weather-widget .spacer{flex:1;}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:6px;}
+  .stat-card{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+  .stat-card h3{margin:0;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;}
+  .stat-card .legend{display:flex;flex-direction:column;gap:3px;width:100%;font-size:11.5px;color:var(--text-dim);}
+  .legend-row{display:flex;align-items:center;gap:6px;}
+  .legend-dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .legend-row .lv{flex:1;text-align:left;}
+  .stat-card .big-num{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;}
+  .home-cat-link{cursor:pointer;border-radius:6px;transition:background .12s ease;}
+  .legend-row.home-cat-link{padding:3px 4px;margin:0 -4px;}
+  .home-cat-link:hover{background:var(--surface-2);color:var(--brand);}
+  .chev-mini{width:12px!important;height:12px!important;opacity:.6;}
+
+  /* ---- forms/modal ---- */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(20,24,20,.5);display:flex;align-items:center;justify-content:center;
+    padding:20px;z-index:50;}
+  .modal{background:var(--surface);border-radius:16px;padding:22px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal h3{margin:0 0 14px;font-size:17px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:5px;}
+  .field input, .field select, .field textarea{width:100%;padding:9px 10px;border:1px solid var(--border);
+    border-radius:9px;background:var(--bg);font-size:13.5px;}
+  .field textarea{resize:vertical;min-height:64px;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .seg-group{display:flex;gap:6px;flex-wrap:wrap;}
+  .seg-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);font-size:12.5px;cursor:pointer;}
+  .seg-btn.active{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .form-subhead{font-size:12px;font-weight:700;color:var(--text-dim);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--border);}
+
+  /* ---- lists ---- */
+  .list-row{display:flex;align-items:flex-start;gap:10px;padding:12px 4px;border-bottom:1px solid var(--border);}
+  .list-row:last-child{border-bottom:none;}
+  .list-row .name{font-weight:700;font-size:14px;}
+  .list-row .meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .list-row .notes{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
+  .list-row .row-actions{display:flex;gap:6px;flex:none;}
+  .icon-btn{background:none;border:none;padding:4px;cursor:pointer;color:var(--text-dim);border-radius:6px;}
+  .icon-btn:hover{background:var(--surface-2);color:var(--text);}
+  .icon-btn svg{width:16px;height:16px;}
+
+  .banner{display:flex;align-items:flex-start;gap:10px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--text-dim);margin-bottom:14px;}
+  .banner svg{width:16px;height:16px;flex:none;margin-top:1px;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--text);
+    color:var(--bg);padding:10px 16px;border-radius:9px;font-size:13px;opacity:0;pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;z-index:80;border-left:3px solid transparent;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.fail{border-left-color:var(--bad);}
+  .toast.ok{border-left-color:var(--good);}
+
+  .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .slider{position:absolute;inset:0;cursor:pointer;background:var(--border);border-radius:23px;transition:.15s ease;}
+  .switch .slider:before{position:absolute;content:"";height:17px;width:17px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s ease;}
+  .switch input:checked + .slider{background:var(--brand);}
+  .switch input:checked + .slider:before{transform:translateX(17px);}
+
+  .checklist-group{margin-bottom:18px;}
+  .checklist-group h3{font-family:"Fraunces",serif;font-size:16.5px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  .cl-subgroup{margin-bottom:10px;padding-left:14px;border-left:2px solid var(--border);}
+  .cl-subgroup:last-child{margin-bottom:0;}
+  .cl-subgroup-head{display:flex;align-items:center;gap:2px;padding:5px 2px 6px;border-bottom:1px dashed var(--border);margin-bottom:2px;}
+  .cl-subgroup-head .spacer{flex:1;}
+  .cl-subgroup-name{font-size:11.5px;font-weight:700;color:var(--text-dim);letter-spacing:.3px;text-transform:uppercase;}
+  .check-row{display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid var(--border);}
+  .check-row:last-child{border-bottom:none;}
+  .check-row .label{flex:1;font-size:13.5px;}
+  .check-row .label.done{text-decoration:line-through;color:var(--text-dim);}
+  .check-row .label.skip{color:var(--text-dim);font-style:italic;}
+  .cl-status-group{display:flex;gap:4px;flex:none;}
+  .cl-status-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--bg);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);padding:0;}
+  .cl-status-btn svg{width:14px;height:14px;}
+  .cl-status-btn:hover{background:var(--surface-2);}
+  .cl-status-btn.packed.active{background:var(--good);border-color:var(--good);color:#fff;}
+  .cl-status-btn.skip.active{background:var(--text-dim);border-color:var(--text-dim);color:#fff;}
+  .tag.done-tag{background:color-mix(in srgb, var(--good) 20%, transparent);color:var(--good);}
+  .tag.skip-tag{margin-left:6px;}
+
+  .placeholder-card{text-align:center;padding:48px 20px;}
+  .placeholder-card svg{width:44px;height:44px;color:var(--text-dim);margin-bottom:12px;}
+  .placeholder-card h2{margin:0 0 8px;}
+  .placeholder-card p{color:var(--text-dim);font-size:13.5px;max-width:440px;margin:0 auto;line-height:1.6;}
+  .placeholder-card-sm{text-align:center;padding:22px 14px;cursor:pointer;}
+  .placeholder-icon-sm{width:26px;height:26px;color:var(--text-dim);margin-bottom:8px;}
+
+  #mobile-topbar{display:none;}
+  @media (max-width:820px){
+    #sidebar{display:none;}
+    #mobile-topbar{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:var(--surface);
+      border-bottom:1px solid var(--border);}
+    .mnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-dim);
+      padding:6px 12px;border-radius:10px;flex:none;cursor:pointer;}
+    .mnav-item.active{background:var(--brand);color:#fff;}
+    .mnav-item svg{width:17px;height:17px;}
+    #topbar{padding:12px 16px;}
+    #main{padding:16px 14px 60px;}
+    .stat-grid{grid-template-columns:1fr;}
+    .field-row{flex-direction:column;}
+  }
+  /* ---- 공유 앱(웹/APK) 전용 ---- */
+  #db-status-top{display:none;margin-left:auto;align-items:center;font-size:11px;color:var(--text-dim);
+    background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;white-space:nowrap;}
+  @media (max-width:820px){ #db-status-top{display:inline-flex;} }
+  .preview-banner{background:color-mix(in srgb, var(--warn) 16%, transparent);border:1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+    color:var(--text);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-bottom:14px;}
+  .backup-text{width:100%;min-height:160px;font-family:"JetBrains Mono",monospace;font-size:11.5px;padding:9px 10px;
+    border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);resize:vertical;}
+  html,body{height:100%;}
+  #app{height:100vh;height:100dvh;}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="brand-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-11 4 6.5L16.5 8 21 20z"/><circle cx="8.2" cy="6.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">캠프베이스</div>
+        <div class="brand-sub">함께 쓰는 캠핑 노트</div>
+      </div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="nav-spacer"></div>
+    <div class="nav-foot" id="db-status">연결 확인 중…</div>
+  </aside>
+
+  <div id="main-wrap">
+    <div id="mobile-topbar"></div>
+    <div id="topbar">
+      <h2 id="view-title" class="disp">Home</h2>
+      <span id="db-status-top">연결 확인 중…</span>
+    </div>
+    <div id="main"></div>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div class="toast" id="toast"></div>
+
+<script src="firebase-config.js"></script>
+<script>
+/* ============================ ICONS ============================ */
+const ICONS = {
+  home:'<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
+  camping:'<path d="M3 20l6-11 4 6.5L16.5 8 21 20z"/><circle cx="8.2" cy="6.5" r="1.6" fill="currentColor" stroke="none"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h0a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5h0a1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v0a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1z"/>',
+  weather:'<path d="M8 19a4 4 0 1 1 .8-7.9A5.5 5.5 0 1 1 18.5 15H8a4 4 0 0 1 0 4z"/>',
+  checklist:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l2.5 2.5L16 9"/>',
+  cooking:'<path d="M4 12h16M6 12a6 6 0 0 1 12 0M4 12l1 8h14l1-8"/><path d="M9 6.5c0-1.5 1-2 1-3.5M13 6.5c0-1.5 1-2 1-3.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  trash:'<path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m2 0-.8 12.1a2 2 0 0 1-2 1.9H7.8a2 2 0 0 1-2-1.9L5 7"/>',
+  edit:'<path d="M4 20h4l10-10-4-4L4 16z"/>',
+  star:'<path d="M12 3l2.7 5.9 6.3.6-4.8 4.3 1.4 6.2L12 17l-5.6 3 1.4-6.2L3 9.5l6.3-.6z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 11h1v5h1"/>',
+  save:'<path d="M4 4h13l3 3v13H4z"/><path d="M8 4v6h8V4M8 21v-7h8v7"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>',
+  drop:'<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/>',
+  settings:'<path d="M4 7h9M17 7h3M4 12h3M9 12h11M4 17h13M19 17h1"/><circle cx="15" cy="7" r="2.4"/><circle cx="7" cy="12" r="2.4"/><circle cx="17" cy="17" r="2.4"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
+};
+function icon(name, cls){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="${cls||''}">${ICONS[name]||''}</svg>`; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function stripId(obj){ const {id, ...rest} = obj; return rest; }
+// unfreeze: db snapshot data can come back with nested arrays/objects that
+// are frozen/non-extensible (only the top-level doc object is a fresh copy;
+// nested fields like items[] keep the original frozen reference). Mutating
+// those directly (e.g. list.items.push(...)) throws synchronously with
+// "Cannot add property N, object is not extensible" — this deep-clones
+// snapshot data into plain, freely-mutable objects/arrays so app code can
+// safely push/assign into anything nested without knowing about this.
+function unfreeze(v){ return v==null ? v : JSON.parse(JSON.stringify(v)); }
+
+// itemStatus: checklist items are tri-state — '가져감'(packed), '안 가져감'(skip,
+// intentionally left behind), or 미정(pending, default). Older items only ever
+// had a boolean `checked` field; this reads the new `status` field when present
+// and falls back to the legacy boolean so existing saved checklists keep working.
+function itemStatus(it){
+  if(it && it.status) return it.status;
+  return (it && it.checked) ? 'packed' : 'pending';
+}
+function isDecided(it){ return itemStatus(it) !== 'pending'; }
+
+/* ============================ STATIC DATA ============================ */
+const FEATURE_DEFS = [
+  {id:'home', label:'Home', icon:'home'},
+  {id:'camping', label:'Camping', icon:'camping'},
+  {id:'gear', label:'Gear', icon:'gear'},
+  {id:'checklist', label:'Checklist', icon:'checklist'},
+  {id:'cooking', label:'Cooking', icon:'cooking'},
+  {id:'settings', label:'Settings', icon:'settings'},
+];
+const HOME_WIDGET_DEFS = [
+  {key:'location', label:'기준 지역 위젯', desc:'Home 상단의 캠핑 계획용 기준 지역 선택 위젯'},
+  {key:'camping', label:'캠핑 기록 통계', desc:'지역별 캠핑 기록 파이 차트'},
+  {key:'gear', label:'보유 장비 통계', desc:'카테고리별 보유 장비 파이 차트'},
+  {key:'checklist', label:'준비물 체크 현황', desc:'체크리스트 완료/미완료 파이 차트'},
+];
+const SITE_TYPES = ['데크','파쇄석','흙','기타'];
+const TOILET_LEVELS = ['최상','좋음','보통','나쁨'];
+const STORE_LEVELS = ['없음','부족함','적당함','잘 갖춰짐'];
+const CAMP_SORT_OPTIONS = [
+  {key:'date_desc', label:'최신순'},
+  {key:'rating_desc', label:'평점 높은순'},
+  {key:'rating_asc', label:'평점 낮은순'},
+  {key:'size_desc', label:'사이트 크기 큰순'},
+  {key:'size_asc', label:'사이트 크기 작은순'},
+];
+// region grouping: Camping 탭의 "카테고리"는 사이트 종류(환경)가 아니라 지역 기준.
+// 지역은 사용자가 자유 텍스트로 입력하므로 고정 목록이 아니라 실제 기록에 있는
+// 값들로부터 매번 계산함. 지역을 안 적은 기록은 '미지정'으로 묶임.
+function regionOf(c){ return (c && c.region && c.region.trim()) || '미지정'; }
+// siteSize는 자유 텍스트("5x5m", "20평" 등)라 정확한 단위 비교는 불가능하지만,
+// 숫자를 뽑아 대략적인 크기로 정렬할 수 있게 함: "AxB" 형태면 A*B(면적)로,
+// 숫자가 하나면 그 값 그대로, 숫자가 없으면 0으로 취급(항상 뒤로 감).
+function siteSizeValue(s){
+  const nums = (String(s||'').match(/\d+(\.\d+)?/g) || []).map(Number);
+  if(nums.length>=2) return nums[0]*nums[1];
+  if(nums.length===1) return nums[0];
+  return 0;
+}
+function campComparator(sortKey){
+  const byDateDesc = (a,b)=> (b.date||'').localeCompare(a.date||'');
+  switch(sortKey){
+    case 'rating_desc': return (a,b)=> ((b.rating||0)-(a.rating||0)) || byDateDesc(a,b);
+    case 'rating_asc': return (a,b)=> ((a.rating||0)-(b.rating||0)) || byDateDesc(a,b);
+    case 'size_desc': return (a,b)=> (siteSizeValue(b.siteSize)-siteSizeValue(a.siteSize)) || byDateDesc(a,b);
+    case 'size_asc': return (a,b)=> (siteSizeValue(a.siteSize)-siteSizeValue(b.siteSize)) || byDateDesc(a,b);
+    default: return byDateDesc;
+  }
+}
+const DEFAULT_GEAR_CATEGORIES = ['텐트','침낭/매트','조리용품','조명','체어/테이블','기타'];
+const GEAR_BRANDS = ['Snow Peak','Coleman','Helinox','Kovea','Nordisk','Naturehike','DOD','BlackYak','Quechua','Nemo','기타'];
+const CHART_COLORS = ['#2f6f4f','#d98e2f','#3a7f5c','#c1503f','#6b9bd1','#9a7fd1','#c9c4b6'];
+// 기상청 단기예보 격자좌표(LCC 변환식으로 산출, RE=6371.00877 GRID=5 SLAT1=30 SLAT2=60 OLON=126 OLAT=38 XO=43 YO=136) +
+// GTS SYNOP 최인접 관측소(stationId, 47XXX에서 47 뗀 값) + 생활기상지수 지역코드(areaNo, 확인 안 된 지역은 null=광주/전남)
+const LOCATIONS = [{"name": "서울", "lat": 37.5665, "lng": 126.978, "nx": 60, "ny": 127, "stationId": 108, "stationName": "서울", "areaNo": "1100000000"}, {"name": "인천", "lat": 37.4563, "lng": 126.7052, "nx": 55, "ny": 124, "stationId": 112, "stationName": "인천", "areaNo": "2800000000"}, {"name": "수원", "lat": 37.2636, "lng": 127.0286, "nx": 61, "ny": 120, "stationId": 119, "stationName": "수원", "areaNo": "4100000000"}, {"name": "부산", "lat": 35.1796, "lng": 129.0756, "nx": 98, "ny": 76, "stationId": 159, "stationName": "부산", "areaNo": "2600000000"}, {"name": "대구", "lat": 35.8714, "lng": 128.6014, "nx": 89, "ny": 91, "stationId": 143, "stationName": "대구", "areaNo": "2700000000"}, {"name": "광주", "lat": 35.1595, "lng": 126.8526, "nx": 58, "ny": 74, "stationId": 156, "stationName": "광주", "areaNo": null}, {"name": "대전", "lat": 36.3504, "lng": 127.3845, "nx": 67, "ny": 100, "stationId": 133, "stationName": "대전", "areaNo": "3000000000"}, {"name": "울산", "lat": 35.5384, "lng": 129.3114, "nx": 102, "ny": 84, "stationId": 159, "stationName": "부산", "areaNo": "3100000000"}, {"name": "세종", "lat": 36.48, "lng": 127.289, "nx": 66, "ny": 103, "stationId": 133, "stationName": "대전", "areaNo": "3600000000"}, {"name": "춘천", "lat": 37.8813, "lng": 127.7298, "nx": 73, "ny": 134, "stationId": 101, "stationName": "춘천", "areaNo": "5100000000"}, {"name": "강릉", "lat": 37.7519, "lng": 128.8761, "nx": 92, "ny": 132, "stationId": 105, "stationName": "강릉", "areaNo": "5100000000"}, {"name": "원주", "lat": 37.3422, "lng": 127.9202, "nx": 76, "ny": 122, "stationId": 114, "stationName": "원주", "areaNo": "5100000000"}, {"name": "속초", "lat": 38.207, "lng": 128.5918, "nx": 87, "ny": 141, "stationId": 90, "stationName": "속초", "areaNo": "5100000000"}, {"name": "양양", "lat": 38.0759, "lng": 128.619, "nx": 88, "ny": 138, "stationId": 90, "stationName": "속초", "areaNo": "5100000000"}, {"name": "인제", "lat": 38.0698, "lng": 128.1707, "nx": 80, "ny": 138, "stationId": 90, "stationName": "속초", "areaNo": "5100000000"}, {"name": "홍천", "lat": 37.697, "lng": 127.8887, "nx": 75, "ny": 130, "stationId": 101, "stationName": "춘천", "areaNo": "5100000000"}, {"name": "평창", "lat": 37.3705, "lng": 128.39, "nx": 84, "ny": 123, "stationId": 114, "stationName": "원주", "areaNo": "5100000000"}, {"name": "정선", "lat": 37.3806, "lng": 128.6608, "nx": 89, "ny": 123, "stationId": 100, "stationName": "대관령", "areaNo": "5100000000"}, {"name": "횡성", "lat": 37.4914, "lng": 127.9852, "nx": 77, "ny": 125, "stationId": 114, "stationName": "원주", "areaNo": "5100000000"}, {"name": "청주", "lat": 36.6424, "lng": 127.489, "nx": 69, "ny": 107, "stationId": 131, "stationName": "청주", "areaNo": "4300000000"}, {"name": "충주", "lat": 36.991, "lng": 127.9259, "nx": 76, "ny": 115, "stationId": 114, "stationName": "원주", "areaNo": "4300000000"}, {"name": "단양", "lat": 36.9846, "lng": 128.3658, "nx": 84, "ny": 115, "stationId": 114, "stationName": "원주", "areaNo": "4300000000"}, {"name": "옥천", "lat": 36.3061, "lng": 127.5713, "nx": 71, "ny": 100, "stationId": 133, "stationName": "대전", "areaNo": "4300000000"}, {"name": "진천", "lat": 36.8551, "lng": 127.4348, "nx": 68, "ny": 111, "stationId": 131, "stationName": "청주", "areaNo": "4300000000"}, {"name": "천안", "lat": 36.8151, "lng": 127.1139, "nx": 62, "ny": 110, "stationId": 131, "stationName": "청주", "areaNo": "4400000000"}, {"name": "공주", "lat": 36.4465, "lng": 127.1189, "nx": 63, "ny": 102, "stationId": 133, "stationName": "대전", "areaNo": "4400000000"}, {"name": "당진", "lat": 36.8895, "lng": 126.6462, "nx": 54, "ny": 112, "stationId": 129, "stationName": "서산", "areaNo": "4400000000"}, {"name": "태안", "lat": 36.7455, "lng": 126.2978, "nx": 48, "ny": 109, "stationId": 129, "stationName": "서산", "areaNo": "4400000000"}, {"name": "전주", "lat": 35.8242, "lng": 127.148, "nx": 63, "ny": 89, "stationId": 146, "stationName": "전주", "areaNo": "5200000000"}, {"name": "군산", "lat": 35.9678, "lng": 126.7369, "nx": 56, "ny": 92, "stationId": 140, "stationName": "군산", "areaNo": "5200000000"}, {"name": "남원", "lat": 35.4164, "lng": 127.3905, "nx": 68, "ny": 80, "stationId": 174, "stationName": "순천", "areaNo": "5200000000"}, {"name": "무주", "lat": 36.0068, "lng": 127.6608, "nx": 72, "ny": 93, "stationId": 135, "stationName": "추풍령", "areaNo": "5200000000"}, {"name": "고창", "lat": 35.4356, "lng": 126.7014, "nx": 55, "ny": 80, "stationId": 156, "stationName": "광주", "areaNo": "5200000000"}, {"name": "정읍", "lat": 35.5699, "lng": 126.8556, "nx": 58, "ny": 83, "stationId": 146, "stationName": "전주", "areaNo": "5200000000"}, {"name": "목포", "lat": 34.8118, "lng": 126.3922, "nx": 50, "ny": 67, "stationId": 165, "stationName": "목포", "areaNo": null}, {"name": "순천", "lat": 34.9506, "lng": 127.4872, "nx": 70, "ny": 70, "stationId": 174, "stationName": "순천", "areaNo": null}, {"name": "여수", "lat": 34.7604, "lng": 127.6622, "nx": 73, "ny": 66, "stationId": 168, "stationName": "여수", "areaNo": null}, {"name": "완도", "lat": 34.3111, "lng": 126.7549, "nx": 57, "ny": 56, "stationId": 165, "stationName": "목포", "areaNo": null}, {"name": "고흥", "lat": 34.6112, "lng": 127.2796, "nx": 66, "ny": 62, "stationId": 168, "stationName": "여수", "areaNo": null}, {"name": "장성", "lat": 35.3018, "lng": 126.7847, "nx": 57, "ny": 77, "stationId": 156, "stationName": "광주", "areaNo": null}, {"name": "나주", "lat": 35.016, "lng": 126.7108, "nx": 56, "ny": 71, "stationId": 156, "stationName": "광주", "areaNo": null}, {"name": "안동", "lat": 36.5684, "lng": 128.7294, "nx": 91, "ny": 106, "stationId": 136, "stationName": "안동", "areaNo": "4700000000"}, {"name": "포항", "lat": 36.019, "lng": 129.3435, "nx": 102, "ny": 94, "stationId": 138, "stationName": "포항", "areaNo": "4700000000"}, {"name": "경주", "lat": 35.8562, "lng": 129.2247, "nx": 100, "ny": 91, "stationId": 138, "stationName": "포항", "areaNo": "4700000000"}, {"name": "김천", "lat": 36.1398, "lng": 128.1136, "nx": 80, "ny": 96, "stationId": 135, "stationName": "추풍령", "areaNo": "4700000000"}, {"name": "봉화", "lat": 36.8931, "lng": 128.7325, "nx": 90, "ny": 113, "stationId": 136, "stationName": "안동", "areaNo": "4700000000"}, {"name": "고령", "lat": 35.7261, "lng": 128.2628, "nx": 83, "ny": 87, "stationId": 143, "stationName": "대구", "areaNo": "4700000000"}, {"name": "창원", "lat": 35.2281, "lng": 128.6811, "nx": 91, "ny": 77, "stationId": 155, "stationName": "창원", "areaNo": "4800000000"}, {"name": "김해", "lat": 35.2285, "lng": 128.8894, "nx": 94, "ny": 77, "stationId": 159, "stationName": "부산", "areaNo": "4800000000"}, {"name": "진주", "lat": 35.18, "lng": 128.1076, "nx": 81, "ny": 75, "stationId": 192, "stationName": "진주", "areaNo": "4800000000"}, {"name": "거창", "lat": 35.6867, "lng": 127.9095, "nx": 77, "ny": 86, "stationId": 192, "stationName": "진주", "areaNo": "4800000000"}, {"name": "합천", "lat": 35.5665, "lng": 128.1656, "nx": 81, "ny": 84, "stationId": 192, "stationName": "진주", "areaNo": "4800000000"}, {"name": "남해", "lat": 34.8375, "lng": 127.8926, "nx": 77, "ny": 68, "stationId": 168, "stationName": "여수", "areaNo": "4800000000"}, {"name": "거제", "lat": 34.8806, "lng": 128.6212, "nx": 90, "ny": 69, "stationId": 162, "stationName": "통영", "areaNo": "4800000000"}, {"name": "제주", "lat": 33.4996, "lng": 126.5312, "nx": 53, "ny": 38, "stationId": 184, "stationName": "제주", "areaNo": "5000000000"}, {"name": "가평", "lat": 37.8315, "lng": 127.5095, "nx": 69, "ny": 133, "stationId": 101, "stationName": "춘천", "areaNo": "4100000000"}, {"name": "양평", "lat": 37.4916, "lng": 127.4874, "nx": 69, "ny": 125, "stationId": 114, "stationName": "원주", "areaNo": "4100000000"}, {"name": "포천", "lat": 37.8949, "lng": 127.2003, "nx": 64, "ny": 134, "stationId": 108, "stationName": "서울", "areaNo": "4100000000"}];
+function uvLabel(v){ if(v==null) return ''; if(v<3) return '낮음'; if(v<6) return '보통'; if(v<8) return '높음'; if(v<11) return '매우높음'; return '위험'; }
+
+// 캠핑 요리 레시피 스냅샷 (2026-09-23, LifeBase·wtable 캠핑 요리 콘텐츠 참고해 정리 — 실시간 수집 아님)
+const COOKING_RECIPES = [
+  {id:'ck1', name:'삼겹살 구이', category:'구이', difficulty:'쉬움', time:'15분', ingredients:['삼겹살','소금','후추','쌈장','상추'], steps:'그릴에 앞뒤로 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck2', name:'모둠 꼬치구이', category:'구이', difficulty:'보통', time:'20분', ingredients:['돼지고기','파프리카','양파','버섯'], steps:'재료를 꼬치에 끼워 소금·후추로 간한 뒤 올리브유를 발라 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck3', name:'닭다리 구이', category:'구이', difficulty:'쉬움', time:'20분(재우기 별도)', ingredients:['닭다리','간장','설탕','마늘','생강'], steps:'양념에 2~3시간 재운 뒤 중불에서 15~20분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck4', name:'옥수수 버터구이', category:'구이', difficulty:'매우쉬움', time:'10분', ingredients:['옥수수','버터','소금'], steps:'버터와 소금을 발라 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck5', name:'소시지 알감자 구이', category:'구이', difficulty:'중급', time:'30분', ingredients:['소시지','알감자','파프리카','케첩','마요네즈'], steps:'꼬치나 팬에 함께 구워 케첩마요 소스에 찍어 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck6', name:'채끝 바비큐 꼬치구이', category:'구이', difficulty:'초급', time:'25분', ingredients:['채끝살','단호박','방울토마토','대파'], steps:'꼬치에 끼워 숯불에 구우면 은은한 단맛이 살아나요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck7', name:'부대찌개 (밀키트)', category:'간편요리', difficulty:'매우쉬움', time:'15분', ingredients:['부대찌개 밀키트','물'], steps:'밀키트에 물을 붓고 끓이기만 하면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck8', name:'짜파구리', category:'간편요리', difficulty:'쉬움', time:'10분', ingredients:['짜파게티','너구리','소고기(선택)'], steps:'두 라면을 함께 끓여 섞고, 구운 소고기를 올려요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck9', name:'대파 닭고기 우동', category:'국물요리', difficulty:'초급', time:'20분', ingredients:['우동면','대파','닭고기'], steps:'끓이기만 하면 되는 맵지 않은 국물 요리라 아이도 잘 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck10', name:'김치찌개', category:'국물요리', difficulty:'보통', time:'25분', ingredients:['신김치','돼지고기','두부','대파'], steps:'김치를 볶다가 물, 고기, 두부를 넣고 끓여요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck11', name:'된장찌개', category:'국물요리', difficulty:'쉬움', time:'20분', ingredients:['된장','감자','애호박','두부','버섯','청양고추'], steps:'모든 재료를 넣고 끓이면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck12', name:'어묵 전골', category:'국물요리', difficulty:'중급', time:'25분', ingredients:['어묵','곤약','채소'], steps:'국물을 오래 끓여내 깊은 맛을 내요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck13', name:'컵피자', category:'아이랑함께', difficulty:'쉬움', time:'10분', ingredients:['식빵','토마토소스','치즈','햄'], steps:'머핀틀에 식빵을 넣고 재료를 올려 약불에서 5~7분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck14', name:'핫도그 말이', category:'아이랑함께', difficulty:'매우쉬움', time:'10분', ingredients:['또띠아','소시지','치즈','케첩','머스타드'], steps:'또띠아에 재료를 올려 말아서 팬에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck15', name:'마시멜로 스모어', category:'디저트', difficulty:'매우쉬움', time:'5분', ingredients:['마시멜로','초콜릿','크래커'], steps:'꼬챙이에 꽂아 불 위에서 노릇하게 구운 뒤 크래커 사이에 끼워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck16', name:'바나나 보트', category:'디저트', difficulty:'쉬움', time:'10분', ingredients:['바나나','초콜릿칩'], steps:'바나나를 반으로 갈라 초콜릿칩을 넣고 호일에 싸서 불 위에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+];
+
+/* ============================ STATE ============================ */
+const state = {
+  db:null, dbAvailable:false,
+  currentView:'home',
+  campingLogs:[], gear:[], checklists:[],
+  weatherLocation:null,
+  cookingChecks:{}, cookingCategory:'all',
+  homeWidgets:{location:true, camping:true, gear:true, checklist:true},
+  campingFilter:'all', gearCategory:'all', checklistFilter:'all',
+  campingSort:'date_desc',
+  gearCategories:[...DEFAULT_GEAR_CATEGORIES],
+};
+
+function seedDefaults(){
+  state.campingLogs = [
+    {id:'c1', name:'홍천 강변 캠핑장', date:'2025-08-16', region:'홍천', siteType:'데크', siteSize:'5x5m', rating:4, checkinTime:'14:00', checkoutTime:'11:00', toiletCondition:'좋음', storeCondition:'적당함', notes:'계곡 바로 옆이라 시원했어요. 데크가 넓어서 텐트+타프 다 설치 가능.'},
+    {id:'c2', name:'가평 숲속 야영장', date:'2025-05-02', region:'가평', siteType:'흙', siteSize:'6x6m', rating:5, checkinTime:'13:00', checkoutTime:'12:00', toiletCondition:'보통', storeCondition:'없음', notes:'경사가 약간 있어서 그라운드시트가 필요했어요.'},
+  ];
+  state.gear = [
+    {id:'g1', name:'스텔스 5 텐트', brand:'Snow Peak', category:'텐트', price:520000, weight:8.2, date:'2024-04-12'},
+    {id:'g2', name:'체어 원', brand:'Helinox', category:'체어/테이블', price:139000, weight:0.9, date:'2024-05-20'},
+    {id:'g3', name:'부스터 플러스1', brand:'Kovea', category:'조리용품', price:78000, weight:0.4, date:'2023-09-02'},
+  ];
+  state.checklists = [
+    {id:'cl1', title:'기본 캠핑 준비물', items:[
+      {id:'i1', label:'텐트', status:'packed', group:'텐트/침구'},
+      {id:'i2', label:'침낭', status:'packed', group:'텐트/침구'},
+      {id:'i3', label:'랜턴', status:'pending', group:'조명/전기'},
+      {id:'i4', label:'버너/가스', status:'pending', group:'조리용품'},
+    ]},
+  ];
+}
+
+/* ============================ DB LAYER ============================ */
+/* ---- 공유 저장소: Firebase Firestore ----
+ * 앱의 나머지 코드는 예전(claude.ai) 저장 인터페이스
+ *   db.collection(name).onSnapshot/doc(id).set/delete/get, db.doc(path)...
+ * 를 그대로 쓰고, 아래 어댑터가 그걸 Firestore 호출로 바꿔준다.
+ * 설정값(firebase-config.js)이 비어 있으면 '미리보기 모드'(저장 안 됨)로 동작. */
+const FIREBASE_SDK_VERSION = '10.12.2';
+const FIREBASE_CDN = 'https://www.gstatic.com/firebasejs/' + FIREBASE_SDK_VERSION + '/';
+state.bootMode = 'connecting';   // 'shared' | 'preview' | 'error'
+state.online = true;
+
+function firebaseConfigured(){
+  const c = window.FIREBASE_CONFIG;
+  if(!c || !c.apiKey || !c.projectId) return false;
+  return !/붙여넣|YOUR_|PASTE|여기에/i.test(String(c.apiKey) + String(c.projectId));
+}
+async function loadFirebaseModules(bases){
+  if(window.__FIREBASE_MODULES__) return {...window.__FIREBASE_MODULES__, base:'injected'}; // 테스트용 주입
+  let lastErr;
+  for(const base of bases){
+    try{
+      const app = await import(base + 'firebase-app.js');
+      const firestore = await import(base + 'firebase-firestore.js');
+      return {app, firestore, base};
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error('Firebase SDK를 불러오지 못했어요');
+}
+function buildFirestoreDb(mods){
+  const appMod = mods.app, fs = mods.firestore;
+  const apps = appMod.getApps ? appMod.getApps() : [];
+  const app = apps.length ? apps[0] : appMod.initializeApp(window.FIREBASE_CONFIG);
+  let fdb;
+  try{
+    fdb = fs.initializeFirestore(app, {
+      ignoreUndefinedProperties: true,
+      // 캠핑장처럼 신호가 약한 곳에서도 열리고, 체크한 내용은 연결되면 자동 동기화
+      localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() }),
+    });
+  }catch(e){
+    fdb = fs.getFirestore(app);
+  }
+  return makeFirestoreAdapter(fs, fdb);
+}
+async function connectFirestore(){
+  // APK에는 SDK가 앱 안(vendor/)에 들어 있어 오프라인 첫 실행도 가능. 웹에서는 CDN 사용.
+  let mods = await loadFirebaseModules(['./vendor/firebase/', FIREBASE_CDN]);
+  try{ return buildFirestoreDb(mods); }
+  catch(e){
+    if(mods.base !== FIREBASE_CDN && mods.base !== 'injected'){
+      mods = await loadFirebaseModules([FIREBASE_CDN]);
+      return buildFirestoreDb(mods);
+    }
+    throw e;
+  }
+}
+function makeFirestoreAdapter(fs, fdb){
+  const wrapQuery = snap => ({ empty: snap.empty, docs: snap.docs.map(d=>({ id: d.id, data: ()=>d.data() })) });
+  const wrapDoc = snap => ({ exists: snap.exists(), data: ()=>snap.data() });
+  function listen(ref, isDoc, cb, errCb){
+    let first = true, prevJson = null;
+    return fs.onSnapshot(ref, { includeMetadataChanges: true }, snap=>{
+      setOnlineStatus(!(snap.metadata && snap.metadata.fromCache));
+      if(isDoc){
+        const json = JSON.stringify(snap.exists() ? snap.data() : null);
+        if(first || json !== prevJson){ first = false; prevJson = json; cb(wrapDoc(snap)); }
+      }else if(first || snap.docChanges().length > 0){
+        first = false; cb(wrapQuery(snap));
+      }
+    }, errCb);
+  }
+  const docApi = d => ({
+    set: data => fs.setDoc(d, data),
+    delete: () => fs.deleteDoc(d),
+    get: () => fs.getDoc(d).then(wrapDoc),
+    onSnapshot: (cb, errCb) => listen(d, true, cb, errCb),
+  });
+  return {
+    collection(name){
+      const ref = fs.collection(fdb, name);
+      return {
+        onSnapshot: (cb, errCb) => listen(ref, false, cb, errCb),
+        doc: id => docApi(fs.doc(fdb, name, id)),
+        get: () => fs.getDocs(ref).then(wrapQuery),
+      };
+    },
+    doc: path => docApi(fs.doc(fdb, path)),
+  };
+}
+let _offlineTimer = null;
+function setOnlineStatus(isOnline){
+  if(isOnline){
+    if(_offlineTimer){ clearTimeout(_offlineTimer); _offlineTimer = null; }
+    if(!state.online){ state.online = true; updateStatus(); }
+  }else if(state.online && !_offlineTimer){
+    // 앱을 막 열었을 때 잠깐 캐시로 먼저 뜨는 건 무시하고, 3초 넘게 서버에 못 붙으면 오프라인 표시
+    _offlineTimer = setTimeout(()=>{ _offlineTimer = null; state.online = false; updateStatus(); }, 3000);
+  }
+}
+const _reportedDbErrors = new Set();
+function reportDbError(e){
+  const code = (e && e.code) || 'unknown';
+  console.error('[firestore]', e);
+  if(_reportedDbErrors.has(code)) return;
+  _reportedDbErrors.add(code);
+  if(code === 'permission-denied'){
+    toast('공유 저장소 접근이 거부됐어요. Firestore 규칙을 게시했는지 확인해주세요.', 'fail');
+  }else{
+    toast('공유 저장소 연결에 문제가 있어요 (' + code + ')', 'fail');
+  }
+}
+function withTimeout(p, ms){
+  return Promise.race([p, new Promise((_, rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]);
+}
+
+async function initDb(){
+  if(!firebaseConfigured()){ finishBoot('preview'); return; }
+  let db;
+  try{ db = await withTimeout(connectFirestore(), 20000); }
+  catch(e){ console.error('[firebase]', e); finishBoot('error'); return; }
+  state.db = db; state.dbAvailable = true;
+  const onErr = e => reportDbError(e);
+
+  db.collection('campingLogs').onSnapshot(snap=>{
+    state.campingLogs = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    if(['home','camping'].includes(state.currentView)) renderView();
+  }, onErr);
+  db.collection('gear').onSnapshot(snap=>{
+    state.gear = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    if(['home','gear'].includes(state.currentView)) renderView();
+  }, onErr);
+  db.collection('checklists').onSnapshot(snap=>{
+    state.checklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    if(['home','checklist'].includes(state.currentView)) renderView();
+  }, onErr);
+  db.doc('app/settings').onSnapshot(snap=>{
+    if(snap.exists){
+      const d = unfreeze(snap.data());
+      if(d.weatherLocation) state.weatherLocation = d.weatherLocation;
+      if(d.gearCategories && d.gearCategories.length) state.gearCategories = d.gearCategories;
+    }
+    if(['home','settings','gear'].includes(state.currentView)) renderView();
+  }, onErr);
+  db.collection('cookingChecks').onSnapshot(snap=>{
+    const map = {};
+    snap.docs.forEach(d=>{ map[d.id] = unfreeze(d.data()); });
+    state.cookingChecks = map;
+    if(state.currentView==='cooking') renderView();
+  }, onErr);
+
+  finishBoot('shared');
+}
+function finishBoot(mode){
+  state.bootMode = mode;
+  // 예시 데이터는 저장소 없이 미리보기할 때만 화면에 채움(공유 저장소에는 절대 쓰지 않음)
+  if(mode==='preview' && state.campingLogs.length===0){ seedDefaults(); }
+  updateStatus();
+  renderNav(); renderView();
+}
+function updateStatus(){
+  let cls = 'local', text;
+  if(state.bootMode==='shared'){
+    if(state.online){ cls = ''; text = '자동 저장 켜짐 · 함께 쓰는 중'; }
+    else { text = '오프라인 · 연결되면 자동 동기화'; }
+  }else if(state.bootMode==='preview'){ text = '로컬 미리보기 모드 · 저장 안 됨'; }
+  else if(state.bootMode==='error'){ cls = 'err'; text = '연결 안 됨 · 저장 안 됨'; }
+  else { text = '연결 확인 중…'; }
+  const html = `<span class="dot-status ${cls}"></span>${text}`;
+  ['db-status','db-status-top'].forEach(id=>{ const el = document.getElementById(id); if(el) el.innerHTML = html; });
+}
+function bootBanner(){
+  if(state.bootMode==='preview') return `<div class="preview-banner"><b>미리보기 모드예요.</b> Firebase 설정값이 아직 없어서 지금 바꾸는 내용은 저장되지 않고 다른 사람에게도 보이지 않아요. 안내서의 Firebase 설정 단계를 마치면 함께 쓰는 저장소로 바뀌어요.</div>`;
+  if(state.bootMode==='error') return `<div class="preview-banner"><b>공유 저장소에 연결하지 못했어요.</b> 인터넷 연결을 확인한 뒤 앱을 다시 열어주세요. 지금 바꾸는 내용은 저장되지 않아요.</div>`;
+  return '';
+}
+
+/* ---- Home 위젯 표시 여부는 사람마다 다를 수 있어서 이 기기에만 저장 ---- */
+const HOME_WIDGETS_KEY = 'campbase.homeWidgets';
+function loadLocalHomeWidgets(){
+  try{
+    const raw = localStorage.getItem(HOME_WIDGETS_KEY);
+    if(raw){ const v = JSON.parse(raw); if(v && typeof v==='object') state.homeWidgets = {...state.homeWidgets, ...v}; }
+  }catch(e){}
+}
+function saveLocalHomeWidgets(){
+  try{ localStorage.setItem(HOME_WIDGETS_KEY, JSON.stringify(state.homeWidgets)); }catch(e){}
+}
+
+/* ---- 백업 내보내기 / 가져오기 ---- */
+function buildBackup(){
+  return {
+    app:'campbase', version:1, exportedAt: new Date().toISOString(),
+    campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists,
+    cookingChecks: state.cookingChecks,
+    settings: { weatherLocation: state.weatherLocation, homeWidgets: state.homeWidgets, gearCategories: state.gearCategories },
+  };
+}
+function exportBackupModal(){
+  const json = JSON.stringify(buildBackup(), null, 2);
+  const fname = 'campbase-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  let downloaded = false;
+  if(!window.Capacitor){
+    try{
+      const url = URL.createObjectURL(new Blob([json], {type:'application/json'}));
+      const a = document.createElement('a');
+      a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 3000);
+      downloaded = true;
+    }catch(e){}
+  }
+  openModal(`
+    <h3>백업 내보내기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">
+      ${downloaded ? `<b>${esc(fname)}</b> 파일로 저장했어요. 파일이 안 보이면 ` : ''}아래 내용을 복사해서 메모 앱이나 메신저의 나와의 대화 등에 붙여넣어 보관하세요.
+    </p>
+    <textarea id="backup-text" class="backup-text" readonly>${esc(json)}</textarea>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">닫기</button>
+      <button class="btn btn-primary" data-action="backup-copy">${icon('save')} 복사</button>
+    </div>
+  `);
+}
+function copyBackupText(){
+  const ta = document.getElementById('backup-text');
+  if(!ta) return;
+  const fallback = ()=>{ try{ ta.removeAttribute('readonly'); ta.select(); document.execCommand('copy'); ta.setAttribute('readonly',''); toast('복사했어요.', 'ok'); }catch(e){ toast('자동 복사가 안 돼요. 내용을 길게 눌러 직접 복사해주세요.'); } };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(()=>toast('복사했어요.', 'ok')).catch(fallback);
+  }else fallback();
+}
+function importBackupModal(){
+  openModal(`
+    <h3>백업 가져오기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">
+      백업 파일을 고르거나, 복사해 둔 백업 내용을 붙여넣으세요.
+      <b style="color:var(--text);">가져오면 지금 함께 쓰는 데이터가 백업 내용으로 모두 바뀌어요.</b>
+    </p>
+    <div class="field"><label>백업 파일</label><input type="file" id="backup-file" accept=".json,application/json,text/plain"></div>
+    <div class="field"><label>또는 붙여넣기</label><textarea id="backup-text-in" class="backup-text" placeholder='{"app":"campbase", ...}'></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-danger-solid" data-action="backup-import-go">가져오기</button>
+    </div>
+  `);
+}
+function parseBackup(text){
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ return {error:'백업 내용을 읽지 못했어요. 전체를 빠짐없이 붙여넣었는지 확인해주세요.'}; }
+  if(!data || typeof data!=='object' || data.app!=='campbase') return {error:'캠프베이스 백업 파일이 아니에요.'};
+  const arr = v => Array.isArray(v) ? v.filter(x=>x && typeof x==='object') : [];
+  const withIds = (list, prefix) => list.map(x=>({...x, id: String(x.id || uid(prefix))}));
+  return { data: {
+    campingLogs: withIds(arr(data.campingLogs), 'c'),
+    gear: withIds(arr(data.gear), 'g'),
+    checklists: withIds(arr(data.checklists), 'cl').map(cl=>({...cl, items: Array.isArray(cl.items) ? cl.items : []})),
+    cookingChecks: (data.cookingChecks && typeof data.cookingChecks==='object' && !Array.isArray(data.cookingChecks)) ? data.cookingChecks : {},
+    settings: (data.settings && typeof data.settings==='object') ? data.settings : {},
+  }};
+}
+function startImportBackup(){
+  const ta = document.getElementById('backup-text-in');
+  const text = ta ? ta.value.trim() : '';
+  if(!text){ toast('백업 파일을 고르거나 내용을 붙여넣어 주세요.'); return; }
+  const res = parseBackup(text);
+  if(res.error){ toast(res.error, 'fail'); return; }
+  const d = res.data;
+  confirmModal(`백업 내용(캠핑 기록 ${d.campingLogs.length}개, 장비 ${d.gear.length}개, 체크리스트 ${d.checklists.length}개)으로 바꿀까요? 지금 함께 쓰는 데이터는 모두 이 내용으로 바뀌고, 모든 사람 화면에 반영돼요.`, '바꾸기', ()=>applyBackup(d));
+}
+function applyBackup(d){
+  const cols = ['campingLogs','gear','checklists'];
+  const prev = { campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists, cookingChecks: state.cookingChecks };
+  state.campingLogs = d.campingLogs; state.gear = d.gear; state.checklists = d.checklists; state.cookingChecks = d.cookingChecks;
+  const s = d.settings;
+  if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = {...state.homeWidgets, ...s.homeWidgets}; saveLocalHomeWidgets(); }
+  if(Array.isArray(s.gearCategories) && s.gearCategories.length){
+    state.gearCategories = s.gearCategories.includes('기타') ? s.gearCategories.slice() : [...s.gearCategories, '기타'];
+  }
+  if(s.weatherLocation) state.weatherLocation = s.weatherLocation;
+  if(state.dbAvailable){
+    const db = state.db;
+    cols.forEach(c=>{
+      const keep = new Set(d[c].map(x=>x.id));
+      prev[c].forEach(old=>{ if(!keep.has(old.id)) safePersist(()=>db.collection(c).doc(old.id).delete()); });
+      d[c].forEach(x=>safePersist(()=>db.collection(c).doc(x.id).set(stripId(x))));
+    });
+    Object.keys(prev.cookingChecks||{}).forEach(id=>{ if(!(id in d.cookingChecks)) safePersist(()=>db.collection('cookingChecks').doc(id).delete()); });
+    Object.entries(d.cookingChecks).forEach(([id, v])=>safePersist(()=>db.collection('cookingChecks').doc(id).set(v)));
+    persistAppSettings();
+  }
+  renderView();
+  toast(state.dbAvailable ? '백업을 가져왔어요. 모두의 화면에 반영돼요.' : '백업을 불러왔어요. (미리보기 모드라 저장되지는 않아요)', 'ok');
+}
+
+function onSaveFail(e){ toast('저장에 실패했어요. 다시 시도해주세요.' + (e&&e.code?' ('+e.code+')':''), 'fail'); }
+// safePersist: never lets a persistence call block the caller. Any SYNCHRONOUS throw
+// (e.g. from building a bad path) or ASYNC rejection is caught here and turned into a
+// toast — the caller's own state update + re-render + success toast always run regardless.
+function safePersist(fn){
+  try{
+    const p = fn();
+    if(p && typeof p.catch === 'function') p.catch(onSaveFail);
+  }catch(e){ onSaveFail(e); }
+}
+function persistCamping(item){ if(state.dbAvailable) safePersist(()=>state.db.collection('campingLogs').doc(item.id).set(stripId(item))); }
+function deleteCampingRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('campingLogs').doc(id).delete()); }
+function persistGear(item){ if(state.dbAvailable) safePersist(()=>state.db.collection('gear').doc(item.id).set(stripId(item))); }
+function deleteGearRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('gear').doc(id).delete()); }
+function persistChecklist(list){ if(state.dbAvailable) safePersist(()=>state.db.collection('checklists').doc(list.id).set(stripId(list))); }
+function deleteChecklistRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('checklists').doc(id).delete()); }
+function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc('app/settings').set({weatherLocation:state.weatherLocation, gearCategories:state.gearCategories})); }
+function persistWeatherLocation(loc){ state.weatherLocation = loc; persistAppSettings(); }
+function persistCookingCheck(id, data){ if(state.dbAvailable) safePersist(()=>state.db.collection('cookingChecks').doc(id).set(data)); }
+function toggleHomeWidget(key){
+  state.homeWidgets[key] = !state.homeWidgets[key];
+  saveLocalHomeWidgets();
+  renderView();
+}
+
+/* ============================ NAV ============================ */
+function renderNav(){
+  document.getElementById('nav').innerHTML = FEATURE_DEFS.map(f=>navItemHtml(f)).join('');
+  document.getElementById('mobile-topbar').innerHTML = FEATURE_DEFS.map(f=>`
+    <div class="mnav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}">
+      ${icon(f.icon)}<span>${f.label}</span>
+    </div>`).join('');
+}
+function navItemHtml(f){
+  return `<div class="nav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}">${icon(f.icon)}<span>${f.label}</span></div>`;
+}
+
+/* ============================ VIEW DISPATCH ============================ */
+function renderView(){
+  const titles = Object.fromEntries(FEATURE_DEFS.map(f=>[f.id,f.label]));
+  document.getElementById('view-title').textContent = titles[state.currentView] || '';
+  const renderers = {
+    home: renderHome, camping: renderCamping, gear: renderGear,
+    checklist: renderChecklist, cooking: renderCooking, settings: renderSettings,
+  };
+  document.getElementById('main').innerHTML = bootBanner() + (renderers[state.currentView] || renderHome)();
+}
+
+/* ============================ PIE CHART ============================ */
+function pieChartSvg(segments, size){
+  size = size || 120;
+  const r = size/2;
+  const total = segments.reduce((s,x)=>s+x.value,0);
+  if(!total){
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r-1}" fill="none" stroke="var(--border)" stroke-width="2"/></svg>`;
+  }
+  let cum = 0;
+  const parts = segments.filter(s=>s.value>0).map(seg=>{
+    const startAng = cum/total*2*Math.PI - Math.PI/2;
+    cum += seg.value;
+    const endAng = cum/total*2*Math.PI - Math.PI/2;
+    if(seg.value === total){
+      return `<circle cx="${r}" cy="${r}" r="${r}" fill="${seg.color}"/>`;
+    }
+    const x1 = r + r*Math.cos(startAng), y1 = r + r*Math.sin(startAng);
+    const x2 = r + r*Math.cos(endAng), y2 = r + r*Math.sin(endAng);
+    const large = (endAng-startAng) > Math.PI ? 1 : 0;
+    return `<path d="M${r},${r} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${seg.color}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${parts}</svg>`;
+}
+
+/* ============================ HOME ============================ */
+function renderHome(){
+  const hw = state.homeWidgets;
+  const loc = state.weatherLocation;
+  const locHtml = hw.location ? `
+    <div class="weather-widget">
+      ${icon('drop')}
+      <div>
+        <div class="loc">${loc ? esc(loc.name)+' 기준' : '기준 지역 미설정'}</div>
+        <div class="desc">캠핑 계획할 때 참고할 지역이에요. 날씨 연동은 지금 빠져 있어요.</div>
+      </div>
+      <div class="spacer"></div>
+      <select id="home-loc-select" style="padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px;">
+        ${LOCATIONS.map(l=>`<option value="${l.name}" ${loc&&loc.name===l.name?'selected':''}>${l.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-sm btn-primary" data-action="home-loc-save">${icon('save')} 설정</button>
+    </div>
+  ` : '';
+
+  const campBy = {};
+  state.campingLogs.forEach(c=>{ const r = regionOf(c); campBy[r]=(campBy[r]||0)+1; });
+  const campRegions = Object.keys(campBy).sort((a,b)=> campBy[b]-campBy[a] || a.localeCompare(b,'ko'));
+  const campSegs = campRegions.map((r,i)=>({label:r, value:campBy[r]||0, color:CHART_COLORS[i%CHART_COLORS.length]}));
+
+  const gearBy = {};
+  state.gear.forEach(g=>{ gearBy[g.category]=(gearBy[g.category]||0)+1; });
+  const gearSegs = state.gearCategories.map((c,i)=>({label:c, value:gearBy[c]||0, color:CHART_COLORS[i%CHART_COLORS.length]}));
+
+  let done=0, notDone=0;
+  state.checklists.forEach(cl=>(cl.items||[]).forEach(it=>{ if(isDecided(it)) done++; else notDone++; }));
+  const checkSegs = [
+    {label:'완료', value:done, color:'#2f6f4f'},
+    {label:'미완료', value:notDone, color:'#c9c4b6'},
+  ];
+
+  function statCard(title, segs, tab, filterOf, emptyIcon, emptyMsg){
+    const total = segs.reduce((s,x)=>s+x.value,0);
+    if(total===0){
+      return `
+        <div class="card stat-card placeholder-card-sm home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">
+          ${icon(emptyIcon, 'placeholder-icon-sm')}
+          <h3 style="margin:0 0 4px;font-size:13.5px;">${title}</h3>
+          <p style="margin:0;font-size:12px;color:var(--text-dim);">${emptyMsg}</p>
+        </div>`;
+    }
+    return `
+      <div class="card stat-card">
+        <h3 class="home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">${title} ${icon('chev', 'chev-mini')}</h3>
+        ${pieChartSvg(segs, 108)}
+        <div class="big-num home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">${total}</div>
+        <div class="legend">
+          ${segs.map(s=>`<div class="legend-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}"><span class="legend-dot" style="background:${s.color}"></span><span class="lv">${esc(s.label)}</span><span class="num">${s.value}</span></div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  const cards = [];
+  if(hw.camping) cards.push(statCard('캠핑 기록 · 지역', campSegs, 'camping', l=>l, 'camping', '아직 다녀온 캠핑 기록이 없어요. 눌러서 추가해보세요.'));
+  if(hw.gear) cards.push(statCard('보유 장비 · 카테고리', gearSegs, 'gear', l=>l, 'gear', '등록된 장비가 없어요. 눌러서 추가해보세요.'));
+  if(hw.checklist) cards.push(statCard('준비물 체크 현황', checkSegs, 'checklist', l=> l==='완료' ? 'done' : 'undone', 'checklist', '체크리스트 항목이 없어요. 눌러서 만들어보세요.'));
+
+  const statBlock = cards.length ? `
+    <div class="section-head"><div><h1>한눈에 보기</h1><div class="section-desc">캠핑 기록, 장비, 준비물 현황을 확인하세요.</div></div></div>
+    <div class="stat-grid">${cards.join('')}</div>
+  ` : '';
+
+  const emptyHint = (!hw.location && cards.length===0) ? `
+    <div class="empty">Home에 표시할 위젯이 모두 꺼져 있어요. <span data-action="goto-settings" style="color:var(--brand);cursor:pointer;font-weight:600;">설정</span>에서 켜보세요.</div>
+  ` : '';
+
+  return `${locHtml}${statBlock}${emptyHint}`;
+}
+
+/* ============================ SETTINGS ============================ */
+
+function renderSettings(){
+  const hw = state.homeWidgets;
+  return `
+    <div class="section-head"><div><h1>설정</h1><div class="section-desc">Home 화면에 보여줄 위젯을 켜고 끌 수 있어요. 끄면 Home에서 해당 영역이 완전히 사라져요. 이 설정은 지금 쓰는 기기에만 적용돼요.</div></div></div>
+    <div class="card">
+      ${HOME_WIDGET_DEFS.map(it=>`
+        <div class="list-row" style="align-items:center;">
+          <div style="flex:1;">
+            <div class="name">${esc(it.label)}</div>
+            <div class="meta">${esc(it.desc)}</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" data-action="toggle-widget" data-key="${it.key}" ${hw[it.key]?'checked':''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+      `).join('')}
+    </div>
+    <div class="section-head" style="margin-top:24px;"><div><h1>데이터 백업</h1><div class="section-desc">모두가 함께 쓰는 데이터를 내보내 보관하거나, 백업으로 되돌릴 수 있어요. 주소를 아는 사람은 누구나 고칠 수 있으니 가끔 내보내 두세요.</div></div></div>
+    <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" data-action="backup-export">${icon('save')} 백업 내보내기</button>
+      <button class="btn" data-action="backup-import">${icon('refresh')} 백업 가져오기</button>
+    </div>
+  `;
+}
+
+/* ============================ CAMPING ============================ */
+function renderCamping(){
+  const filter = state.campingFilter || 'all';
+  const sortKey = state.campingSort || 'date_desc';
+  const byRegion = {};
+  state.campingLogs.forEach(c=>{ const r=regionOf(c); byRegion[r]=(byRegion[r]||0)+1; });
+  const regions = Object.keys(byRegion).sort((a,b)=> byRegion[b]-byRegion[a] || a.localeCompare(b,'ko'));
+  const camCats = ['all', ...regions];
+  const camCatLabels = {all:'전체'};
+  const logs = [...state.campingLogs]
+    .filter(c=> filter==='all' || regionOf(c)===filter)
+    .sort(campComparator(sortKey));
+  return `
+    <div class="section-head">
+      <div><h1>캠핑 기록</h1><div class="section-desc">다녀온 캠핑장의 사이트 정보와 후기를 남겨보세요.</div></div>
+      <button class="btn btn-accent" data-action="camp-new">${icon('plus')} 기록 추가</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="seg-group" style="flex:1;">
+        ${camCats.map(c=>`<div class="seg-btn ${c===filter?'active':''}" data-action="camp-filter" data-cat="${esc(c)}">${esc(camCatLabels[c]||c)}${c!=='all'?` <span class="num" style="opacity:.65;">${byRegion[c]||0}</span>`:''}</div>`).join('')}
+      </div>
+      <select data-action="camp-sort" style="padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:12.5px;flex:none;">
+        ${CAMP_SORT_OPTIONS.map(o=>`<option value="${o.key}" ${o.key===sortKey?'selected':''}>${esc(o.label)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="card">
+      ${logs.length ? logs.map(c=>`
+        <div class="list-row">
+          <div style="flex:1;">
+            <div class="name">${esc(c.name)}</div>
+            <div class="meta">
+              ${c.date?esc(c.date):''}${c.region?' · '+esc(c.region):''} ·
+              <span class="tag">${esc(c.siteType||'기타')}</span>
+              ${c.siteSize?' · '+esc(c.siteSize):''}
+              ${c.rating?' · '+'★'.repeat(Math.max(0,Math.min(5,c.rating))):''}
+            </div>
+            ${(c.checkinTime||c.checkoutTime||c.toiletCondition||c.storeCondition) ? `<div class="meta">${[
+              (c.checkinTime||c.checkoutTime) ? ('입/퇴실 '+esc(c.checkinTime||'?')+'~'+esc(c.checkoutTime||'?')) : '',
+              c.toiletCondition ? ('화장실 '+esc(c.toiletCondition)) : '',
+              c.storeCondition ? ('매점 '+esc(c.storeCondition)) : '',
+            ].filter(Boolean).join(' · ')}</div>` : ''}
+            ${c.notes?`<div class="notes">${esc(c.notes)}</div>`:''}
+          </div>
+          <div class="row-actions">
+            <button class="icon-btn" data-action="camp-edit" data-id="${c.id}">${icon('edit')}</button>
+            <button class="icon-btn btn-danger" data-action="camp-del" data-id="${c.id}">${icon('trash')}</button>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">${filter==='all' ? '아직 기록이 없어요. 다녀온 캠핑장을 기록해보세요.' : '이 지역으로 기록된 캠핑장이 없어요.'}</div>`}
+    </div>
+  `;
+}
+function campFormModal(id){
+  const c = id ? state.campingLogs.find(x=>x.id===id) : null;
+  const initType = c ? (c.siteType||SITE_TYPES[0]) : SITE_TYPES[0];
+  const initToilet = c ? (c.toiletCondition||'') : '';
+  const initStore = c ? (c.storeCondition||'') : '';
+  openModal(`
+    <h3>${c?'기록 수정':'캠핑 기록 추가'}</h3>
+    <div class="field"><label>캠핑장 이름</label><input id="cf-name" value="${c?esc(c.name):''}" placeholder="예: 홍천 강변 캠핑장"></div>
+    <div class="field-row">
+      <div class="field"><label>방문일</label><input type="date" id="cf-date" value="${c?(c.date||''):''}"></div>
+      <div class="field"><label>지역</label><input id="cf-region" value="${c?esc(c.region||''):''}" placeholder="예: 홍천"></div>
+    </div>
+    <div class="field">
+      <label>사이트 종류</label>
+      <input type="hidden" id="cf-sitetype-val" value="${esc(initType)}">
+      <div class="seg-group" id="cf-sitetype">
+        ${SITE_TYPES.map(t=>`<div class="seg-btn ${t===initType?'active':''}" data-val="${t}">${t}</div>`).join('')}
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>사이트 크기</label><input id="cf-size" value="${c?esc(c.siteSize||''):''}" placeholder="예: 5x5m"></div>
+      <div class="field"><label>평점(0~5)</label><input type="number" min="0" max="5" id="cf-rating" value="${c&&c.rating?c.rating:''}"></div>
+    </div>
+    <div class="form-subhead">이용 후기 상세</div>
+    <div class="field-row">
+      <div class="field"><label>체크인 시간</label><input type="time" id="cf-checkin" value="${c?esc(c.checkinTime||''):''}"></div>
+      <div class="field"><label>체크아웃 시간</label><input type="time" id="cf-checkout" value="${c?esc(c.checkoutTime||''):''}"></div>
+    </div>
+    <div class="field">
+      <label>화장실 상태</label>
+      <input type="hidden" id="cf-toilet-val" value="${esc(initToilet)}">
+      <div class="seg-group" id="cf-toilet">
+        ${TOILET_LEVELS.map(t=>`<div class="seg-btn ${t===initToilet?'active':''}" data-val="${t}">${t}</div>`).join('')}
+      </div>
+    </div>
+    <div class="field">
+      <label>매점 상태</label>
+      <input type="hidden" id="cf-store-val" value="${esc(initStore)}">
+      <div class="seg-group" id="cf-store">
+        ${STORE_LEVELS.map(t=>`<div class="seg-btn ${t===initStore?'active':''}" data-val="${t}">${t}</div>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>내용/후기</label><textarea id="cf-notes">${c?esc(c.notes||''):''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="camp-save" data-id="${id||''}">${icon('save')} 저장</button>
+    </div>
+  `);
+  function wireSeg(groupId, valId){
+    document.querySelectorAll('#'+groupId+' .seg-btn').forEach(el=>{
+      el.onclick = ()=>{
+        const cur = document.getElementById(valId).value;
+        const val = el.getAttribute('data-val');
+        document.querySelectorAll('#'+groupId+' .seg-btn').forEach(x=>x.classList.remove('active'));
+        if(cur===val){ document.getElementById(valId).value = ''; }
+        else{ el.classList.add('active'); document.getElementById(valId).value = val; }
+      };
+    });
+  }
+  wireSeg('cf-toilet','cf-toilet-val');
+  wireSeg('cf-store','cf-store-val');
+  document.querySelectorAll('#cf-sitetype .seg-btn').forEach(el=>{
+    el.onclick = ()=>{
+      document.querySelectorAll('#cf-sitetype .seg-btn').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('cf-sitetype-val').value = el.getAttribute('data-val');
+    };
+  });
+}
+function saveCampForm(id){
+  const name = document.getElementById('cf-name').value.trim();
+  if(!name){ toast('캠핑장 이름을 입력해주세요.'); return; }
+  const item = {
+    id: id || uid('c'),
+    name,
+    date: document.getElementById('cf-date').value || '',
+    region: document.getElementById('cf-region').value.trim(),
+    siteType: document.getElementById('cf-sitetype-val').value || SITE_TYPES[0],
+    siteSize: document.getElementById('cf-size').value.trim(),
+    rating: Number(document.getElementById('cf-rating').value)||0,
+    checkinTime: document.getElementById('cf-checkin').value || '',
+    checkoutTime: document.getElementById('cf-checkout').value || '',
+    toiletCondition: document.getElementById('cf-toilet-val').value || '',
+    storeCondition: document.getElementById('cf-store-val').value || '',
+    notes: document.getElementById('cf-notes').value.trim(),
+  };
+  if(id){ state.campingLogs = state.campingLogs.map(c=>c.id===id?item:c); }
+  else{ state.campingLogs.push(item); }
+  persistCamping(item);
+  closeModal(); renderView(); toast('저장했어요.');
+}
+
+/* ============================ GEAR ============================ */
+function renderGear(){
+  const filter = state.gearCategory || 'all';
+  const gearCats = ['all', ...state.gearCategories];
+  const gearCatLabels = {all:'전체'};
+  const byCat = {};
+  state.gear.forEach(g=>{ byCat[g.category]=(byCat[g.category]||0)+1; });
+  const filtered = state.gear.filter(g=> filter==='all' || g.category===filter);
+  return `
+    <div class="section-head">
+      <div><h1>내 장비</h1><div class="section-desc">보유 장비를 카테고리별로 등록하고 한눈에 확인하세요.</div></div>
+      <button class="btn btn-accent" data-action="gear-new">${icon('plus')} 장비 추가</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="seg-group" style="flex:1;">
+        ${gearCats.map(c=>`<div class="seg-btn ${c===filter?'active':''}" data-action="gear-filter" data-cat="${c}">${esc(gearCatLabels[c]||c)}${c!=='all'?` <span class="num" style="opacity:.65;">${byCat[c]||0}</span>`:''}</div>`).join('')}
+      </div>
+      <button class="btn btn-sm btn-ghost" data-action="gear-cat-manage">${icon('edit')} 카테고리 관리</button>
+    </div>
+    <div class="card">
+      ${filtered.length ? filtered.map(g=>`
+        <div class="list-row">
+          <div style="flex:1;">
+            <div class="name">${esc(g.name)}</div>
+            <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}</div>
+          </div>
+          <div class="row-actions">
+            <button class="icon-btn" data-action="gear-edit" data-id="${g.id}">${icon('edit')}</button>
+            <button class="icon-btn btn-danger" data-action="gear-del" data-id="${g.id}">${icon('trash')}</button>
+          </div>
+        </div>
+      `).join('') : `<div class="empty">${filter==='all' ? '등록된 장비가 없어요.' : '이 카테고리에는 장비가 없어요.'}</div>`}
+    </div>
+  `;
+}
+function gearFormModal(id){
+  const g = id ? state.gear.find(x=>x.id===id) : null;
+  openModal(`
+    <h3>${g?'장비 수정':'장비 추가'}</h3>
+    <div class="field"><label>이름</label><input id="gf-name" value="${g?esc(g.name):''}" placeholder="예: 스텔스 5 텐트"></div>
+    <div class="field-row">
+      <div class="field"><label>브랜드</label>
+        <select id="gf-brand">${GEAR_BRANDS.map(b=>`<option ${g&&g.brand===b?'selected':''}>${b}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>카테고리</label>
+        <select id="gf-category">${state.gearCategories.map(c=>`<option ${g&&g.category===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>가격(원)</label><input type="number" id="gf-price" value="${g?(g.price||''):''}"></div>
+      <div class="field"><label>무게(kg)</label><input type="number" step="0.1" id="gf-weight" value="${g?(g.weight||''):''}"></div>
+    </div>
+    <div class="field"><label>구매일</label><input type="date" id="gf-date" value="${g?(g.date||''):''}"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="gear-save" data-id="${id||''}">${icon('save')} 저장</button>
+    </div>
+  `);
+}
+function saveGearForm(id){
+  const name = document.getElementById('gf-name').value.trim();
+  if(!name){ toast('장비 이름을 입력해주세요.'); return; }
+  const item = {
+    id: id || uid('g'),
+    name,
+    brand: document.getElementById('gf-brand').value,
+    category: document.getElementById('gf-category').value,
+    price: Number(document.getElementById('gf-price').value)||0,
+    weight: Number(document.getElementById('gf-weight').value)||0,
+    date: document.getElementById('gf-date').value || '',
+  };
+  if(id){ state.gear = state.gear.map(g=>g.id===id?item:g); }
+  else{ state.gear.push(item); }
+  persistGear(item);
+  closeModal(); renderView(); toast('저장했어요.');
+}
+
+/* ---- gear category management ---- */
+function categoryManageModal(){
+  openModal(`
+    <h3>카테고리 관리</h3>
+    <div class="section-desc" style="margin-bottom:12px;">이름을 바꾸면 해당 카테고리로 등록된 장비도 함께 바뀌고, 삭제하면 그 장비는 '기타'로 옮겨져요.</div>
+    <div id="cat-manage-list">
+      ${state.gearCategories.map(c=>categoryRowHtml(c)).join('')}
+    </div>
+    <div class="field-row" style="margin-top:12px;align-items:flex-end;">
+      <div class="field" style="flex:1;margin-bottom:0;"><input id="cat-new-name" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-action=gear-cat-add]').click();}"></div>
+      <button class="btn btn-primary" data-action="gear-cat-add">${icon('plus')} 추가</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">닫기</button>
+    </div>
+  `);
+}
+function categoryRowHtml(c){
+  const locked = c === '기타';
+  return `
+    <div class="list-row" style="align-items:center;">
+      <input class="cat-edit-input" data-old="${esc(c)}" value="${esc(c)}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13.5px;" ${locked?'disabled':''}>
+      <div class="row-actions">
+        ${locked ? `<span class="tag">기본값</span>` : `
+          <button class="icon-btn" data-action="gear-cat-rename" data-old="${esc(c)}" title="이름 변경">${icon('save')}</button>
+          <button class="icon-btn btn-danger" data-action="gear-cat-del" data-cat="${esc(c)}" title="삭제">${icon('trash')}</button>
+        `}
+      </div>
+    </div>
+  `;
+}
+function addGearCategory(name){
+  if(!name){ toast('카테고리 이름을 입력해주세요.'); return; }
+  if(state.gearCategories.includes(name)){ toast('이미 있는 카테고리예요.'); return; }
+  state.gearCategories.push(name);
+  persistAppSettings();
+  categoryManageModal();
+  renderView();
+  toast('카테고리를 추가했어요.');
+}
+function renameGearCategory(oldName, newName){
+  if(!newName){ toast('이름을 입력해주세요.'); return; }
+  if(newName===oldName) return;
+  if(state.gearCategories.includes(newName)){ toast('이미 있는 이름이에요.'); return; }
+  state.gearCategories = state.gearCategories.map(c=>c===oldName?newName:c);
+  state.gear.forEach(g=>{ if(g.category===oldName){ g.category=newName; persistGear(g); } });
+  if(state.gearCategory===oldName) state.gearCategory=newName;
+  persistAppSettings();
+  categoryManageModal();
+  renderView();
+  toast('카테고리 이름을 바꿨어요.');
+}
+function deleteGearCategory(cat){
+  if(cat==='기타'){ toast("'기타'는 삭제할 수 없어요."); return; }
+  state.gearCategories = state.gearCategories.filter(c=>c!==cat);
+  if(!state.gearCategories.includes('기타')) state.gearCategories.push('기타');
+  const moved = state.gear.filter(g=>g.category===cat);
+  moved.forEach(g=>{ g.category='기타'; persistGear(g); });
+  if(state.gearCategory===cat) state.gearCategory='all';
+  persistAppSettings();
+  categoryManageModal();
+  renderView();
+  toast(moved.length ? `카테고리를 삭제했어요. 장비 ${moved.length}개는 기타로 옮겨졌어요.` : '카테고리를 삭제했어요.');
+}
+
+function saveBaseLocation(){
+  const name = document.getElementById('home-loc-select').value;
+  const loc = LOCATIONS.find(l=>l.name===name);
+  if(!loc) return;
+  state.weatherLocation = {name:loc.name, nx:loc.nx, ny:loc.ny, stationId:loc.stationId, areaNo:loc.areaNo};
+  persistWeatherLocation(state.weatherLocation);
+  renderView();
+  toast('기준 지역을 설정했어요.');
+}
+
+/* ============================ CHECKLIST ============================ */
+function groupChecklistItems(items){
+  const order = []; const map = {};
+  items.forEach(it=>{
+    const g = it.group || '기타';
+    if(!map[g]){ map[g]=[]; order.push(g); }
+    map[g].push(it);
+  });
+  const ordered = order.filter(g=>g!=='기타');
+  if(map['기타']) ordered.push('기타');
+  return ordered.map(g=>({group:g, items:map[g]}));
+}
+function renderChecklist(){
+  const filter = state.checklistFilter || 'all';
+  const clFilters = [
+    {key:'all', label:'전체'},
+    {key:'done', label:'완료'},
+    {key:'undone', label:'미완료'},
+  ];
+  return `
+    <div class="section-head">
+      <div><h1>준비물 체크</h1><div class="section-desc">대분류(리스트) 안에 소분류를 만들어 항목을 정리하세요.</div></div>
+      <button class="btn btn-accent" data-action="cl-new-list">${icon('plus')} 새 리스트</button>
+    </div>
+    <div class="seg-group" style="margin-bottom:16px;">
+      ${clFilters.map(f=>`<div class="seg-btn ${f.key===filter?'active':''}" data-action="cl-filter" data-filter="${f.key}">${f.label}</div>`).join('')}
+    </div>
+    ${state.checklists.length ? state.checklists.map(cl=>{
+      const allItems = cl.items||[];
+      const decided = allItems.filter(isDecided).length;
+      const total = allItems.length;
+      const allDone = total>0 && decided===total;
+      const visible = allItems.filter(it=> filter==='all' || (filter==='done'&&isDecided(it)) || (filter==='undone'&&!isDecided(it)));
+      const groups = groupChecklistItems(visible);
+      return `
+      <div class="card checklist-group">
+        <h3>
+          <span style="flex:1;">${esc(cl.title)}</span>
+          ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
+          <button class="icon-btn" data-action="cl-list-rename" data-id="${cl.id}" title="리스트 이름 변경">${icon('edit')}</button>
+          ${decided>0 ? `<button class="icon-btn" data-action="cl-list-reset" data-id="${cl.id}" title="전부 미정으로 초기화">${icon('refresh')}</button>` : ''}
+          <button class="icon-btn" data-action="cl-add-item" data-id="${cl.id}" title="새 항목 추가">${icon('plus')}</button>
+          <button class="icon-btn btn-danger" data-action="cl-del-list" data-id="${cl.id}">${icon('trash')}</button>
+        </h3>
+        ${groups.length ? groups.map(gr=>{
+          const gDecided = gr.items.filter(isDecided).length;
+          return `
+          <div class="cl-subgroup">
+            <div class="cl-subgroup-head">
+              <span class="cl-subgroup-name">${esc(gr.group)}</span>
+              <span class="tag">${gDecided}/${gr.items.length}</span>
+              <div class="spacer"></div>
+              <button class="icon-btn" data-action="cl-group-add" data-list="${cl.id}" data-group="${esc(gr.group)}" title="이 소분류에 항목 추가">${icon('plus')}</button>
+              ${gr.group!=='기타' ? `<button class="icon-btn" data-action="cl-group-rename" data-list="${cl.id}" data-group="${esc(gr.group)}" title="소분류 이름 변경">${icon('edit')}</button>` : ''}
+            </div>
+            ${gr.items.map(it=>{
+              const status = itemStatus(it);
+              return `
+              <div class="check-row">
+                <div class="cl-status-group">
+                  <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="가져감">${icon('check')}</button>
+                  <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="안 가져감 (일부러 제외)">${icon('close')}</button>
+                </div>
+                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}</span>
+                <button class="icon-btn btn-danger" data-action="cl-del-item" data-list="${cl.id}" data-item="${it.id}">${icon('trash')}</button>
+              </div>
+            `;}).join('')}
+          </div>`;
+        }).join('') : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`}
+      </div>`;
+    }).join('') : '<div class="card empty">아직 체크리스트가 없어요. 새 리스트를 만들어보세요.</div>'}
+  `;
+}
+function newChecklistModal(){
+  openModal(`
+    <h3>새 체크리스트</h3>
+    <div class="field"><label>리스트 이름</label><input id="ncl-title" placeholder="예: 겨울 캠핑 준비물"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="cl-new-list-save">${icon('save')} 만들기</button>
+    </div>
+  `);
+}
+function saveNewChecklist(){
+  const title = document.getElementById('ncl-title').value.trim();
+  if(!title){ toast('리스트 이름을 입력해주세요.'); return; }
+  const list = { id: uid('cl'), title, items: [] };
+  state.checklists.push(list);
+  persistChecklist(list);
+  closeModal(); renderView(); toast('리스트를 만들었어요.');
+}
+function addChecklistItemModal(listId, presetGroup){
+  const list = state.checklists.find(c=>c.id===listId);
+  const existingGroups = Array.from(new Set(((list&&list.items)||[]).map(it=>it.group||'기타')));
+  openModal(`
+    <h3>항목 추가</h3>
+    <div class="field"><label>항목 이름</label><input id="cli-label" placeholder="예: 랜턴"></div>
+    <div class="field">
+      <label>소분류</label>
+      <input id="cli-group" value="${esc(presetGroup||'')}" placeholder="예: 조리도구 (비워두면 기타로 들어가요)">
+      ${existingGroups.length ? `<div class="seg-group" style="margin-top:7px;">${existingGroups.map(g=>`<div class="seg-btn" data-action="cli-group-pick" data-val="${esc(g)}">${esc(g)}</div>`).join('')}</div>` : ''}
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="cl-add-item-save" data-id="${listId}">${icon('save')} 추가</button>
+    </div>
+  `);
+}
+function saveChecklistItem(listId){
+  const labelEl = document.getElementById('cli-label');
+  const groupEl = document.getElementById('cli-group');
+  if(!labelEl){ toast('입력창을 찾지 못했어요. 창을 닫고 다시 시도해주세요.'); return; }
+  const label = labelEl.value.trim();
+  if(!label){ toast('항목 이름을 입력해주세요.'); return; }
+  const group = (groupEl ? groupEl.value : '').trim() || '기타';
+  const list = state.checklists.find(c=>c.id===listId);
+  if(!list){ toast('리스트를 찾지 못했어요.'); return; }
+  list.items = list.items || [];
+  list.items.push({ id: uid('i'), label, status:'pending', group });
+  persistChecklist(list);
+  closeModal(); renderView(); toast('항목을 추가했어요.');
+}
+function resetChecklist(listId){
+  const list = state.checklists.find(c=>c.id===listId);
+  if(!list) return;
+  confirmModal(`'${list.title}' 리스트의 체크를 모두 초기화할까요? (다음 캠핑에 다시 쓸 때 편해요)`, '초기화', ()=>{
+    (list.items||[]).forEach(it=>{ it.status = 'pending'; delete it.checked; });
+    persistChecklist(list);
+    renderView(); toast('리스트를 초기화했어요.');
+  });
+}
+function renameListModal(listId){
+  const list = state.checklists.find(c=>c.id===listId);
+  if(!list) return;
+  openModal(`
+    <h3>리스트 이름 변경</h3>
+    <div class="field"><label>리스트 이름</label><input id="cl-title-name" value="${esc(list.title)}"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="cl-list-rename-save" data-id="${listId}">${icon('save')} 변경</button>
+    </div>
+  `);
+}
+function renameChecklistTitle(listId, newTitle){
+  const nm = (newTitle||'').trim();
+  if(!nm){ toast('이름을 입력해주세요.'); return; }
+  const list = state.checklists.find(c=>c.id===listId);
+  if(!list) return;
+  list.title = nm;
+  persistChecklist(list);
+  closeModal(); renderView(); toast('리스트 이름을 바꿨어요.');
+}
+function renameGroupModal(listId, groupName){
+  openModal(`
+    <h3>소분류 이름 변경</h3>
+    <div class="field"><label>소분류 이름</label><input id="clg-name" value="${esc(groupName)}"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="cl-group-rename-save" data-list="${listId}" data-old="${esc(groupName)}">${icon('save')} 변경</button>
+    </div>
+  `);
+}
+function renameChecklistGroup(listId, oldName, newName){
+  const nm = (newName||'').trim();
+  if(!nm){ toast('이름을 입력해주세요.'); return; }
+  const list = state.checklists.find(c=>c.id===listId);
+  if(!list) return;
+  (list.items||[]).forEach(it=>{ if((it.group||'기타')===oldName) it.group = nm; });
+  persistChecklist(list);
+  closeModal(); renderView(); toast('소분류 이름을 바꿨어요.');
+}
+
+/* ============================ COOKING ============================ */
+function renderCooking(){
+  const cats = ['all', ...Array.from(new Set(COOKING_RECIPES.map(r=>r.category)))];
+  const catLabels = {all:'전체'};
+  const activeCat = state.cookingCategory || 'all';
+  const list = COOKING_RECIPES.filter(r=> activeCat==='all' || r.category===activeCat);
+  return `
+    <div class="section-head">
+      <div><h1>캠핑 요리</h1><div class="section-desc">캠핑 요리 블로그에서 모은 레시피예요. 재료를 체크하며 장보기·준비를 챙겨보세요.</div></div>
+    </div>
+    <div class="banner">${icon('info')}<div>캠핑 요리 블로그(LifeBase, 우리의식탁)에서 모은 대표 레시피 모음이에요. 실시간으로 갱신되진 않아요.</div></div>
+    <div class="seg-group" style="margin-bottom:16px;">
+      ${cats.map(c=>`<div class="seg-btn ${c===activeCat?'active':''}" data-action="cook-filter" data-cat="${c}">${esc(catLabels[c]||c)}</div>`).join('')}
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
+      ${list.length ? list.map(r=>recipeCardHtml(r)).join('') : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
+    </div>
+  `;
+}
+function recipeCardHtml(r){
+  const checked = new Set((state.cookingChecks[r.id] && state.cookingChecks[r.id].checked) || []);
+  const doneCount = checked.size, total = r.ingredients.length;
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+        <div class="name">${esc(r.name)}</div>
+        <span class="tag">${esc(r.category)}</span>
+      </div>
+      <div class="section-desc" style="margin:4px 0 10px;">${esc(r.difficulty)} · ${esc(r.time)}</div>
+      <div style="margin-bottom:8px;">
+        ${r.ingredients.map((ing,i)=>`
+          <div class="check-row">
+            <input type="checkbox" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}" ${checked.has(i)?'checked':''}>
+            <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="section-desc" style="margin-bottom:10px;line-height:1.5;">${esc(r.steps)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span class="tag accent">재료 ${doneCount}/${total}</span>
+        <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
+      </div>
+    </div>
+  `;
+}
+
+/* ============================ MODAL / TOAST ============================ */
+function openModal(html){
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal">${html}</div>
+    </div>`;
+  document.getElementById('modal-backdrop').addEventListener('click', e=>{ if(e.target.id==='modal-backdrop') closeModal(); });
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; _confirmCallback = null; }
+// confirmModal: replaces window.confirm() for destructive actions. The
+// sandboxed iframe this Artifact runs in silently blocks native confirm()/
+// alert() dialogs (no popup ever appears and it just resolves as cancelled)
+// — clicking a delete icon would then do nothing at all ("선택 시 무반응"),
+// with no error either, since `if(!confirm(...)) break;` just quietly took
+// the cancel branch. This draws the same confirmation as a normal in-app
+// modal instead, which always renders.
+let _confirmCallback = null;
+function confirmModal(message, confirmLabel, onConfirm){
+  _confirmCallback = onConfirm;
+  openModal(`
+    <h3>확인</h3>
+    <p style="margin:0 0 4px;color:var(--text-dim);font-size:13.5px;line-height:1.6;">${esc(message)}</p>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-danger-solid" data-action="confirm-yes">${esc(confirmLabel||'확인')}</button>
+    </div>
+  `);
+}
+function toast(msg, kind){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.remove('fail','ok'); if(kind) t.classList.add(kind);
+  t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ============================ GLOBAL EVENT DELEGATION ============================ */
+function wireGlobalActions(){
+  document.addEventListener('click', (e)=>{
+   try{
+    const navEl = e.target.closest('[data-nav]');
+    if(navEl && navEl.closest('#nav, #mobile-topbar')){
+      state.currentView = navEl.getAttribute('data-nav');
+      renderNav(); renderView();
+      return;
+    }
+    const a = e.target.closest('[data-action]');
+    if(!a) return;
+    const action = a.getAttribute('data-action');
+    const id = a.getAttribute('data-id');
+
+    switch(action){
+      case 'modal-close': closeModal(); break;
+
+      case 'camp-new': campFormModal(); break;
+      case 'camp-edit': campFormModal(id); break;
+      case 'camp-del': {
+        const target = state.campingLogs.find(c=>c.id===id);
+        confirmModal(`'${target?target.name:'이 기록'}'을 삭제할까요? 되돌릴 수 없어요.`, '삭제', ()=>{
+          state.campingLogs = state.campingLogs.filter(c=>c.id!==id);
+          deleteCampingRemote(id); renderView(); toast('기록을 삭제했어요.');
+        });
+        break;
+      }
+      case 'camp-save': saveCampForm(id); break;
+
+      case 'gear-new': gearFormModal(); break;
+      case 'gear-edit': gearFormModal(id); break;
+      case 'gear-del': {
+        const target = state.gear.find(g=>g.id===id);
+        confirmModal(`'${target?target.name:'이 장비'}'를 삭제할까요? 되돌릴 수 없어요.`, '삭제', ()=>{
+          state.gear = state.gear.filter(g=>g.id!==id);
+          deleteGearRemote(id); renderView(); toast('장비를 삭제했어요.');
+        });
+        break;
+      }
+      case 'gear-save': saveGearForm(id); break;
+
+      case 'gear-cat-manage': categoryManageModal(); break;
+      case 'gear-cat-add': {
+        const input = document.getElementById('cat-new-name');
+        addGearCategory(input.value.trim());
+        break;
+      }
+      case 'gear-cat-rename': {
+        const oldName = a.getAttribute('data-old');
+        const row = a.closest('.list-row');
+        const input = row.querySelector('.cat-edit-input');
+        renameGearCategory(oldName, input.value.trim());
+        break;
+      }
+      case 'gear-cat-del':
+        deleteGearCategory(a.getAttribute('data-cat'));
+        break;
+
+      case 'home-loc-save': saveBaseLocation(); break;
+
+      case 'goto-settings':
+        state.currentView = 'settings';
+        renderNav(); renderView();
+        break;
+
+      case 'cook-filter':
+        state.cookingCategory = a.getAttribute('data-cat');
+        renderView();
+        break;
+
+      case 'camp-filter':
+        state.campingFilter = a.getAttribute('data-cat');
+        renderView();
+        break;
+
+      case 'gear-filter':
+        state.gearCategory = a.getAttribute('data-cat');
+        renderView();
+        break;
+
+      case 'cl-filter':
+        state.checklistFilter = a.getAttribute('data-filter');
+        renderView();
+        break;
+
+      case 'home-cat-nav': {
+        const tab = a.getAttribute('data-tab');
+        const filterVal = a.getAttribute('data-filter');
+        if(tab==='camping') state.campingFilter = filterVal;
+        if(tab==='gear') state.gearCategory = filterVal;
+        if(tab==='checklist') state.checklistFilter = filterVal;
+        state.currentView = tab;
+        renderNav(); renderView();
+        break;
+      }
+
+      case 'cl-new-list': newChecklistModal(); break;
+      case 'cl-new-list-save': saveNewChecklist(); break;
+      case 'cl-del-list': {
+        const target = state.checklists.find(c=>c.id===id);
+        confirmModal(`'${target?target.title:'이 리스트'}' 전체를 삭제할까요? 안의 항목도 모두 사라지고 되돌릴 수 없어요.`, '삭제', ()=>{
+          state.checklists = state.checklists.filter(c=>c.id!==id);
+          deleteChecklistRemote(id); renderView(); toast('리스트를 삭제했어요.');
+        });
+        break;
+      }
+      case 'cl-list-reset': resetChecklist(id); break;
+      case 'cl-list-rename': renameListModal(id); break;
+      case 'backup-export': exportBackupModal(); break;
+      case 'backup-copy': copyBackupText(); break;
+      case 'backup-import': importBackupModal(); break;
+      case 'backup-import-go': startImportBackup(); break;
+      case 'cl-list-rename-save': {
+        const input = document.getElementById('cl-title-name');
+        renameChecklistTitle(id, input ? input.value : '');
+        break;
+      }
+      case 'confirm-yes': {
+        const cb = _confirmCallback; _confirmCallback = null;
+        closeModal();
+        if(cb) cb();
+        break;
+      }
+      case 'cl-add-item': addChecklistItemModal(id); break;
+      case 'cl-add-item-save': saveChecklistItem(id); break;
+      case 'cli-group-pick': {
+        const groupEl = document.getElementById('cli-group');
+        if(groupEl) groupEl.value = a.getAttribute('data-val');
+        break;
+      }
+      case 'cl-item-status': {
+        const listId = a.getAttribute('data-list'), itemId = a.getAttribute('data-item'), val = a.getAttribute('data-val');
+        const list = state.checklists.find(c=>c.id===listId);
+        if(list){
+          const it = (list.items||[]).find(i=>i.id===itemId);
+          if(it){
+            const cur = itemStatus(it);
+            it.status = (cur===val) ? 'pending' : val; // clicking the active state again resets to 미정
+            delete it.checked; // migrate off the legacy boolean field going forward
+            persistChecklist(list);
+            renderView();
+          }
+        }
+        break;
+      }
+      case 'cl-del-item': {
+        const listId = a.getAttribute('data-list'), itemId = a.getAttribute('data-item');
+        const list = state.checklists.find(c=>c.id===listId);
+        if(list){ list.items = (list.items||[]).filter(i=>i.id!==itemId); persistChecklist(list); renderView(); }
+        break;
+      }
+      case 'cl-group-add': {
+        const listId = a.getAttribute('data-list'), group = a.getAttribute('data-group');
+        addChecklistItemModal(listId, group);
+        break;
+      }
+      case 'cl-group-rename': {
+        const listId = a.getAttribute('data-list'), group = a.getAttribute('data-group');
+        renameGroupModal(listId, group);
+        break;
+      }
+      case 'cl-group-rename-save': {
+        const listId = a.getAttribute('data-list'), oldName = a.getAttribute('data-old');
+        const input = document.getElementById('clg-name');
+        renameChecklistGroup(listId, oldName, input.value);
+        break;
+      }
+    }
+   }catch(err){
+     console.error('[wireGlobalActions:click]', err);
+     toast('작업 중 오류가 발생했어요: ' + (err && err.message ? err.message : String(err)), 'fail');
+   }
+  });
+  document.addEventListener('change', (e)=>{
+   try{
+    const cc = e.target.closest('[data-action="cook-toggle"]');
+    if(cc){
+      const rid = cc.getAttribute('data-recipe');
+      const idx = Number(cc.getAttribute('data-idx'));
+      const cur = new Set((state.cookingChecks[rid] && state.cookingChecks[rid].checked) || []);
+      if(cc.checked) cur.add(idx); else cur.delete(idx);
+      state.cookingChecks[rid] = {checked:[...cur]};
+      persistCookingCheck(rid, state.cookingChecks[rid]);
+      renderView();
+      return;
+    }
+    if(e.target && e.target.id === 'backup-file'){
+      const f = e.target.files && e.target.files[0];
+      if(f){
+        const r = new FileReader();
+        r.onload = ()=>{
+          const ta = document.getElementById('backup-text-in');
+          if(ta) ta.value = String(r.result || '');
+          toast('파일을 불러왔어요. 가져오기를 눌러주세요.');
+        };
+        r.readAsText(f);
+      }
+      return;
+    }
+    const tw = e.target.closest('[data-action="toggle-widget"]');
+    if(tw){
+      toggleHomeWidget(tw.getAttribute('data-key'));
+    }
+    const cs = e.target.closest('[data-action="camp-sort"]');
+    if(cs){
+      state.campingSort = cs.value;
+      renderView();
+    }
+   }catch(err){
+     console.error('[wireGlobalActions:change]', err);
+     toast('작업 중 오류가 발생했어요: ' + (err && err.message ? err.message : String(err)), 'fail');
+   }
+  });
+}
+
+/* ============================ BOOT ============================ */
+function boot(){
+  loadLocalHomeWidgets();
+  renderNav();
+  updateStatus();
+  wireGlobalActions();
+  initDb();
+  // 웹(홈 화면 설치)용 오프라인 캐시. APK 안에서는 앱에 파일이 들어 있으므로 쓰지 않음.
+  if('serviceWorker' in navigator && !window.Capacitor && location.protocol === 'https:'){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+boot();
+</script>
+</body>
+</html>

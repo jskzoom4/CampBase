@@ -1,0 +1,11 @@
+{
+  "appId": "com.campbase.app",
+  "appName": "캠프베이스",
+  "webDir": "docs",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#f7f6f2"
+  }
+}

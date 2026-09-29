@@ -1,0 +1,14 @@
+rules_version = '2';
+
+// 캠프베이스 공유 저장소 규칙
+// - 로그인 없이 앱을 가진 사람은 누구나 읽고 쓸 수 있어요(선택한 방식).
+// - 대신 캠프베이스가 쓰는 칸(컬렉션)만 열어두고, 그 밖의 곳은 전부 막아요.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /campingLogs/{id}   { allow read, write: if true; }
+    match /gear/{id}          { allow read, write: if true; }
+    match /checklists/{id}    { allow read, write: if true; }
+    match /cookingChecks/{id} { allow read, write: if true; }
+    match /app/{id}           { allow read, write: if id == 'settings'; }
+  }
+}
