@@ -1,0 +1,84 @@
+{
+  "app": "campbase",
+  "version": 1,
+  "exportedAt": "2026-01-01T00:00:00Z",
+  "campingLogs": [
+    {
+      "id": "c1",
+      "name": "테스트 강변 캠핑장",
+      "date": "2025-08-16",
+      "region": "홍천",
+      "siteType": "데크",
+      "siteSize": "5x5m",
+      "rating": 4,
+      "checkinTime": "14:00",
+      "checkoutTime": "11:00",
+      "toiletCondition": "좋음",
+      "storeCondition": "적당함",
+      "notes": "테스트용 기록"
+    },
+    {
+      "id": "c2",
+      "name": "테스트 숲속 야영장",
+      "date": "2025-05-02",
+      "region": "가평",
+      "siteType": "흙",
+      "siteSize": "6x6m",
+      "rating": 5,
+      "notes": ""
+    }
+  ],
+  "gear": [
+    {
+      "id": "g1",
+      "name": "테스트 텐트",
+      "brand": "Snow Peak",
+      "category": "텐트",
+      "price": 520000,
+      "weight": 8.2,
+      "date": "2024-04-12"
+    },
+    {
+      "id": "g2",
+      "name": "테스트 체어",
+      "brand": "Helinox",
+      "category": "체어/테이블",
+      "price": 139000,
+      "weight": 0.9,
+      "date": "2024-05-20"
+    },
+    {
+      "id": "g3",
+      "name": "테스트 버너",
+      "brand": "Kovea",
+      "category": "조리용품",
+      "price": 78000,
+      "weight": 0.4,
+      "date": "2023-09-02"
+    }
+  ],
+  "checklists": [
+    {
+      "id": "cl_fixture",
+      "title": "10/4-5",
+      "items": []
+    }
+  ],
+  "cookingChecks": {},
+  "settings": {
+    "gearCategories": [
+      "텐트",
+      "침낭/매트",
+      "조리용품",
+      "조명",
+      "체어/테이블",
+      "기타"
+    ],
+    "homeWidgets": {
+      "camping": false,
+      "checklist": true,
+      "gear": false,
+      "location": false
+    }
+  }
+}
