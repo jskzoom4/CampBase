@@ -1,7 +1,7 @@
 {
   "name": "캠프베이스",
   "short_name": "캠프베이스",
-  "description": "함께 쓰는 캠핑 준비물·장비·후기 기록",
+  "description": "캠핑 준비물·장비·후기를 내 계정에 기록하는 캠핑 노트",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",

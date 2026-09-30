@@ -1,7 +1,7 @@
 // 캠프베이스 웹(홈 화면 설치) 오프라인 캐시.
 // 데이터 자체는 Firestore가 따로 오프라인 저장하므로, 여기서는 앱 파일만 캐시한다.
 // 화면 파일(HTML)은 항상 최신을 먼저 받아오고, 인터넷이 없을 때만 캐시를 쓴다.
-const CACHE = 'campbase-v1';
+const CACHE = 'campbase-v2';
 const SHELL = ['./', './index.html', './firebase-config.js', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
