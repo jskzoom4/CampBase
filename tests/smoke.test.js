@@ -247,7 +247,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   await page.waitForTimeout(200);
   if (!(await page.locator('#login-screen').isVisible())) issues.push('login screen not shown after logout');
   log('logout');
-  const foreign = await page.evaluate(() => window.__fsAccess.filter(x => x !== 'users/smokeUser' && !x.startsWith('users/smokeUser/') && !/^(campingLogs|gear|checklists|cookingChecks|app\/settings)$/.test(x)));
+  const foreign = await page.evaluate(() => window.__fsAccess.filter(x => x !== 'users/smokeUser' && !x.startsWith('users/smokeUser/') && !/^(campingLogs|gear|checklists|cookingChecks|app\/settings|groups)$/.test(x)));
   if (foreign.length) issues.push('accessed paths outside own space: ' + foreign.join(', '));
   if (Object.keys(server).some(k => !k.startsWith('users/smokeUser'))) issues.push('wrote outside own space: ' + Object.keys(server).join(', '));
 

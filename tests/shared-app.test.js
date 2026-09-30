@@ -95,7 +95,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const nav = (p, tab) => p.locator(`[data-nav="${tab}"]:visible`).first().click();
   const userKeys = uid => Object.keys(server).filter(k => k.startsWith('users/' + uid + '/')).sort();
   // 이 페이지가 건드린 경로가 전부 자기 개인 공간인지 (legacy 가져오기 전 기준)
-  const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => x !== 'users/' + u && !x.startsWith('users/' + u + '/')), uid);
+  const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => x !== 'users/' + u && !x.startsWith('users/' + u + '/') && x !== 'groups'), uid);   // 'groups' = 내 그룹 목록 쿼리
 
   // 전환 기간: 예전 APK가 쓰던 최상위 공유 데이터가 이미 있다고 가정
   Object.assign(server, {

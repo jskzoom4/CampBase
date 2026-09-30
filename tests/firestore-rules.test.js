@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, deleteDoc, collection, getDocs, setLogLevel } = require('firebase/firestore');
+const { doc, getDoc, setDoc, deleteDoc, updateDoc, collection, getDocs, query, where, arrayUnion, arrayRemove, deleteField, setLogLevel } = require('firebase/firestore');
 setLogLevel('silent');   // 거부될 때마다 찍히는 SDK 경고는 숨김(거부가 기대값인 테스트가 많음)
 
 const results = [];
@@ -81,8 +81,95 @@ async function check(name, p) {
 
   // 3. 그 밖의 경로 전부 거부
   await check('그 밖의 경로 읽기 거부(로그인해도)', assertFails(getDoc(doc(alice, 'secret/x'))));
-  await check('그 밖의 경로 쓰기 거부', assertFails(setDoc(doc(alice, 'groups/g1'), { v: 1 })));
+  await check('그 밖의 경로 쓰기 거부', assertFails(setDoc(doc(alice, 'somethingElse/g1'), { v: 1 })));
   await check('그 밖의 경로: 로그인 안 함 거부', assertFails(getDoc(doc(anon, 'secret/x'))));
+
+  // 3-1. 그룹
+  const carol = env.authenticatedContext('carol').firestore();
+  const DAY = 24 * 60 * 60 * 1000;
+  const member = (name, role) => ({ name, photoURL: '', role });
+  await env.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    // alice(그룹장) + bob(멤버). carol은 비멤버.
+    await setDoc(doc(db, 'groups/fam'), { name: '캠핑팸', ownerUid: 'alice', memberUids: ['alice', 'bob'],
+      members: { alice: member('앨리스', 'owner'), bob: member('밥', 'member') }, createdAt: 'x', gearCategories: ['텐트', '기타'] });
+    await setDoc(doc(db, 'groups/fam/checklists/l1'), { title: '그룹 리스트', items: [] });
+    await setDoc(doc(db, 'groups/other'), { name: '다른 그룹', ownerUid: 'dave', memberUids: ['dave'], members: { dave: member('데이브', 'owner') }, createdAt: 'x' });
+    await setDoc(doc(db, 'groupInvites/GOODCD'), { gid: 'fam', groupName: '캠핑팸', createdBy: 'alice', expiresAt: Date.now() + 7 * DAY, createdAt: 'x' });
+    await setDoc(doc(db, 'groupInvites/OLDCDE'), { gid: 'fam', groupName: '캠핑팸', createdBy: 'alice', expiresAt: Date.now() - 1000, createdAt: 'x' });
+    await setDoc(doc(db, 'groupInvites/OTHERG'), { gid: 'other', groupName: '다른 그룹', createdBy: 'dave', expiresAt: Date.now() + DAY, createdAt: 'x' });
+  });
+  const joinAs = (who, uid, code, extra = {}) => updateDoc(doc(who, 'groups/fam'), { memberUids: arrayUnion(uid), ['members.' + uid]: member(uid, 'member'), joinCode: code, ...extra });
+
+  // 읽기
+  await check('그룹: 멤버는 그룹 문서 읽기', assertSucceeds(getDoc(doc(bob, 'groups/fam'))));
+  await check('그룹: 비멤버는 그룹 문서 읽기 거부', assertFails(getDoc(doc(carol, 'groups/fam'))));
+  await check('그룹: 로그인 안 하면 읽기 거부', assertFails(getDoc(doc(anon, 'groups/fam'))));
+  await check('그룹: 내 그룹 목록 쿼리(array-contains 나)', (async () => {
+    const s = await assertSucceeds(getDocs(query(collection(bob, 'groups'), where('memberUids', 'array-contains', 'bob'))));
+    if (s.size !== 1) throw new Error('size ' + s.size);
+  })());
+  await check('그룹: 조건 없이 그룹 전체 목록 읽기 거부', assertFails(getDocs(collection(bob, 'groups'))));
+  await check('그룹 데이터: 멤버 읽기·쓰기', (async () => {
+    await assertSucceeds(getDocs(collection(bob, 'groups/fam/checklists')));
+    await assertSucceeds(setDoc(doc(bob, 'groups/fam/gear/g1'), { name: '텐트', addedBy: 'bob' }));
+  })());
+  await check('그룹 데이터: 비멤버 읽기 거부', assertFails(getDocs(collection(carol, 'groups/fam/checklists'))));
+  await check('그룹 데이터: 비멤버 쓰기 거부', assertFails(setDoc(doc(carol, 'groups/fam/gear/x'), { v: 1 })));
+
+  // 만들기
+  await check('그룹 만들기: 내가 그룹장이자 유일한 멤버면 허용', assertSucceeds(setDoc(doc(carol, 'groups/carolG'), {
+    name: '캐롤팀', ownerUid: 'carol', memberUids: ['carol'], members: { carol: member('캐롤', 'owner') }, createdAt: 'x', gearCategories: ['기타'] })));
+  await check('그룹 만들기: 다른 사람을 멤버로 넣으면 거부', assertFails(setDoc(doc(carol, 'groups/carolG2'), {
+    name: '캐롤팀', ownerUid: 'carol', memberUids: ['carol', 'bob'], members: { carol: member('캐롤', 'owner'), bob: member('밥', 'member') }, createdAt: 'x' })));
+  await check('그룹 만들기: 남을 그룹장으로 넣으면 거부', assertFails(setDoc(doc(carol, 'groups/carolG3'), {
+    name: '캐롤팀', ownerUid: 'bob', memberUids: ['bob'], members: { bob: member('밥', 'owner') }, createdAt: 'x' })));
+
+  // 참여
+  await check('참여: 코드 없이 참여 거부', assertFails(updateDoc(doc(carol, 'groups/fam'), { memberUids: arrayUnion('carol'), 'members.carol': member('캐롤', 'member') })));
+  await check('참여: 없는 코드로 참여 거부', assertFails(joinAs(carol, 'carol', 'NOPE22')));
+  await check('참여: 만료된 코드로 참여 거부', assertFails(joinAs(carol, 'carol', 'OLDCDE')));
+  await check('참여: 다른 그룹 코드로 참여 거부', assertFails(joinAs(carol, 'carol', 'OTHERG')));
+  await check('참여: 남(erin)을 멤버로 추가 거부', assertFails(joinAs(carol, 'erin', 'GOODCD')));
+  await check('참여: 자기를 그룹장 역할로 넣기 거부', assertFails(updateDoc(doc(carol, 'groups/fam'), { memberUids: arrayUnion('carol'), 'members.carol': member('캐롤', 'owner'), joinCode: 'GOODCD' })));
+  await check('참여: 참여하면서 이름까지 바꾸기 거부', assertFails(joinAs(carol, 'carol', 'GOODCD', { name: '해킹' })));
+  await check('참여: 유효한 코드로 자기 자신만 추가하면 허용', assertSucceeds(joinAs(carol, 'carol', 'GOODCD')));
+  await check('참여 후: 그룹 데이터 읽기 가능', assertSucceeds(getDocs(collection(carol, 'groups/fam/checklists'))));
+
+  // 멤버 권한 / 그룹장 권한
+  await check('멤버: 장비 카테고리 변경 허용', assertSucceeds(updateDoc(doc(bob, 'groups/fam'), { gearCategories: ['텐트', '해먹', '기타'] })));
+  await check('멤버: 그룹 이름 변경 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { name: '밥의 그룹' })));
+  await check('멤버: 다른 멤버 내보내기 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { memberUids: arrayRemove('carol'), 'members.carol': deleteField() })));
+  await check('멤버: 그룹장 바꾸기 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { ownerUid: 'bob' })));
+  await check('멤버: 그룹 삭제 거부', assertFails(deleteDoc(doc(bob, 'groups/fam'))));
+  await check('그룹장: 이름 변경 허용', assertSucceeds(updateDoc(doc(alice, 'groups/fam'), { name: '캠핑팸2' })));
+  await check('그룹장: 자기 자신 내보내기 거부', assertFails(updateDoc(doc(alice, 'groups/fam'), { memberUids: arrayRemove('alice'), 'members.alice': deleteField() })));
+  await check('그룹장: 나가기 거부(그룹을 삭제해야 함)', assertFails(updateDoc(doc(alice, 'groups/fam'), { memberUids: arrayRemove('alice'), 'members.alice': deleteField() })));
+  await check('그룹장: 멤버 내보내기 허용', assertSucceeds(updateDoc(doc(alice, 'groups/fam'), { memberUids: arrayRemove('carol'), 'members.carol': deleteField() })));
+  await check('내보낸 뒤: 그 사람은 그룹 데이터 읽기 거부', assertFails(getDocs(collection(carol, 'groups/fam/checklists'))));
+  await check('나가기: 멤버가 자기 자신만 빼면 허용', assertSucceeds(updateDoc(doc(bob, 'groups/fam'), { memberUids: arrayRemove('bob'), 'members.bob': deleteField() })));
+
+  // 초대 코드
+  await check('초대 코드: 로그인한 사람은 코드 한 개 읽기', assertSucceeds(getDoc(doc(carol, 'groupInvites/GOODCD'))));
+  await check('초대 코드: 로그인 안 하면 읽기 거부', assertFails(getDoc(doc(anon, 'groupInvites/GOODCD'))));
+  await check('초대 코드: 비멤버가 코드 목록 훑어보기 거부', assertFails(getDocs(query(collection(carol, 'groupInvites'), where('gid', '==', 'fam')))));
+  await check('초대 코드: 멤버는 자기 그룹 코드 목록 읽기', assertSucceeds(getDocs(query(collection(alice, 'groupInvites'), where('gid', '==', 'fam')))));
+  const inv = (by, gid, extra = {}) => ({ gid, groupName: 'x', createdBy: by, expiresAt: Date.now() + 7 * DAY, createdAt: 'x', ...extra });
+  await check('초대 코드: 멤버가 만들기 허용', assertSucceeds(setDoc(doc(alice, 'groupInvites/ABC234'), inv('alice', 'fam'))));
+  await check('초대 코드: 비멤버가 만들기 거부', assertFails(setDoc(doc(carol, 'groupInvites/ABC235'), inv('carol', 'fam'))));
+  await check('초대 코드: 헷갈리는 글자(0/O/1/I) 코드 거부', assertFails(setDoc(doc(alice, 'groupInvites/ABC0O1'), inv('alice', 'fam'))));
+  await check('초대 코드: 만료가 너무 먼 코드 거부', assertFails(setDoc(doc(alice, 'groupInvites/ABC236'), inv('alice', 'fam', { expiresAt: Date.now() + 30 * DAY }))));
+  await check('초대 코드: 이미 있는 코드 덮어쓰기 거부', assertFails(setDoc(doc(alice, 'groupInvites/GOODCD'), inv('alice', 'fam'))));
+  await check('초대 코드: 만든 사람 삭제 허용', assertSucceeds(deleteDoc(doc(alice, 'groupInvites/ABC234'))));
+  await check('초대 코드: 다른 사람(그룹장 아님) 삭제 거부', assertFails(deleteDoc(doc(carol, 'groupInvites/OTHERG'))));
+
+  // 그룹 삭제(그룹장): 하위 데이터 → 초대 코드 → 그룹 문서 순서
+  await check('그룹장: 하위 데이터·초대 코드·그룹 삭제', (async () => {
+    await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/checklists/l1')));
+    await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/gear/g1')));
+    await assertSucceeds(deleteDoc(doc(alice, 'groupInvites/GOODCD')));
+    await assertSucceeds(deleteDoc(doc(alice, 'groups/fam')));
+  })());
 
   // 4. 전환 기간을 닫은 뒤(주석 안내대로 1단계: 로그인한 사람만 읽기 전용)에도 의도대로 동작하는지
   const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');

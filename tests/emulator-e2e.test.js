@@ -10,7 +10,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { initializeTestEnvironment } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, getDoc, collection, getDocs, setLogLevel } = require('firebase/firestore');
+const { doc, setDoc, getDoc, collection, getDocs, query, where, setLogLevel } = require('firebase/firestore');
 setLogLevel('silent');
 
 const ROOT = path.join(__dirname, '..');
@@ -130,6 +130,44 @@ const until = async (fn, t = 8000) => { const end = Date.now() + t; while (Date.
   await nav(B, 'camping');
   await B.waitForSelector('.list-row:has-text("예전 공유 캠핑장")', { timeout: 5000 }).catch(() => {});
   check('가져온 기록이 B 화면에 보임', await B.locator('.list-row:has-text("예전 공유 캠핑장")').count() === 1);
+
+  // 그룹: A 만들기 → 초대 코드 → B 참여 → 그룹 체크리스트 공유 → B 나가기 (진짜 SDK + 진짜 규칙)
+  await nav(A, 'settings');
+  await A.click('[data-action="group-new"]');
+  await A.fill('#grp-name', '캠핑팸');
+  await A.click('[data-action="group-new-save"]');
+  const gid = await until(() => admin(async db => { const s = await getDocs(query(collection(db, 'groups'), where('ownerUid', '==', aUid))); return s.size === 1 && s.docs[0].id; }));
+  check('실제 규칙: 그룹 만들기', !!gid, gid);
+  await A.waitForSelector('.group-row [data-action="group-invite"]', { timeout: 8000 });
+  await A.click('.group-row [data-action="group-invite"]');
+  await A.waitForSelector('#invite-code', { timeout: 8000 }).catch(() => {});
+  const code = (await A.locator('#invite-code').innerText().catch(() => '')).trim();
+  check('실제 규칙: 초대 코드 만들기', /^[A-HJ-NP-Z2-9]{6}$/.test(code), code);
+  await A.click('[data-action="modal-close"]').catch(() => {});
+  await nav(B, 'settings');
+  await B.click('[data-action="group-join"]');
+  await B.fill('#join-code', code);
+  await B.click('[data-action="group-join-check"]');
+  await B.waitForSelector('[data-action="confirm-yes"]', { timeout: 8000 }).catch(() => {});
+  await B.click('[data-action="confirm-yes"]').catch(() => {});
+  const joined = await until(() => admin(async db => { const d = (await getDoc(doc(db, 'groups/' + gid))).data(); return d.memberUids.includes(bUid) && d; }));
+  check('실제 규칙: 초대 코드로 참여(arrayUnion + members.uid)', joined && joined.members[bUid] && joined.members[bUid].role === 'member', joined && joined.memberUids);
+  await nav(A, 'checklist');
+  await A.locator('.space-chip:has-text("캠핑팸")').click();
+  await A.click('[data-action="cl-new-list"]');
+  await A.fill('#ncl-title', '그룹 준비물');
+  await A.click('[data-action="cl-new-list-save"]');
+  await nav(B, 'checklist');
+  await B.waitForSelector('.space-chip:has-text("캠핑팸")', { timeout: 8000 }).catch(() => {});
+  await B.locator('.space-chip:has-text("캠핑팸")').click().catch(() => {});
+  await B.waitForSelector('.checklist-group:has-text("그룹 준비물")', { timeout: 8000 }).catch(() => {});
+  check('실제 규칙: A의 그룹 리스트가 B에게 보임', (await B.locator('.checklist-group:has-text("그룹 준비물")').count()) === 1);
+  await nav(B, 'settings');
+  await B.click('.group-row [data-action="group-leave"]');
+  await B.click('[data-action="confirm-yes"]');
+  const left = await until(() => admin(async db => !(await getDoc(doc(db, 'groups/' + gid))).data().memberUids.includes(bUid)));
+  check('실제 규칙: 나가기', !!left);
+  check('그룹 작업 중 권한 오류 토스트 없음', !/권한|거부/.test(await A.locator('#toast').innerText()) && !/권한|거부/.test(await B.locator('#toast').innerText()));
 
   // 로그아웃
   await nav(B, 'settings');
