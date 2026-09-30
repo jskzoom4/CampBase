@@ -1,23 +1,27 @@
 # 캠프베이스 안드로이드 APK 자동 빌드
-# 저장소에 파일을 올리거나 고칠 때마다 GitHub가 APK를 새로 만들어
-# "Releases"에 올려줘요. 공유 링크(항상 최신):
-#   https://github.com/<아이디>/<저장소이름>/releases/latest/download/campbase.apk
+# - main에 올리면: APK를 만들어 "Releases"에 올려요(친구들이 받는 최신 링크).
+#     https://github.com/<아이디>/<저장소이름>/releases/latest/download/campbase.apk
+# - 다른 브랜치·PR에 올리면: APK를 만들기만 하고 Actions 실행 화면의 "Artifacts"에만 올려요.
+#   (친구들이 받는 최신 링크는 바뀌지 않아요 → 머지 전에 내 폰에서 먼저 테스트용)
 name: Build APK
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
+  pull_request: {}
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: build-apk
+  group: build-apk-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
+    # 같은 저장소 브랜치의 PR은 push 때 이미 빌드하므로 한 번만 돌게 함(다른 저장소에서 온 PR만 여기서 빌드)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - name: 코드 받기
@@ -27,6 +31,18 @@ jobs:
         run: |
           if grep -q "여기에-붙여넣기" docs/firebase-config.js; then
             echo "::warning title=Firebase 설정 전::docs/firebase-config.js에 설정값이 아직 없어요. 이대로 만든 APK는 저장되지 않는 미리보기 모드로 열려요. (안내서 3단계)"
+          fi
+          if [ ! -s android-config/google-services.json ]; then
+            echo "::error title=google-services.json 없음::android-config/google-services.json 파일이 없어요. APK의 구글 로그인에 꼭 필요해요. Firebase 콘솔 → 프로젝트 설정 → 내 앱(Android, com.campbase.app)에서 google-services.json을 받아 저장소의 android-config 폴더에 올려주세요."
+            exit 1
+          fi
+          if ! grep -q '"package_name": "com.campbase.app"' android-config/google-services.json; then
+            echo "::error title=google-services.json 확인 필요::android-config/google-services.json이 캠프베이스 앱(com.campbase.app)용이 아니에요. Firebase 콘솔에서 com.campbase.app 앱의 파일을 다시 받아주세요."
+            exit 1
+          fi
+          if ! grep -q '"client_type": 3' android-config/google-services.json; then
+            echo "::error title=google-services.json 확인 필요::google-services.json에 웹 클라이언트 ID가 없어요. Firebase 콘솔 → Authentication에서 Google 로그인을 켠 뒤 google-services.json을 다시 받아 올려주세요."
+            exit 1
           fi
 
       - name: Node 준비
@@ -45,25 +61,49 @@ jobs:
 
       - name: Firebase SDK를 앱 안에 포함 (오프라인 첫 실행 대비)
         run: |
+          # docs/index.html의 FIREBASE_SDK_VERSION과 같은 버전이어야 해요.
           V=10.12.2
           mkdir -p docs/vendor/firebase
-          curl -fsSL "https://www.gstatic.com/firebasejs/$V/firebase-app.js" -o docs/vendor/firebase/firebase-app.js
-          curl -fsSL "https://www.gstatic.com/firebasejs/$V/firebase-firestore.js" -o docs/vendor/firebase/firebase-firestore.js
-          # firestore 모듈이 CDN의 app 모듈 대신 앱 안의 app 모듈을 쓰도록 경로 변경
-          sed -i "s#https://www.gstatic.com/firebasejs/$V/firebase-app.js#./firebase-app.js#g" docs/vendor/firebase/firebase-firestore.js
+          for m in app firestore auth; do
+            curl -fsSL "https://www.gstatic.com/firebasejs/$V/firebase-$m.js" -o "docs/vendor/firebase/firebase-$m.js" \
+              || cp "node_modules/firebase/firebase-$m.js" "docs/vendor/firebase/firebase-$m.js"
+          done
+          # firestore·auth 모듈이 CDN의 app 모듈 대신 앱 안의 app 모듈을 쓰도록 경로 변경
+          sed -i "s#https://www.gstatic.com/firebasejs/$V/firebase-app.js#./firebase-app.js#g" \
+            docs/vendor/firebase/firebase-firestore.js docs/vendor/firebase/firebase-auth.js
+          if grep -l "https://www.gstatic.com/firebasejs/" docs/vendor/firebase/*.js; then
+            echo "::error title=SDK 경로 변경 실패::위 파일에 CDN 주소가 남아 있어요. V= 값과 docs/index.html의 FIREBASE_SDK_VERSION이 같은지 확인해주세요."
+            exit 1
+          fi
 
       - name: 안드로이드 프로젝트 만들기
         run: npx cap add android
+
+      - name: 구글 로그인 설정 넣기
+        run: |
+          cp android-config/google-services.json android/app/google-services.json
+          # @capacitor-firebase/authentication 플러그인이 구글 로그인 기능을 포함하도록
+          sed -i 's/^ext {/ext {\n    rgcfaIncludeGoogle = true/' android/variables.gradle
+          if ! grep -q "rgcfaIncludeGoogle = true" android/variables.gradle; then
+            echo "::error title=구글 로그인 설정 실패::android/variables.gradle에 rgcfaIncludeGoogle을 넣지 못했어요."
+            exit 1
+          fi
 
       - name: 앱 아이콘·시작 화면 만들기
         continue-on-error: true
         run: npx capacitor-assets generate --android
 
       - name: 앱 파일 복사
-        run: npx cap sync android
+        run: |
+          npx cap sync android
+          if ! grep -q "capacitor-firebase-authentication" android/capacitor.settings.gradle; then
+            echo "::error title=로그인 플러그인 없음::@capacitor-firebase/authentication 플러그인이 안드로이드 프로젝트에 들어가지 않았어요."
+            exit 1
+          fi
 
       - name: 고정 서명키 사용 (업데이트 시 덮어 설치 가능)
         run: |
+          # keystore/debug.keystore는 절대 바꾸지 마세요(이 키의 SHA-1이 Firebase에 등록돼 있어요).
           mkdir -p ~/.android
           cp keystore/debug.keystore ~/.android/debug.keystore
 
@@ -73,16 +113,44 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      - name: 구글 로그인 설정이 APK에 들어갔는지 확인
+        run: |
+          if ! grep -rqs "default_web_client_id" android/app/build/generated/; then
+            echo "::error title=구글 로그인 설정 누락::google-services 설정이 APK에 들어가지 않았어요(default_web_client_id 없음). 이대로면 앱에서 구글 로그인이 안 돼요."
+            exit 1
+          fi
+
       - name: 파일 이름 정리
         run: cp android/app/build/outputs/apk/debug/app-debug.apk campbase.apk
 
-      - name: 빌드 결과 보관
+      - name: 빌드 결과 보관 (Actions → 이 실행 → Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: campbase-apk
+          name: campbase-apk-${{ github.run_number }}
           path: campbase.apk
+          retention-days: 30
 
-      - name: Releases에 올리기
+      - name: 받는 곳 안내
+        env:
+          IS_MAIN: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          REPO: ${{ github.repository }}
+          RUN_NO: ${{ github.run_number }}
+        run: |
+          {
+            echo "## 캠프베이스 APK 빌드 완료"
+            echo ""
+            if [ "$IS_MAIN" = "true" ]; then
+              echo "main 빌드라서 Releases에 올렸어요. 친구 공유 링크: https://github.com/$REPO/releases/latest/download/campbase.apk"
+            else
+              echo "테스트용 빌드예요(브랜치: $BRANCH). Releases(친구들이 받는 링크)에는 올리지 않았어요."
+              echo ""
+              echo "이 페이지 아래쪽 **Artifacts**의 campbase-apk-$RUN_NO 을 눌러 받으면 zip 파일이 받아져요. 압축을 풀면 campbase.apk가 들어 있어요."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Releases에 올리기 (main만)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}

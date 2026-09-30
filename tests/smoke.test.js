@@ -20,6 +20,10 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   await ctx.exposeFunction('__fsDump', () => JSON.parse(JSON.stringify(server)));
   await ctx.exposeFunction('__fsWrite', async (p, d) => { if (d === null) delete server[p]; else server[p] = d; });
+  // 외부 폰트는 테스트와 무관 → 빈 응답 (프록시 인증서 오류로 콘솔 에러가 나지 않게)
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, body: '' }));
+  // 가짜 구글 로그인 사용자 (팝업에서 이 사람이 선택됨)
+  await ctx.addInitScript(() => { window.__fakePopupUser = { uid: 'smokeUser', displayName: '스모크', email: 'smoke@example.com', photoURL: '' }; });
   await ctx.addInitScript(fs.readFileSync(path.join(__dirname, 'fake-firestore.js'), 'utf8'));
   const page = await ctx.newPage();
   // camp-del/gear-del/cl-del-list/resetChecklist now open an in-app
@@ -49,6 +53,9 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   const srv = require('child_process').spawn('python3', ['-m','http.server','8767','-d',SITE], {stdio:'ignore'});
   await new Promise(r=>setTimeout(r,700));
   await page.goto('http://127.0.0.1:8767/');
+  // 0. 로그인 화면 → Google로 시작하기
+  await page.waitForSelector('#login-btn:not([disabled])', { timeout: 5000 });
+  await page.click('[data-action="login-google"]');
   await page.waitForFunction(() => /자동 저장|로컬 미리보기/.test(document.getElementById('db-status').textContent || ''), { timeout: 5000 });
 
   const log = (label) => console.log('--- after: ' + label + ' | issues so far: ' + issues.length);
@@ -224,6 +231,25 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   await page.waitForTimeout(100);
   const cookCb = page.locator('[data-action="cook-toggle"]').first();
   if (await cookCb.count()) { await cookCb.click({ force: true }); await page.waitForTimeout(150); log('cooking toggle'); }
+
+  // 8. Settings: 기존 공유 데이터 가져오기(빈 상태) + 백업 내보내기 + 로그아웃
+  await page.click('[data-nav="settings"]');
+  await page.waitForTimeout(150);
+  await page.click('[data-action="legacy-import"]');
+  await page.waitForTimeout(300);
+  if (await page.locator('[data-action="confirm-yes"]').count()) await page.click('[data-action="modal-close"]');
+  log('legacy import (empty)');
+  await page.click('[data-action="backup-export"]');
+  await page.waitForTimeout(120);
+  await page.click('[data-action="modal-close"]');
+  log('backup export');
+  if (!(await clickAndConfirm(page.locator('[data-action="logout"]'), 'logout'))) issues.push('logout confirm missing');
+  await page.waitForTimeout(200);
+  if (!(await page.locator('#login-screen').isVisible())) issues.push('login screen not shown after logout');
+  log('logout');
+  const foreign = await page.evaluate(() => window.__fsAccess.filter(x => x !== 'users/smokeUser' && !x.startsWith('users/smokeUser/') && !/^(campingLogs|gear|checklists|cookingChecks|app\/settings)$/.test(x)));
+  if (foreign.length) issues.push('accessed paths outside own space: ' + foreign.join(', '));
+  if (Object.keys(server).some(k => !k.startsWith('users/smokeUser'))) issues.push('wrote outside own space: ' + Object.keys(server).join(', '));
 
   console.log('\n=== TOTAL ISSUES CAPTURED:', issues.length, '===');
   issues.forEach(i => console.log(' -', i));

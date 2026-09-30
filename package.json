@@ -1,12 +1,18 @@
 {
   "name": "campbase",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "캠프베이스 - 함께 쓰는 캠핑 준비물·장비·후기 기록 (안드로이드 APK 빌드용)",
+  "description": "캠프베이스 - 구글 로그인으로 내 캠핑 준비물·장비·후기 기록 (안드로이드 APK 빌드용)",
+  "scripts": {
+    "test": "node tests/shared-app.test.js && node tests/smoke.test.js",
+    "test:emulator": "firebase emulators:exec --only firestore,auth --project demo-campbase \"node tests/firestore-rules.test.js && node tests/emulator-e2e.test.js\""
+  },
   "dependencies": {
+    "@capacitor-firebase/authentication": "6.3.1",
     "@capacitor/android": "^6.1.0",
     "@capacitor/cli": "^6.1.0",
-    "@capacitor/core": "^6.1.0"
+    "@capacitor/core": "^6.1.0",
+    "firebase": "10.12.2"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5"

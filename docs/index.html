@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>캠프베이스</title>
 <meta name="theme-color" content="#2f6f4f">
-<meta name="description" content="함께 쓰는 캠핑 준비물·장비·후기 기록">
+<meta name="description" content="캠핑 준비물·장비·후기를 내 계정에 기록하는 캠핑 노트">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -211,9 +211,41 @@
     border:1px solid var(--border);border-radius:9px;background:var(--bg);color:var(--text);resize:vertical;}
   html,body{height:100%;}
   #app{height:100vh;height:100dvh;}
+  /* ---- 로그인 화면 / 내 계정 ---- */
+  body.signed-out #app{display:none;}
+  #login-screen{display:none;}
+  body.signed-out #login-screen{display:flex;min-height:100vh;min-height:100dvh;align-items:center;justify-content:center;padding:24px 16px;}
+  .login-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:30px 24px;width:100%;max-width:380px;text-align:center;
+    box-shadow:0 12px 40px rgba(0,0,0,.08);}
+  .login-card .brand-badge{width:52px;height:52px;border-radius:15px;margin:0 auto 14px;}
+  .login-card .brand-badge svg{width:30px;height:30px;}
+  .login-card h1{font-family:"Fraunces",serif;font-size:26px;margin:0 0 8px;}
+  .login-card p{color:var(--text-dim);font-size:13.5px;line-height:1.65;margin:0 0 22px;}
+  .btn-google{width:100%;justify-content:center;padding:12px 14px;font-size:14.5px;border-radius:11px;}
+  .btn-google svg{width:18px;height:18px;}
+  .btn-google[disabled]{opacity:.6;cursor:default;}
+  .login-msg{min-height:20px;margin-top:12px;font-size:12.5px;color:var(--text-dim);line-height:1.5;}
+  .login-msg.err{color:var(--bad);}
+  .account-row{display:flex;align-items:center;gap:12px;}
+  .account-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);}
 </style>
 </head>
-<body>
+<body class="signed-out">
+<div id="login-screen">
+  <div class="login-card">
+    <div class="brand-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-11 4 6.5L16.5 8 21 20z"/><circle cx="8.2" cy="6.5" r="1.6" fill="currentColor" stroke="none"/></svg>
+    </div>
+    <h1>캠프베이스</h1>
+    <p>캠핑 준비물 체크, 내 캠핑 장비, 다녀온 캠핑장 후기를 한곳에 모아두는 캠핑 노트예요.<br>구글 계정으로 시작하면 어느 기기에서 열어도 내 기록이 그대로 이어져요.</p>
+    <button class="btn btn-google" id="login-btn" data-action="login-google" disabled>
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2-1.9 3.2-4.7 3.2-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.2 1.6l3.1-3.1A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>
+      <span>Google로 시작하기</span>
+    </button>
+    <div class="login-msg" id="login-msg">로그인 상태 확인 중…</div>
+  </div>
+</div>
 <div id="app">
   <aside id="sidebar">
     <div class="brand">
@@ -222,7 +254,7 @@
       </div>
       <div>
         <div class="brand-name">캠프베이스</div>
-        <div class="brand-sub">함께 쓰는 캠핑 노트</div>
+        <div class="brand-sub">나의 캠핑 노트</div>
       </div>
     </div>
     <nav id="nav"></nav>
@@ -399,20 +431,39 @@ function seedDefaults(){
 }
 
 /* ============================ DB LAYER ============================ */
-/* ---- 공유 저장소: Firebase Firestore ----
+/* ---- 저장소: Firebase Firestore / 로그인: Firebase Auth(구글) ----
+ * 로그인한 사람마다 개인 공간 users/{uid}/... 에 저장한다.
  * 앱의 나머지 코드는 예전(claude.ai) 저장 인터페이스
  *   db.collection(name).onSnapshot/doc(id).set/delete/get, db.doc(path)...
- * 를 그대로 쓰고, 아래 어댑터가 그걸 Firestore 호출로 바꿔준다.
- * 설정값(firebase-config.js)이 비어 있으면 '미리보기 모드'(저장 안 됨)로 동작. */
+ * 를 그대로 쓰고, makeFirestoreAdapter(fs, fdb, base)가 경로 앞에 base('users/{uid}')를 붙여
+ * Firestore 호출로 바꿔준다. (base가 ''이면 최상위 = 예전 공유 저장소, 가져오기에만 사용)
+ * 로그인 상태는 웹 SDK(auth) 하나만 본다. APK는 네이티브 구글 로그인 → idToken으로 웹 SDK에 로그인.
+ * 설정값(firebase-config.js)이 비어 있으면 '미리보기 모드'(로그인·저장 없음)로 동작. */
 const FIREBASE_SDK_VERSION = '10.12.2';
 const FIREBASE_CDN = 'https://www.gstatic.com/firebasejs/' + FIREBASE_SDK_VERSION + '/';
-state.bootMode = 'connecting';   // 'shared' | 'preview' | 'error'
+state.bootMode = 'connecting';   // 'shared'(로그인됨) | 'signedOut' | 'preview' | 'error'
 state.online = true;
+state.user = null;               // {uid, name, email, photoURL}
+state.rootDb = null;             // 최상위(예전 공유 저장소) 어댑터 — 기존 데이터 가져오기 전용
+const USER_COLLECTIONS = ['campingLogs','gear','checklists','cookingChecks'];
+const SETTINGS_DOC = 'settings/app';            // users/{uid}/settings/app
+const LEGACY_SETTINGS_DOC = 'app/settings';     // 예전 공유 설정(최상위)
+const DEFAULT_HOME_WIDGETS = {location:true, camping:true, gear:true, checklist:true};
 
 function firebaseConfigured(){
   const c = window.FIREBASE_CONFIG;
   if(!c || !c.apiKey || !c.projectId) return false;
   return !/붙여넣|YOUR_|PASTE|여기에/i.test(String(c.apiKey) + String(c.projectId));
+}
+// APK(Capacitor) 안에서 열렸는지. 웹(GitHub Pages)에서는 window.Capacitor가 없음.
+function isNativeApp(){
+  const C = window.Capacitor;
+  if(!C) return false;
+  return typeof C.isNativePlatform === 'function' ? !!C.isNativePlatform() : true;
+}
+function nativeAuthPlugin(){
+  const C = window.Capacitor;
+  return (C && C.Plugins && C.Plugins.FirebaseAuthentication) || null;
 }
 async function loadFirebaseModules(bases){
   if(window.__FIREBASE_MODULES__) return {...window.__FIREBASE_MODULES__, base:'injected'}; // 테스트용 주입
@@ -421,13 +472,14 @@ async function loadFirebaseModules(bases){
     try{
       const app = await import(base + 'firebase-app.js');
       const firestore = await import(base + 'firebase-firestore.js');
-      return {app, firestore, base};
+      const auth = await import(base + 'firebase-auth.js');
+      return {app, firestore, auth, base};
     }catch(e){ lastErr = e; }
   }
   throw lastErr || new Error('Firebase SDK를 불러오지 못했어요');
 }
-function buildFirestoreDb(mods){
-  const appMod = mods.app, fs = mods.firestore;
+function buildFirebase(mods){
+  const appMod = mods.app, fs = mods.firestore, authMod = mods.auth;
   const apps = appMod.getApps ? appMod.getApps() : [];
   const app = apps.length ? apps[0] : appMod.initializeApp(window.FIREBASE_CONFIG);
   let fdb;
@@ -440,21 +492,37 @@ function buildFirestoreDb(mods){
   }catch(e){
     fdb = fs.getFirestore(app);
   }
-  return makeFirestoreAdapter(fs, fdb);
+  let auth;
+  if(isNativeApp()){
+    // APK: 팝업 로그인을 쓰지 않으므로(구글이 WebView 로그인을 막음) 팝업 도우미 없이
+    // 로그인 상태만 기기(IndexedDB)에 보관 → 다시 열어도 로그인 유지
+    try{ auth = authMod.initializeAuth(app, { persistence: [authMod.indexedDBLocalPersistence, authMod.browserLocalPersistence] }); }
+    catch(e){ auth = authMod.getAuth(app); }
+  }else{
+    auth = authMod.getAuth(app);   // 웹: 기본값이 로그인 유지(IndexedDB) + 팝업 로그인 지원
+  }
+  // 테스트 전용(tests/emulator-e2e.test.js): Firebase 에뮬레이터로 연결. 실제 앱에서는 설정되지 않음.
+  const emu = window.__FIREBASE_EMULATOR__;
+  if(emu){
+    fs.connectFirestoreEmulator(fdb, emu.host, emu.firestorePort);
+    authMod.connectAuthEmulator(auth, 'http://' + emu.host + ':' + emu.authPort, { disableWarnings: true });
+  }
+  return {fs, fdb, auth, authMod};
 }
-async function connectFirestore(){
+async function connectFirebase(){
   // APK에는 SDK가 앱 안(vendor/)에 들어 있어 오프라인 첫 실행도 가능. 웹에서는 CDN 사용.
   let mods = await loadFirebaseModules(['./vendor/firebase/', FIREBASE_CDN]);
-  try{ return buildFirestoreDb(mods); }
+  try{ return buildFirebase(mods); }
   catch(e){
     if(mods.base !== FIREBASE_CDN && mods.base !== 'injected'){
       mods = await loadFirebaseModules([FIREBASE_CDN]);
-      return buildFirestoreDb(mods);
+      return buildFirebase(mods);
     }
     throw e;
   }
 }
-function makeFirestoreAdapter(fs, fdb){
+function makeFirestoreAdapter(fs, fdb, base){
+  const full = p => base ? base + '/' + p : p;
   const wrapQuery = snap => ({ empty: snap.empty, docs: snap.docs.map(d=>({ id: d.id, data: ()=>d.data() })) });
   const wrapDoc = snap => ({ exists: snap.exists(), data: ()=>snap.data() });
   function listen(ref, isDoc, cb, errCb){
@@ -477,14 +545,15 @@ function makeFirestoreAdapter(fs, fdb){
   });
   return {
     collection(name){
-      const ref = fs.collection(fdb, name);
+      const path = full(name);
+      const ref = fs.collection(fdb, path);
       return {
         onSnapshot: (cb, errCb) => listen(ref, false, cb, errCb),
-        doc: id => docApi(fs.doc(fdb, name, id)),
+        doc: id => docApi(fs.doc(fdb, path, id)),
         get: () => fs.getDocs(ref).then(wrapQuery),
       };
     },
-    doc: path => docApi(fs.doc(fdb, path)),
+    doc: path => docApi(fs.doc(fdb, full(path))),
   };
 }
 let _offlineTimer = null;
@@ -504,86 +573,285 @@ function reportDbError(e){
   if(_reportedDbErrors.has(code)) return;
   _reportedDbErrors.add(code);
   if(code === 'permission-denied'){
-    toast('공유 저장소 접근이 거부됐어요. Firestore 규칙을 게시했는지 확인해주세요.', 'fail');
+    toast('저장소 접근이 거부됐어요. Firestore 규칙을 게시했는지 확인해주세요.', 'fail');
   }else{
-    toast('공유 저장소 연결에 문제가 있어요 (' + code + ')', 'fail');
+    toast('저장소 연결에 문제가 있어요 (' + code + ')', 'fail');
   }
 }
 function withTimeout(p, ms){
   return Promise.race([p, new Promise((_, rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]);
 }
 
+let _fb = null;          // {fs, fdb, auth, authMod}
+let _unsubs = [];        // 로그인한 사람 데이터의 실시간 구독 해제 함수들
+let _dataGen = 0;        // 계정이 바뀐 뒤 늦게 도착한 예전 계정 스냅샷을 무시하기 위한 번호
+
 async function initDb(){
   if(!firebaseConfigured()){ finishBoot('preview'); return; }
-  let db;
-  try{ db = await withTimeout(connectFirestore(), 20000); }
+  try{ _fb = await withTimeout(connectFirebase(), 20000); }
   catch(e){ console.error('[firebase]', e); finishBoot('error'); return; }
-  state.db = db; state.dbAvailable = true;
-  const onErr = e => reportDbError(e);
+  state.rootDb = makeFirestoreAdapter(_fb.fs, _fb.fdb, '');
+  _fb.authMod.onAuthStateChanged(_fb.auth, user=>{
+    try{ onAuthUser(user); }
+    catch(e){ console.error('[auth]', e); toast('로그인 처리 중 오류가 발생했어요: ' + (e && e.message ? e.message : String(e)), 'fail'); }
+  });
+}
+function onAuthUser(user){
+  stopUserData();
+  if(!user){ state.user = null; finishBoot('signedOut'); return; }
+  state.user = { uid: user.uid, name: user.displayName || '', email: user.email || '', photoURL: user.photoURL || '' };
+  state.db = makeFirestoreAdapter(_fb.fs, _fb.fdb, 'users/' + user.uid);
+  state.dbAvailable = true;
+  startUserData();
+  // 계정 정보(이름·이메일·사진)는 로그인할 때마다 최신으로 남김
+  const u = state.user;
+  safePersist(()=>state.rootDb.doc('users/' + u.uid).set({ name: u.name, email: u.email, photoURL: u.photoURL, updatedAt: new Date().toISOString() }));
+  finishBoot('shared');
+}
+function resetUserState(){
+  state.campingLogs = []; state.gear = []; state.checklists = []; state.cookingChecks = {};
+  state.weatherLocation = null;
+  state.gearCategories = [...DEFAULT_GEAR_CATEGORIES];
+  state.homeWidgets = {...DEFAULT_HOME_WIDGETS};
+  loadLocalHomeWidgets();
+  state.campingFilter = 'all'; state.gearCategory = 'all'; state.checklistFilter = 'all';
+  state.currentView = 'home';
+}
+function stopUserData(){
+  _dataGen++;
+  _unsubs.forEach(fn=>{ try{ fn && fn(); }catch(e){} });
+  _unsubs = [];
+  state.db = null; state.dbAvailable = false;
+  _reportedDbErrors.clear();
+  resetUserState();
+}
+function startUserData(){
+  const db = state.db, gen = _dataGen;
+  const onErr = e => { if(gen===_dataGen) reportDbError(e); };
+  const live = fn => snap => { if(gen===_dataGen) fn(snap); };
 
-  db.collection('campingLogs').onSnapshot(snap=>{
+  _unsubs.push(db.collection('campingLogs').onSnapshot(live(snap=>{
     state.campingLogs = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     if(['home','camping'].includes(state.currentView)) renderView();
-  }, onErr);
-  db.collection('gear').onSnapshot(snap=>{
+  }), onErr));
+  _unsubs.push(db.collection('gear').onSnapshot(live(snap=>{
     state.gear = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     if(['home','gear'].includes(state.currentView)) renderView();
-  }, onErr);
-  db.collection('checklists').onSnapshot(snap=>{
+  }), onErr));
+  _unsubs.push(db.collection('checklists').onSnapshot(live(snap=>{
     state.checklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     if(['home','checklist'].includes(state.currentView)) renderView();
-  }, onErr);
-  db.doc('app/settings').onSnapshot(snap=>{
+  }), onErr));
+  _unsubs.push(db.doc(SETTINGS_DOC).onSnapshot(live(snap=>{
     if(snap.exists){
-      const d = unfreeze(snap.data());
+      const d = unfreeze(snap.data()) || {};
       if(d.weatherLocation) state.weatherLocation = d.weatherLocation;
       if(d.gearCategories && d.gearCategories.length) state.gearCategories = d.gearCategories;
+      if(d.homeWidgets && typeof d.homeWidgets==='object') state.homeWidgets = {...DEFAULT_HOME_WIDGETS, ...d.homeWidgets};
     }
     if(['home','settings','gear'].includes(state.currentView)) renderView();
-  }, onErr);
-  db.collection('cookingChecks').onSnapshot(snap=>{
+  }), onErr));
+  _unsubs.push(db.collection('cookingChecks').onSnapshot(live(snap=>{
     const map = {};
     snap.docs.forEach(d=>{ map[d.id] = unfreeze(d.data()); });
     state.cookingChecks = map;
     if(state.currentView==='cooking') renderView();
-  }, onErr);
-
-  finishBoot('shared');
+  }), onErr));
 }
 function finishBoot(mode){
   state.bootMode = mode;
-  // 예시 데이터는 저장소 없이 미리보기할 때만 화면에 채움(공유 저장소에는 절대 쓰지 않음)
+  // 예시 데이터는 저장소 없이 미리보기할 때만 화면에 채움(저장소에는 절대 쓰지 않음)
   if(mode==='preview' && state.campingLogs.length===0){ seedDefaults(); }
   updateStatus();
+  if(mode==='signedOut'){ showLoginScreen(); return; }
+  document.body.classList.remove('signed-out');
   renderNav(); renderView();
 }
 function updateStatus(){
   let cls = 'local', text;
   if(state.bootMode==='shared'){
-    if(state.online){ cls = ''; text = '자동 저장 켜짐 · 함께 쓰는 중'; }
+    if(state.online){ cls = ''; text = '자동 저장 켜짐 · 내 계정에 저장'; }
     else { text = '오프라인 · 연결되면 자동 동기화'; }
   }else if(state.bootMode==='preview'){ text = '로컬 미리보기 모드 · 저장 안 됨'; }
   else if(state.bootMode==='error'){ cls = 'err'; text = '연결 안 됨 · 저장 안 됨'; }
+  else if(state.bootMode==='signedOut'){ text = '로그인 필요'; }
   else { text = '연결 확인 중…'; }
   const html = `<span class="dot-status ${cls}"></span>${text}`;
   ['db-status','db-status-top'].forEach(id=>{ const el = document.getElementById(id); if(el) el.innerHTML = html; });
 }
 function bootBanner(){
-  if(state.bootMode==='preview') return `<div class="preview-banner"><b>미리보기 모드예요.</b> Firebase 설정값이 아직 없어서 지금 바꾸는 내용은 저장되지 않고 다른 사람에게도 보이지 않아요. 안내서의 Firebase 설정 단계를 마치면 함께 쓰는 저장소로 바뀌어요.</div>`;
-  if(state.bootMode==='error') return `<div class="preview-banner"><b>공유 저장소에 연결하지 못했어요.</b> 인터넷 연결을 확인한 뒤 앱을 다시 열어주세요. 지금 바꾸는 내용은 저장되지 않아요.</div>`;
+  if(state.bootMode==='preview') return `<div class="preview-banner"><b>미리보기 모드예요.</b> Firebase 설정값이 아직 없어서 로그인 없이 열렸고, 지금 바꾸는 내용은 저장되지 않아요. 안내서의 Firebase 설정 단계를 마치면 구글 로그인 후 내 계정에 저장돼요.</div>`;
+  if(state.bootMode==='error') return `<div class="preview-banner"><b>저장소에 연결하지 못했어요.</b> 인터넷 연결을 확인한 뒤 앱을 다시 열어주세요. 지금 바꾸는 내용은 저장되지 않아요.</div>`;
   return '';
 }
 
-/* ---- Home 위젯 표시 여부는 사람마다 다를 수 있어서 이 기기에만 저장 ---- */
+/* ---- 로그인 / 로그아웃 ---- */
+function setLoginMsg(msg, isErr){
+  const el = document.getElementById('login-msg');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('err', !!isErr);
+}
+function setLoginBusy(busy){
+  const btn = document.getElementById('login-btn');
+  if(btn) btn.disabled = !!busy;
+}
+function showLoginScreen(msg, isErr){
+  closeModal();
+  document.body.classList.add('signed-out');
+  setLoginBusy(false);
+  setLoginMsg(msg || '', isErr);
+}
+function loginErrorMessage(e){
+  const code = String((e && e.code) || '');
+  const text = code + ' ' + String((e && e.message) || '');
+  if(/popup-closed-by-user|cancelled-popup-request|user-cancelled|cancel/i.test(text)) return '로그인을 취소했어요.';
+  if(/unauthorized-domain/.test(code)) return '이 주소는 아직 로그인 허용 목록에 없어요. (Firebase 콘솔 → Authentication → 설정 → 승인된 도메인)';
+  if(/operation-not-allowed/.test(code)) return 'Firebase에서 Google 로그인이 아직 켜져 있지 않아요.';
+  if(/popup-blocked/.test(code)) return '로그인 창(팝업)이 막혔어요. 브라우저에서 팝업을 허용한 뒤 다시 눌러주세요.';
+  if(/network-request-failed|network/i.test(text)) return '인터넷 연결을 확인한 뒤 다시 시도해주세요.';
+  if(/native\/plugin-missing/.test(code)) return '앱의 로그인 기능을 찾지 못했어요. 최신 APK로 다시 설치해주세요.';
+  if(/DEVELOPER_ERROR|(^|\D)10:/.test(text)) return '구글 로그인 설정(SHA-1 등록)이 맞지 않아요. 안내서의 Firebase 설정을 확인해주세요.';
+  return '로그인하지 못했어요. 다시 시도해주세요.' + (code ? ' (' + code + ')' : '');
+}
+let _signingIn = false;
+async function signInWithGoogle(){
+  if(_signingIn || !_fb) return;
+  _signingIn = true;
+  setLoginBusy(true); setLoginMsg('구글 계정 확인 중…');
+  const A = _fb.authMod;
+  try{
+    if(isNativeApp()){
+      // APK: 폰의 구글 계정 선택 창(네이티브) → 받은 idToken으로 웹 SDK에 로그인
+      const plugin = nativeAuthPlugin();
+      if(!plugin) throw Object.assign(new Error('FirebaseAuthentication plugin missing'), {code:'native/plugin-missing'});
+      const res = await plugin.signInWithGoogle();
+      const idToken = res && res.credential && res.credential.idToken;
+      if(!idToken) throw Object.assign(new Error('no idToken'), {code:'native/no-id-token'});
+      await A.signInWithCredential(_fb.auth, A.GoogleAuthProvider.credential(idToken));
+    }else{
+      const provider = new A.GoogleAuthProvider();
+      if(provider.setCustomParameters) provider.setCustomParameters({ prompt: 'select_account' });
+      try{ await A.signInWithPopup(_fb.auth, provider); }
+      catch(e){
+        if(e && e.code==='auth/popup-blocked' && A.signInWithRedirect){ await A.signInWithRedirect(_fb.auth, provider); return; }
+        throw e;
+      }
+    }
+    // 성공하면 onAuthStateChanged → onAuthUser가 앱 화면으로 바꿔줌
+  }catch(e){
+    console.error('[auth]', e);
+    setLoginBusy(false);
+    setLoginMsg(loginErrorMessage(e), true);
+  }finally{
+    _signingIn = false;
+  }
+}
+async function signOutNow(){
+  if(!_fb) return;
+  const plugin = isNativeApp() ? nativeAuthPlugin() : null;
+  if(plugin && plugin.signOut){ try{ await plugin.signOut(); }catch(e){ console.warn('[auth] native signOut', e); } }
+  try{
+    await _fb.authMod.signOut(_fb.auth);
+    toast('로그아웃했어요.');
+  }catch(e){
+    console.error('[auth]', e);
+    toast('로그아웃하지 못했어요. 다시 시도해주세요.', 'fail');
+  }
+}
+
+/* ---- 기존 공유 데이터(최상위 legacy 경로) → 내 개인 공간으로 복사 ----
+ * 원본은 그대로 두고, 내 공간에 이미 같은 id가 있으면 덮어쓰지 않고 건너뛴다. */
+const LEGACY_LABELS = {campingLogs:'캠핑 기록', gear:'장비', checklists:'체크리스트', cookingChecks:'요리 재료 체크'};
+let _legacyBusy = false;
+async function readUserCollections(db){
+  const out = {};
+  for(const c of USER_COLLECTIONS){
+    const snap = await db.collection(c).get();
+    out[c] = snap.docs.map(d=>({ id: d.id, data: unfreeze(d.data()) || {} }));
+  }
+  return out;
+}
+function mergeGearCategories(mine, theirs){
+  const merged = [...(mine || [])];
+  (theirs || []).forEach(c=>{
+    if(!c || merged.includes(c)) return;
+    const etc = merged.indexOf('기타');
+    if(etc >= 0) merged.splice(etc, 0, c); else merged.push(c);
+  });
+  return merged;
+}
+async function startLegacyImport(){
+  if(!state.dbAvailable || !state.rootDb){ toast('로그인한 뒤에 가져올 수 있어요.'); return; }
+  if(_legacyBusy) return;
+  _legacyBusy = true;
+  toast('기존 공유 데이터를 확인하는 중…');
+  try{
+    const legacy = await readUserCollections(state.rootDb);
+    const mine = await readUserCollections(state.db);
+    const legacySettingsSnap = await state.rootDb.doc(LEGACY_SETTINGS_DOC).get();
+    const legacySettings = legacySettingsSnap.exists ? (unfreeze(legacySettingsSnap.data()) || {}) : {};
+    const plan = { copy:{}, total:0, skipped:0, counts:{}, settings: legacySettings };
+    USER_COLLECTIONS.forEach(c=>{
+      const have = new Set(mine[c].map(d=>d.id));
+      plan.counts[c] = legacy[c].length;
+      plan.total += legacy[c].length;
+      plan.copy[c] = legacy[c].filter(d=>!have.has(d.id));
+      plan.skipped += legacy[c].length - plan.copy[c].length;
+    });
+    const hasSettings = (Array.isArray(legacySettings.gearCategories) && legacySettings.gearCategories.length) || !!legacySettings.weatherLocation;
+    if(plan.total === 0 && !hasSettings){ toast('가져올 기존 공유 데이터가 없어요.'); return; }
+    const countText = USER_COLLECTIONS.map(c=>`${LEGACY_LABELS[c]} ${plan.counts[c]}개`).join(', ');
+    const skipText = plan.skipped ? ` 내 공간에 이미 있는 ${plan.skipped}개는 덮어쓰지 않고 건너뛰어요.` : '';
+    confirmModal(`기존 공유 데이터(${countText})를 내 개인 공간으로 복사할까요?${skipText} 공유 데이터 원본은 그대로 남아요.`, '가져오기', ()=>applyLegacyImport(plan));
+  }catch(e){
+    console.error('[legacy-import]', e);
+    const code = (e && e.code) || '';
+    toast(code==='permission-denied' ? '기존 공유 데이터를 읽을 수 없어요. (공유 저장소가 이미 닫혔어요)' : '기존 공유 데이터를 불러오지 못했어요.' + (code ? ' (' + code + ')' : ''), 'fail');
+  }finally{
+    _legacyBusy = false;
+  }
+}
+function applyLegacyImport(plan){
+  if(!state.dbAvailable){ toast('로그인한 뒤에 가져올 수 있어요.'); return; }
+  const db = state.db;
+  let copied = 0, skipped = plan.skipped;
+  ['campingLogs','gear','checklists'].forEach(c=>{
+    const have = new Set(state[c].map(x=>x.id));   // 확인 창을 띄운 사이에 생긴 항목도 건너뜀
+    plan.copy[c].forEach(d=>{
+      if(have.has(d.id)){ skipped++; return; }
+      const data = stripId(d.data);
+      state[c].push({ id: d.id, ...data });
+      safePersist(()=>db.collection(c).doc(d.id).set(data));
+      copied++;
+    });
+  });
+  plan.copy.cookingChecks.forEach(d=>{
+    if(d.id in state.cookingChecks){ skipped++; return; }
+    state.cookingChecks[d.id] = d.data;
+    safePersist(()=>db.collection('cookingChecks').doc(d.id).set(d.data));
+    copied++;
+  });
+  const s = plan.settings || {};
+  let settingsChanged = false;
+  if(Array.isArray(s.gearCategories) && s.gearCategories.length){
+    const merged = mergeGearCategories(state.gearCategories, s.gearCategories);
+    if(merged.length !== state.gearCategories.length){ state.gearCategories = merged; settingsChanged = true; }
+  }
+  if(s.weatherLocation && !state.weatherLocation){ state.weatherLocation = s.weatherLocation; settingsChanged = true; }
+  if(settingsChanged) persistAppSettings();
+  renderView();
+  toast(`${copied}개를 내 공간으로 가져왔어요.` + (skipped ? ` (이미 있던 ${skipped}개는 건너뜀)` : ''), 'ok');
+}
+
+/* ---- Home 위젯 표시 여부: 이제 계정(users/{uid}/settings/app)에 저장.
+ * 예전 버전이 기기에 남긴 값(localStorage)은 계정에 저장된 값이 없을 때의 기본값으로만 읽는다. ---- */
 const HOME_WIDGETS_KEY = 'campbase.homeWidgets';
 function loadLocalHomeWidgets(){
   try{
     const raw = localStorage.getItem(HOME_WIDGETS_KEY);
     if(raw){ const v = JSON.parse(raw); if(v && typeof v==='object') state.homeWidgets = {...state.homeWidgets, ...v}; }
   }catch(e){}
-}
-function saveLocalHomeWidgets(){
-  try{ localStorage.setItem(HOME_WIDGETS_KEY, JSON.stringify(state.homeWidgets)); }catch(e){}
 }
 
 /* ---- 백업 내보내기 / 가져오기 ---- */
@@ -633,7 +901,7 @@ function importBackupModal(){
     <h3>백업 가져오기</h3>
     <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">
       백업 파일을 고르거나, 복사해 둔 백업 내용을 붙여넣으세요.
-      <b style="color:var(--text);">가져오면 지금 함께 쓰는 데이터가 백업 내용으로 모두 바뀌어요.</b>
+      <b style="color:var(--text);">가져오면 지금 내 계정의 데이터가 백업 내용으로 모두 바뀌어요.</b>
     </p>
     <div class="field"><label>백업 파일</label><input type="file" id="backup-file" accept=".json,application/json,text/plain"></div>
     <div class="field"><label>또는 붙여넣기</label><textarea id="backup-text-in" class="backup-text" placeholder='{"app":"campbase", ...}'></textarea></div>
@@ -664,14 +932,14 @@ function startImportBackup(){
   const res = parseBackup(text);
   if(res.error){ toast(res.error, 'fail'); return; }
   const d = res.data;
-  confirmModal(`백업 내용(캠핑 기록 ${d.campingLogs.length}개, 장비 ${d.gear.length}개, 체크리스트 ${d.checklists.length}개)으로 바꿀까요? 지금 함께 쓰는 데이터는 모두 이 내용으로 바뀌고, 모든 사람 화면에 반영돼요.`, '바꾸기', ()=>applyBackup(d));
+  confirmModal(`백업 내용(캠핑 기록 ${d.campingLogs.length}개, 장비 ${d.gear.length}개, 체크리스트 ${d.checklists.length}개)으로 바꿀까요? 지금 내 계정의 데이터는 모두 이 내용으로 바뀌어요. (다른 사람의 데이터에는 영향이 없어요)`, '바꾸기', ()=>applyBackup(d));
 }
 function applyBackup(d){
   const cols = ['campingLogs','gear','checklists'];
   const prev = { campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists, cookingChecks: state.cookingChecks };
   state.campingLogs = d.campingLogs; state.gear = d.gear; state.checklists = d.checklists; state.cookingChecks = d.cookingChecks;
   const s = d.settings;
-  if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = {...state.homeWidgets, ...s.homeWidgets}; saveLocalHomeWidgets(); }
+  if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = {...state.homeWidgets, ...s.homeWidgets}; }
   if(Array.isArray(s.gearCategories) && s.gearCategories.length){
     state.gearCategories = s.gearCategories.includes('기타') ? s.gearCategories.slice() : [...s.gearCategories, '기타'];
   }
@@ -688,7 +956,7 @@ function applyBackup(d){
     persistAppSettings();
   }
   renderView();
-  toast(state.dbAvailable ? '백업을 가져왔어요. 모두의 화면에 반영돼요.' : '백업을 불러왔어요. (미리보기 모드라 저장되지는 않아요)', 'ok');
+  toast(state.dbAvailable ? '백업을 가져왔어요. 내 계정의 모든 기기에 반영돼요.' : '백업을 불러왔어요. (미리보기 모드라 저장되지는 않아요)', 'ok');
 }
 
 function onSaveFail(e){ toast('저장에 실패했어요. 다시 시도해주세요.' + (e&&e.code?' ('+e.code+')':''), 'fail'); }
@@ -707,12 +975,12 @@ function persistGear(item){ if(state.dbAvailable) safePersist(()=>state.db.colle
 function deleteGearRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('gear').doc(id).delete()); }
 function persistChecklist(list){ if(state.dbAvailable) safePersist(()=>state.db.collection('checklists').doc(list.id).set(stripId(list))); }
 function deleteChecklistRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('checklists').doc(id).delete()); }
-function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc('app/settings').set({weatherLocation:state.weatherLocation, gearCategories:state.gearCategories})); }
+function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc(SETTINGS_DOC).set({weatherLocation:state.weatherLocation, gearCategories:state.gearCategories, homeWidgets:state.homeWidgets})); }
 function persistWeatherLocation(loc){ state.weatherLocation = loc; persistAppSettings(); }
 function persistCookingCheck(id, data){ if(state.dbAvailable) safePersist(()=>state.db.collection('cookingChecks').doc(id).set(data)); }
 function toggleHomeWidget(key){
   state.homeWidgets[key] = !state.homeWidgets[key];
-  saveLocalHomeWidgets();
+  persistAppSettings();   // 계정에 저장 → 같은 계정으로 로그인한 다른 기기에도 적용
   renderView();
 }
 
@@ -840,8 +1108,27 @@ function renderHome(){
 
 function renderSettings(){
   const hw = state.homeWidgets;
+  const u = state.user;
+  const initial = u ? esc((u.name || u.email || '?').trim().charAt(0).toUpperCase()) : '';
+  const accountBlock = u ? `
+    <div class="section-head"><div><h1>내 계정</h1><div class="section-desc">이 계정으로 로그인한 기기에서는 어디서든 내 기록이 똑같이 보여요. 다른 사람에게는 보이지 않아요.</div></div></div>
+    <div class="card account-row" id="account-card">
+      ${u.photoURL ? `<img class="account-photo" src="${esc(u.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<div class="account-photo">${initial}</div>`}
+      <div style="flex:1;min-width:0;">
+        <div class="name" style="font-weight:700;font-size:14.5px;">${esc(u.name || '이름 없음')}</div>
+        <div class="meta" style="font-size:12.5px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;">${esc(u.email)}</div>
+      </div>
+      <button class="btn" data-action="logout">로그아웃</button>
+    </div>
+    <div class="section-head" style="margin-top:24px;"><div><h1>기존 공유 데이터 가져오기</h1><div class="section-desc">로그인 기능이 생기기 전, 모두가 함께 쓰던 데이터를 내 개인 공간으로 복사해요. 원본은 그대로 남고, 이미 내 공간에 있는 항목은 덮어쓰지 않고 건너뛰어요.</div></div></div>
+    <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" data-action="legacy-import">${icon('refresh')} 기존 공유 데이터 가져오기</button>
+    </div>
+    <div style="height:24px;"></div>
+  ` : '';
   return `
-    <div class="section-head"><div><h1>설정</h1><div class="section-desc">Home 화면에 보여줄 위젯을 켜고 끌 수 있어요. 끄면 Home에서 해당 영역이 완전히 사라져요. 이 설정은 지금 쓰는 기기에만 적용돼요.</div></div></div>
+    ${accountBlock}
+    <div class="section-head"><div><h1>Home 위젯</h1><div class="section-desc">Home 화면에 보여줄 위젯을 켜고 끌 수 있어요. 끄면 Home에서 해당 영역이 완전히 사라져요. 이 설정은 내 계정에 저장돼서 다른 기기에서도 똑같이 적용돼요.</div></div></div>
     <div class="card">
       ${HOME_WIDGET_DEFS.map(it=>`
         <div class="list-row" style="align-items:center;">
@@ -856,7 +1143,7 @@ function renderSettings(){
         </div>
       `).join('')}
     </div>
-    <div class="section-head" style="margin-top:24px;"><div><h1>데이터 백업</h1><div class="section-desc">모두가 함께 쓰는 데이터를 내보내 보관하거나, 백업으로 되돌릴 수 있어요. 주소를 아는 사람은 누구나 고칠 수 있으니 가끔 내보내 두세요.</div></div></div>
+    <div class="section-head" style="margin-top:24px;"><div><h1>데이터 백업</h1><div class="section-desc">내 계정의 데이터를 파일로 내보내 보관하거나, 백업으로 되돌릴 수 있어요. 실수로 지웠을 때를 대비해 가끔 내보내 두세요.</div></div></div>
     <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn" data-action="backup-export">${icon('save')} 백업 내보내기</button>
       <button class="btn" data-action="backup-import">${icon('refresh')} 백업 가져오기</button>
@@ -1526,6 +1813,9 @@ function wireGlobalActions(){
       case 'backup-copy': copyBackupText(); break;
       case 'backup-import': importBackupModal(); break;
       case 'backup-import-go': startImportBackup(); break;
+      case 'login-google': signInWithGoogle(); break;
+      case 'logout': confirmModal('로그아웃할까요? 다시 로그인하면 내 기록이 그대로 보여요.', '로그아웃', ()=>signOutNow()); break;
+      case 'legacy-import': startLegacyImport(); break;
       case 'cl-list-rename-save': {
         const input = document.getElementById('cl-title-name');
         renameChecklistTitle(id, input ? input.value : '');
