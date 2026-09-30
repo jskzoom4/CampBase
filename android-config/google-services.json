@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "518727790712",
+    "project_id": "campbase-f5df5",
+    "storage_bucket": "campbase-f5df5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518727790712:android:31083acef74f1f57f1fd8d",
+        "android_client_info": {
+          "package_name": "com.campbase.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "518727790712-ti16m47k92h4vp5qbebmpfss4ejko400.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.campbase.app",
+            "certificate_hash": "9f9ea1d9cb5d15fe10c4e1302d48a17ad37e119d"
+          }
+        },
+        {
+          "client_id": "518727790712-5m0er2iosd4952opqvl6a1ul4odjm6hk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3pvRMlC7d-KQDsCF9wQEJsJIqJs5ViAI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "518727790712-5m0er2iosd4952opqvl6a1ul4odjm6hk.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
