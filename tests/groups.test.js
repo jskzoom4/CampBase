@@ -86,6 +86,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await nav(A, 'checklist');
   check('그룹이 없으면 공간 칩 없음', (await A.locator('.space-chip').count()) === 0);
   await nav(A, 'settings');
+  await sleep(300);
+  check('예전 공유 데이터가 없으면 "기존 공유 데이터 가져오기" 버튼 숨김', (await A.locator('[data-action="legacy-import"]').count()) === 0);
   check('Settings에 "내 그룹" + 만들기/코드로 참여', /내 그룹/.test(await A.locator('#main').innerText()) && (await A.locator('[data-action="group-new"]').count()) === 1 && (await A.locator('[data-action="group-join"]').count()) === 1);
   await createGroup(A, '캠핑팸');
   const gid = groupIdByName('캠핑팸');

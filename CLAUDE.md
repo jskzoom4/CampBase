@@ -13,7 +13,7 @@
 - `docs/index.html` — 앱 전체(HTML+CSS+JS 한 파일, 바닐라 JS, 빌드 도구 없음). 로그인 화면(`#login-screen`) + 탭: Home / Camping / Gear / Checklist / Cooking / Settings.
 - `docs/firebase-config.js` — Firebase 프로젝트 `campbase-f5df5` 연결값(비밀 아님).
 - `docs/sw.js`, `docs/manifest.webmanifest`, `docs/icons/` — 웹(홈 화면 설치)용.
-- `firestore.rules` — Firestore 보안 규칙. `users/{uid}/**`는 본인만, `groups/**`·`groupInvites`는 그룹 규칙(아래), 최상위 legacy 경로는 "전환 기간" 블록으로 열어둠, 나머지는 거부.
+- `firestore.rules` — Firestore 보안 규칙. `users/{uid}/**`는 본인만, `groups/**`·`groupInvites`는 그룹 규칙(아래), 최상위 legacy 경로는 "전환 기간" 블록(현재 1단계: 로그인한 사람만 읽기 전용), 나머지는 거부.
 - `firebase.json` — 에뮬레이터(규칙 테스트)용 설정. 실제 배포에는 쓰지 않음.
 - `capacitor.config.json`, `package.json`, `assets/`, `keystore/` — 안드로이드 APK 빌드용(Capacitor 6 + `@capacitor-firebase/authentication` 6.x, `skipNativeAuth: true`).
 - `android-config/google-services.json` — APK 구글 로그인용. 워크플로가 `android/app/`로 복사한다.
@@ -32,6 +32,7 @@
   - `users/{uid}/settings/app` — `{ gearCategories, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준)
 - 최상위 `campingLogs/gear/checklists/cookingChecks`, `app/settings`는 **예전 공유 저장소(legacy)**. 새 앱은
   Settings → "기존 공유 데이터 가져오기"에서 **읽기만** 한다(내 공간으로 복사, 같은 id는 건너뜀, 원본 유지).
+  로그인 직후 `checkLegacyAvailable()`이 legacy 데이터가 남아 있는지 `limit(1)`로 확인해서, 없거나 읽을 수 없으면(규칙 삭제 후) 버튼을 숨긴다(`state.legacyAvailable`).
 - 설정값이 비어 있으면 미리보기 모드(로그인 없음, 예시 데이터, 저장 안 함).
 
 ## 그룹
@@ -74,7 +75,7 @@
 - **새 Firestore 컬렉션/문서 경로를 쓰면 `firestore.rules`에도 추가**해야 한다(개인 데이터는 `users/{uid}/` 아래면 이미 허용됨).
   규칙은 GitHub에 올려도 자동 적용되지 않으므로, 사용자에게 "Firebase 콘솔 → Firestore → 규칙 탭에 붙여넣고 게시"를 꼭 안내할 것.
 - 그룹 규칙(참여·나가기·내보내기·이름 변경·삭제 권한)은 `firestore.rules`에만 있다. 앱에서 그룹 문서를 바꾸는 방식을 바꾸면 규칙과 `tests/firestore-rules.test.js`도 함께 확인할 것.
-- 전환 기간 블록(legacy 경로)은 나중에 "로그인한 사람만 읽기 전용 → 삭제" 순서로 닫는다(파일 안 주석 참고). 그 전에 legacy에 새로 쓰는 코드는 만들지 않는다.
+- 전환 기간 블록(legacy 경로)은 **1단계(로그인한 사람만 읽기 전용)가 적용된 상태**. 남은 건 2단계(콘솔에서 legacy 데이터 삭제 → 블록 삭제). legacy에 쓰는 코드는 만들지 않는다(규칙이 거부함).
 - 저장소에 예시 데이터를 자동으로 쓰지 않는다(예시는 설정값이 없을 때의 미리보기 모드에서만 화면에 채움).
 - Home 위젯 켜기/끄기는 계정(`users/{uid}/settings/app.homeWidgets`)에 저장. 예전 기기 값(`localStorage` `campbase.homeWidgets`)은 계정 값이 없을 때의 기본값으로만 읽는다.
 - Camping 탭의 분류는 지역(`regionOf()`)이다. Home의 캠핑 통계도 같은 기준이어야 `home-cat-nav` 이동이 맞는다.

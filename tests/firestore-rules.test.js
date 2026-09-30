@@ -64,20 +64,23 @@ async function check(name, p) {
   await check('로그인 안 함: 계정 문서 읽기 거부', assertFails(getDoc(doc(anon, 'users/alice'))));
   await check('users 전체 목록 읽기 거부(남의 계정 훑어보기 금지)', assertFails(getDocs(collection(alice, 'users'))));
 
-  // 2. 전환 기간: 예전 공유 경로는 예전 APK를 위해 열려 있음
+  // 2. 전환 기간(1단계 적용 중): 예전 공유 경로는 로그인한 사람만 읽기 전용
   for (const c of ['campingLogs', 'gear', 'checklists', 'cookingChecks']) {
-    await check(`전환 기간: 로그인 없이 ${c} 읽기·쓰기(예전 APK)`, (async () => {
-      await assertSucceeds(getDocs(collection(anon, c)));
-      await assertSucceeds(setDoc(doc(anon, `${c}/old1`), { v: 1 }));
+    await check(`전환 기간: 로그인한 사람은 ${c} 읽기(가져오기)`, assertSucceeds(getDocs(collection(alice, c))));
+    await check(`전환 기간: 로그인해도 ${c} 쓰기·삭제 거부`, (async () => {
+      await assertFails(setDoc(doc(alice, `${c}/old1`), { v: 1 }));
+      await assertFails(deleteDoc(doc(alice, `${c}/legacy1`)));
+    })());
+    await check(`전환 기간: 로그인 안 하면(예전 APK) ${c} 읽기·쓰기 거부`, (async () => {
+      await assertFails(getDocs(collection(anon, c)));
+      await assertFails(setDoc(doc(anon, `${c}/old1`), { v: 1 }));
     })());
   }
-  await check('전환 기간: 로그인한 사람이 legacy 읽기(가져오기)', assertSucceeds(getDocs(collection(alice, 'gear'))));
-  await check('전환 기간: app/settings 읽기·쓰기', Promise.all([
-    assertSucceeds(getDoc(doc(anon, 'app/settings'))),
-    assertSucceeds(setDoc(doc(anon, 'app/settings'), { gearCategories: ['텐트'] })),
-  ]));
-  await check('app/다른문서 거부', assertFails(setDoc(doc(anon, 'app/other'), { v: 1 })));
-  await check('legacy 하위 컬렉션 거부', assertFails(setDoc(doc(anon, 'gear/legacy1/sub/x'), { v: 1 })));
+  await check('전환 기간: 로그인한 사람은 app/settings 읽기', assertSucceeds(getDoc(doc(alice, 'app/settings'))));
+  await check('전환 기간: app/settings 쓰기 거부', assertFails(setDoc(doc(alice, 'app/settings'), { gearCategories: ['텐트'] })));
+  await check('전환 기간: 로그인 안 하면 app/settings 읽기 거부', assertFails(getDoc(doc(anon, 'app/settings'))));
+  await check('app/다른문서 읽기 거부', assertFails(getDoc(doc(alice, 'app/other'))));
+  await check('legacy 하위 컬렉션 거부', assertFails(setDoc(doc(alice, 'gear/legacy1/sub/x'), { v: 1 })));
 
   // 3. 그 밖의 경로 전부 거부
   await check('그 밖의 경로 읽기 거부(로그인해도)', assertFails(getDoc(doc(alice, 'secret/x'))));
@@ -171,22 +174,11 @@ async function check(name, p) {
     await assertSucceeds(deleteDoc(doc(alice, 'groups/fam')));
   })());
 
-  // 4. 전환 기간을 닫은 뒤(주석 안내대로 1단계: 로그인한 사람만 읽기 전용)에도 의도대로 동작하는지
+  // 4. 전환 기간 2단계(블록 삭제) 후에도 의도대로 동작하는지
   const rules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules'), 'utf8');
-  const stage1 = rules.replace(/allow read, write: if true;/g, 'allow read: if request.auth != null; allow write: if false;')
-    .replace("allow read, write: if id == 'settings';", "allow read: if request.auth != null && id == 'settings'; allow write: if false;");
   const stage2 = rules.replace(/\/\/ ── 전환 기간 시작 ──[\s\S]*?\/\/ ── 전환 기간 끝 ──/, '');
-  await check('닫기 안내가 가리키는 "전환 기간" 블록이 규칙 파일에 있음', Promise.resolve().then(() => { if (stage1 === rules || stage2 === rules) throw new Error('전환 기간 표시를 찾지 못함'); }));
+  await check('닫기 안내가 가리키는 "전환 기간" 블록이 규칙 파일에 있음', Promise.resolve().then(() => { if (stage2 === rules) throw new Error('전환 기간 표시를 찾지 못함'); }));
   await env.cleanup();
-
-  const env1 = await initializeTestEnvironment({ projectId: 'demo-campbase-stage1', firestore: { host, port: Number(port), rules: stage1 } });
-  await env1.withSecurityRulesDisabled(async ctx => { await setDoc(doc(ctx.firestore(), 'gear/legacy1'), { name: '예전' }); });
-  const a1 = env1.authenticatedContext('alice').firestore(), n1 = env1.unauthenticatedContext().firestore();
-  await check('1단계(읽기 전용): 로그인한 사람은 legacy 읽기 가능', assertSucceeds(getDocs(collection(a1, 'gear'))));
-  await check('1단계(읽기 전용): legacy 쓰기 거부', assertFails(setDoc(doc(a1, 'gear/x'), { v: 1 })));
-  await check('1단계(읽기 전용): 로그인 안 하면 legacy 읽기 거부', assertFails(getDocs(collection(n1, 'gear'))));
-  await check('1단계: 개인 공간은 그대로 동작', assertSucceeds(setDoc(doc(a1, 'users/alice/gear/g2'), { v: 1 })));
-  await env1.cleanup();
 
   const env2 = await initializeTestEnvironment({ projectId: 'demo-campbase-stage2', firestore: { host, port: Number(port), rules: stage2 } });
   const a2 = env2.authenticatedContext('alice').firestore();

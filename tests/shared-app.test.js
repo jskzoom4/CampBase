@@ -71,6 +71,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       }, opts.native);
     }
     if (!opts.noFake) await ctx.addInitScript(FAKE);
+    if (opts.legacyClosed) await ctx.addInitScript(() => { window.__fakeLegacyClosed = true; });   // 전환 기간 2단계(규칙 삭제) 흉내
     // SDK를 못 불러오는 상황(오프라인 첫 실행)을 네트워크와 무관하게 재현
     if (opts.brokenSdk) await ctx.addInitScript(() => { window.__FIREBASE_MODULES__ = { app: { getApps: () => [], initializeApp() { throw new Error('offline: SDK unavailable'); } }, firestore: {}, auth: {} }; });
     const page = await ctx.newPage();
@@ -95,7 +96,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const nav = (p, tab) => p.locator(`[data-nav="${tab}"]:visible`).first().click();
   const userKeys = uid => Object.keys(server).filter(k => k.startsWith('users/' + uid + '/')).sort();
   // 이 페이지가 건드린 경로가 전부 자기 개인 공간인지 (legacy 가져오기 전 기준)
-  const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => x !== 'users/' + u && !x.startsWith('users/' + u + '/') && x !== 'groups'), uid);   // 'groups' = 내 그룹 목록 쿼리
+  // 남의 개인 공간(users/{다른 uid}) 경로를 건드렸는지. (예전 공유 경로 읽기·내 그룹 목록 쿼리는 허용)
+const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => x.startsWith('users/') && x !== 'users/' + u && !x.startsWith('users/' + u + '/')), uid);
 
   // 전환 기간: 예전 APK가 쓰던 최상위 공유 데이터가 이미 있다고 가정
   Object.assign(server, {
@@ -142,7 +144,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const acct = await A.locator('#account-card').innerText();
   check('Settings에 내 계정(이름·이메일) + 로그아웃 버튼', /앨리스/.test(acct) && /alice@example.com/.test(acct) && (await A.locator('#account-card [data-action="logout"]').count()) === 1, acct);
   check('Settings에 계정 사진 표시', (await A.locator('#account-card img.account-photo').getAttribute('src')) === PHOTO);
-  check('Settings에 "기존 공유 데이터 가져오기" 버튼', (await A.locator('[data-action="legacy-import"]').count()) === 1);
+  await A.waitForSelector('[data-action="legacy-import"]', { timeout: 3000 }).catch(() => {});
+  check('예전 공유 데이터가 있으면 Settings에 "기존 공유 데이터 가져오기" 버튼', (await A.locator('[data-action="legacy-import"]').count()) === 1);
+  const legacyWrite = await A.evaluate(async () => { const m = window.__FIREBASE_MODULES__.firestore; try { await m.setDoc(m.doc({}, 'gear/hack'), { v: 1 }); return 'ok'; } catch (e) { return e.code; } });
+  check('(가짜 규칙) 예전 공유 경로는 읽기 전용(쓰기 거부)', legacyWrite === 'permission-denied', legacyWrite);
 
   // ================= 2. 같은 계정의 두 기기 실시간 동기화 =================
   const A2 = await newPhone({ mobile: true, signedIn: UA });
@@ -329,6 +334,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await N.click('[data-action="confirm-yes"]');
   await N.waitForSelector('#login-screen', { state: 'visible', timeout: 3000 }).catch(() => {});
   check('APK: 로그아웃 시 네이티브 로그아웃도 호출', (await N.evaluate(() => window.__nativeCalls)).includes('signOut') && await loginVisible(N));
+
+  // 전환 기간 2단계 이후(예전 경로가 규칙에서 지워짐): 데이터가 있어도 읽을 수 없으니 버튼 숨김
+  const L = await newPhone({ user: { uid: 'uidLate', displayName: '늦은', email: 'late@example.com' }, legacyClosed: true });
+  await login(L);
+  await nav(L, 'settings');
+  await sleep(400);
+  check('예전 공유 경로가 닫히면 가져오기 버튼 숨김(오류 없음)', (await L.locator('[data-action="legacy-import"]').count()) === 0 && !/거부|오류/.test(await L.locator('#toast').innerText()), await L.locator('#toast').innerText());
 
   // ================= 10. 미리보기 모드 (설정값 없음) =================
   const P = await newPhone({ noFake: true, url: 'http://127.0.0.1:8766/' });
