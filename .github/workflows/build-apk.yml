@@ -71,7 +71,8 @@ jobs:
           # firestore·auth 모듈이 CDN의 app 모듈 대신 앱 안의 app 모듈을 쓰도록 경로 변경
           sed -i "s#https://www.gstatic.com/firebasejs/$V/firebase-app.js#./firebase-app.js#g" \
             docs/vendor/firebase/firebase-firestore.js docs/vendor/firebase/firebase-auth.js
-          if grep -l "https://www.gstatic.com/firebasejs/" docs/vendor/firebase/*.js; then
+          # (firebase-app.js 안의 CDN 주소는 이름표일 뿐이라 괜찮음 — import하는 두 파일만 확인)
+          if grep -l "https://www.gstatic.com/firebasejs/" docs/vendor/firebase/firebase-firestore.js docs/vendor/firebase/firebase-auth.js; then
             echo "::error title=SDK 경로 변경 실패::위 파일에 CDN 주소가 남아 있어요. V= 값과 docs/index.html의 FIREBASE_SDK_VERSION이 같은지 확인해주세요."
             exit 1
           fi
