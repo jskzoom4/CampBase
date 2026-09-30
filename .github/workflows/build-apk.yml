@@ -102,11 +102,28 @@ jobs:
             exit 1
           fi
 
-      - name: 고정 서명키 사용 (업데이트 시 덮어 설치 가능)
+      - name: 고정 서명키 사용 (업데이트 시 덮어 설치 가능 + 구글 로그인)
         run: |
           # keystore/debug.keystore는 절대 바꾸지 마세요(이 키의 SHA-1이 Firebase에 등록돼 있어요).
-          mkdir -p ~/.android
-          cp keystore/debug.keystore ~/.android/debug.keystore
+          # ~/.android에 복사하는 방식은 Actions에서 무시되고 매번 새 키가 만들어졌어요
+          # → 앱 빌드 설정에서 이 파일로 직접 서명하도록 지정해요.
+          cat >> android/app/build.gradle <<'GRADLE'
+
+          // 캠프베이스: 저장소의 고정 서명키로 서명 (워크플로에서 추가)
+          android {
+              signingConfigs {
+                  debug {
+                      storeFile rootProject.file('../keystore/debug.keystore')
+                      storePassword 'android'
+                      keyAlias 'androiddebugkey'
+                      keyPassword 'android'
+                  }
+              }
+              buildTypes {
+                  debug { signingConfig signingConfigs.debug }
+              }
+          }
+          GRADLE
 
       - name: APK 빌드
         working-directory: android
@@ -123,6 +140,16 @@ jobs:
 
       - name: 파일 이름 정리
         run: cp android/app/build/outputs/apk/debug/app-debug.apk campbase.apk
+
+      - name: 고정 서명키로 서명됐는지 확인 (SHA-1)
+        run: |
+          EXPECTED="9F:9E:A1:D9:CB:5D:15:FE:10:C4:E1:30:2D:48:A1:7A:D3:7E:11:9D"
+          ACTUAL=$(keytool -printcert -jarfile campbase.apk | grep -m1 "SHA1:" | awk '{print $2}')
+          echo "APK 서명 SHA-1: $ACTUAL"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error title=서명키가 달라요::APK가 고정 서명키로 서명되지 않았어요(SHA-1 $ACTUAL). 이대로면 구글 로그인이 안 되고 덮어 설치도 안 돼요."
+            exit 1
+          fi
 
       - name: 빌드 결과 보관 (Actions → 이 실행 → Artifacts)
         uses: actions/upload-artifact@v4

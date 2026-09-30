@@ -59,6 +59,7 @@
 - Camping 탭의 분류는 지역(`regionOf()`)이다. Home의 캠핑 통계도 같은 기준이어야 `home-cat-nav` 이동이 맞는다.
 - Firebase SDK 버전을 바꿀 때는 `docs/index.html`의 `FIREBASE_SDK_VERSION`, 워크플로의 `V=`, `package.json`의 `firebase` 세 곳을 같이 바꾼다.
 - `keystore/debug.keystore`는 **절대** 바꾸지 않는다(SHA-1 `9F:9E:A1:…:7E:11:9D`가 Firebase·google-services.json에 등록돼 있음. 바꾸면 구글 로그인과 덮어 설치가 모두 깨짐).
+  서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
 ## 테스트 (변경할 때마다 앞의 둘은 꼭 실행, 새 기능에는 테스트 추가)
