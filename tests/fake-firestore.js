@@ -81,31 +81,107 @@
     signOut: async () => { setUser(null); },
   };
 
-  /* ---------------- rules ---------------- */
+  /* ---------------- rules (firestore.rules와 같은 뜻) ---------------- */
   const LEGACY = ['campingLogs', 'gear', 'checklists', 'cookingChecks'];
-  function allowed(path) {
+  const me = () => (currentUser ? currentUser.uid : null);
+  const INVITE_RE = /^[A-HJ-NP-Z2-9]{6,8}$/;
+  function isMemberOf(gid) { const g = store['groups/' + gid]; return !!(me() && g && (g.memberUids || []).includes(me())); }
+  function canRead(ref) {
     if (window.__fakeDenied) return false;
-    const seg = path.split('/');
-    if (seg[0] === 'users') return !!(currentUser && seg[1] === currentUser.uid);
+    const seg = ref.path.split('/');
+    const f = (ref.filters || [])[0];
+    if (seg[0] === 'users') return !!(me() && seg[1] === me());
+    if (seg[0] === 'groups') {
+      if (seg.length === 1) return !!(f && f.field === 'memberUids' && f.op === 'array-contains' && f.value === me());
+      return isMemberOf(seg[1]);
+    }
+    if (seg[0] === 'groupInvites') {
+      if (seg.length === 2) return !!me();
+      return !!(f && f.field === 'gid' && f.op === '==' && isMemberOf(f.value));
+    }
     if (window.__fakeLegacyClosed) return false;
     if (LEGACY.includes(seg[0])) return seg.length <= 2;
     if (seg[0] === 'app') return seg.length === 2 && seg[1] === 'settings';
     return false;
   }
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const setOf = a => new Set(a || []);
+  const minus = (a, b) => [...setOf(a)].filter(x => !setOf(b).has(x));
+  function canWrite(path, before, after) {
+    if (window.__fakeDenied || !me()) return false;
+    const seg = path.split('/');
+    if (seg[0] === 'users') return seg[1] === me();
+    if (seg[0] === 'groups' && seg.length === 2) {
+      const gid = seg[1];
+      if (!before) {   // 만들기
+        return !!after && after.ownerUid === me() && same(after.memberUids, [me()]) && same(Object.keys(after.members || {}), [me()])
+          && after.members[me()].role === 'owner' && typeof after.name === 'string' && after.name.length > 0 && after.name.length <= 40;
+      }
+      const isMember = (before.memberUids || []).includes(me()), isOwner = before.ownerUid === me();
+      if (!after) return isOwner;   // 삭제
+      const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+      const changed = [...keys].filter(k => !same(before[k], after[k]));
+      const only = allowed => changed.every(k => allowed.includes(k));
+      const added = minus(after.memberUids, before.memberUids), removed = minus(before.memberUids, after.memberUids);
+      const mAdded = minus(Object.keys(after.members || {}), Object.keys(before.members || {}));
+      const mRemoved = minus(Object.keys(before.members || {}), Object.keys(after.members || {}));
+      const membersOk = (a, r) => same(added.sort(), a.slice().sort()) && same(removed.sort(), r.slice().sort()) && same(mAdded.sort(), a.slice().sort()) && same(mRemoved.sort(), r.slice().sort())
+        && Object.keys(before.members || {}).filter(k => !r.includes(k)).every(k => same(before.members[k], after.members[k]));
+      if (isOwner && only(['name']) && typeof after.name === 'string' && after.name.length > 0) return true;
+      if (isMember && only(['gearCategories'])) return true;
+      if (!isMember && only(['memberUids', 'members', 'joinCode']) && membersOk([me()], [])) {       // 참여
+        const inv = store['groupInvites/' + after.joinCode];
+        return !!(inv && inv.gid === gid && inv.expiresAt > Date.now() && after.members[me()].role === 'member');
+      }
+      if (isMember && !isOwner && only(['memberUids', 'members']) && membersOk([], [me()])) return true;   // 나가기
+      if (isOwner && only(['memberUids', 'members']) && removed.length > 0 && !removed.includes(me()) && membersOk([], removed)) return true;   // 내보내기
+      return false;
+    }
+    if (seg[0] === 'groups') return isMemberOf(seg[1]);
+    if (seg[0] === 'groupInvites') {
+      if (!before) return !!after && INVITE_RE.test(seg[1]) && after.createdBy === me() && isMemberOf(after.gid);
+      if (!after) return before.createdBy === me() || (store['groups/' + before.gid] || {}).ownerUid === me();
+      return false;
+    }
+    if (window.__fakeLegacyClosed) return false;
+    if (LEGACY.includes(seg[0])) return seg.length === 2;
+    if (seg[0] === 'app') return seg.length === 2 && seg[1] === 'settings';
+    return false;
+  }
   const denied = () => Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' });
-  function guard(path) {
-    window.__fsAccess.push(path);
-    if (!allowed(path)) throw denied();
+  function guardRead(ref) { window.__fsAccess.push(ref.path); if (!canRead(ref)) throw denied(); }
+  function guardWrite(path, before, after) { window.__fsAccess.push(path); if (!canWrite(path, before, after)) throw denied(); }
+  // update()의 특수 값(arrayUnion 등)과 'a.b' 경로 적용
+  function applyUpdate(before, data) {
+    const out = clone(before);
+    Object.entries(data).forEach(([k, v]) => {
+      const parts = k.split('.');
+      let o = out;
+      parts.slice(0, -1).forEach(p => { if (!o[p] || typeof o[p] !== 'object') o[p] = {}; o = o[p]; });
+      const last = parts[parts.length - 1];
+      if (v && v.__op === 'delete') delete o[last];
+      else if (v && v.__op === 'arrayUnion') { const arr = Array.isArray(o[last]) ? o[last] : []; v.values.forEach(x => { if (!arr.some(y => same(x, y))) arr.push(x); }); o[last] = arr; }
+      else if (v && v.__op === 'arrayRemove') { o[last] = (Array.isArray(o[last]) ? o[last] : []).filter(y => !v.values.some(x => same(x, y))); }
+      else o[last] = clone(v);
+    });
+    return out;
   }
 
   /* ---------------- firestore ---------------- */
-  function colDocs(path) {
+  function matches(d, f) {
+    const v = d[f.field];
+    if (f.op === 'array-contains') return Array.isArray(v) && v.some(x => same(x, f.value));
+    if (f.op === '==') return same(v, f.value);
+    throw new Error('fake: unsupported op ' + f.op);
+  }
+  function colDocs(path, filters) {
     const depth = path.split('/').length + 1;
     return Object.keys(store).filter(p => p.startsWith(path + '/') && p.split('/').length === depth)
+      .filter(p => (filters || []).every(f => matches(store[p], f)))
       .sort().map(p => ({ id: p.split('/').pop(), data: store[p] }));
   }
   function qSnap(ref, prev) {
-    const docs = colDocs(ref.path);
+    const docs = colDocs(ref.path, ref.filters);
     const prevMap = new Map((prev || []).map(d => [d.id, JSON.stringify(d.data)]));
     const changes = [];
     docs.forEach(d => { const j = JSON.stringify(d.data); if (prevMap.get(d.id) !== j) changes.push({ type: prevMap.has(d.id) ? 'modified' : 'added', doc: d }); prevMap.delete(d.id); });
@@ -124,8 +200,9 @@
     return { exists: () => has, data: () => (has ? clone(store[ref.path]) : undefined), metadata: { fromCache: !!window.__fakeOffline } };
   }
   function emit(l) {
-    if (!allowed(l.ref.path)) { l.err && l.err(denied()); return; }
-    if (l.ref.type === 'col') { const r = qSnap(l.ref, l.prev); l.prev = r.docs; l.cb(r.snap); }
+    if (!canRead(l.ref)) { if (!l.deniedOnce) { l.deniedOnce = true; l.err && l.err(denied()); } return; }
+    l.deniedOnce = false;
+    if (l.ref.type === 'col' || l.ref.type === 'query') { const r = qSnap(l.ref, l.prev); l.prev = r.docs; l.cb(r.snap); }
     else l.cb(dSnap(l.ref));
   }
   function emitAll() { listeners.forEach(emit); }
@@ -155,6 +232,11 @@
       if (segs(path) % 2 !== 1) throw new Error('Invalid collection reference: ' + path);
       return { type: 'col', path };
     },
+    query: (ref, ...constraints) => ({ type: 'query', path: ref.path, filters: constraints }),
+    where: (field, op, value) => ({ field, op, value }),
+    arrayUnion: (...values) => ({ __op: 'arrayUnion', values }),
+    arrayRemove: (...values) => ({ __op: 'arrayRemove', values }),
+    deleteField: () => ({ __op: 'delete' }),
     doc: (db, a, b) => {
       const path = b ? a + '/' + b : a;
       if (segs(path) % 2 !== 0) throw new Error('Invalid document reference: ' + path);
@@ -176,20 +258,32 @@
     },
     setDoc: async (ref, data) => {
       checkData(data, settingsIgnoreUndef);
-      guard(ref.path);
       await ensureReady();
+      guardWrite(ref.path, store[ref.path] || null, data);
       const d = clone(data);
       store[ref.path] = d; emitAll();
       await window.__fsWrite(ref.path, d);
     },
-    deleteDoc: async ref => {
-      guard(ref.path);
+    updateDoc: async (ref, data) => {
       await ensureReady();
+      if (!Object.prototype.hasOwnProperty.call(store, ref.path)) {
+        window.__fsAccess.push(ref.path);
+        // 진짜 Firestore처럼: 읽을 권한이 없으면 permission-denied, 있으면 not-found
+        throw canRead({ path: ref.path }) ? Object.assign(new Error('No document to update'), { code: 'not-found' }) : denied();
+      }
+      const before = store[ref.path], after = applyUpdate(before, data);
+      guardWrite(ref.path, before, after);
+      store[ref.path] = after; emitAll();
+      await window.__fsWrite(ref.path, after);
+    },
+    deleteDoc: async ref => {
+      await ensureReady();
+      guardWrite(ref.path, store[ref.path] || null, null);
       delete store[ref.path]; emitAll();
       await window.__fsWrite(ref.path, null);
     },
-    getDocs: async ref => { guard(ref.path); await ensureReady(); return qSnap(ref, null).snap; },
-    getDoc: async ref => { guard(ref.path); await ensureReady(); return dSnap(ref); },
+    getDocs: async ref => { await ensureReady(); guardRead(ref); return qSnap(ref, null).snap; },
+    getDoc: async ref => { await ensureReady(); guardRead(ref); return dSnap(ref); },
   };
   window.__FIREBASE_MODULES__ = { app, firestore, auth };
 })();

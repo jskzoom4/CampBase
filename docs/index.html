@@ -227,6 +227,21 @@
   .login-msg{min-height:20px;margin-top:12px;font-size:12.5px;color:var(--text-dim);line-height:1.5;}
   .login-msg.err{color:var(--bad);}
   .account-row{display:flex;align-items:center;gap:12px;}
+  .account-photo.small{width:32px;height:32px;font-size:13px;}
+  /* ---- 그룹 공간 ---- */
+  .space-bar{margin-bottom:14px;}
+  .space-chips .seg-btn{display:inline-flex;align-items:center;gap:5px;}
+  .space-chips svg{width:14px;height:14px;}
+  .space-note{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--text-dim);
+    background:color-mix(in srgb, var(--brand) 10%, transparent);border:1px solid color-mix(in srgb, var(--brand) 30%, transparent);border-radius:9px;padding:7px 10px;}
+  .space-note svg{width:15px;height:15px;flex:none;color:var(--brand);}
+  .invite-code{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;letter-spacing:6px;text-align:center;
+    padding:14px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);user-select:all;}
+  .send-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:9px;padding:4px 8px;background:var(--bg);}
+  .send-row{display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:13.5px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .send-row:last-child{border-bottom:none;}
+  .send-row span:first-of-type{flex:1;}
+  .link-btn{color:var(--brand);cursor:pointer;font-weight:600;}
   .account-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2);
     display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);}
 </style>
@@ -297,6 +312,8 @@ const ICONS = {
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
   close:'<path d="M6 6l12 12M18 6L6 18"/>',
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14c2.4.2 4 1.8 4.5 4.5"/>',
+  send:'<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
 };
 function icon(name, cls){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="${cls||''}">${ICONS[name]||''}</svg>`; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -539,9 +556,14 @@ function makeFirestoreAdapter(fs, fdb, base){
   }
   const docApi = d => ({
     set: data => fs.setDoc(d, data),
+    update: data => fs.updateDoc(d, data),   // 일부 필드만 변경('members.uid' 같은 경로, arrayUnion 등 사용 가능)
     delete: () => fs.deleteDoc(d),
     get: () => fs.getDoc(d).then(wrapDoc),
     onSnapshot: (cb, errCb) => listen(d, true, cb, errCb),
+  });
+  const queryApi = q => ({
+    onSnapshot: (cb, errCb) => listen(q, false, cb, errCb),
+    get: () => fs.getDocs(q).then(wrapQuery),
   });
   return {
     collection(name){
@@ -551,9 +573,15 @@ function makeFirestoreAdapter(fs, fdb, base){
         onSnapshot: (cb, errCb) => listen(ref, false, cb, errCb),
         doc: id => docApi(fs.doc(fdb, path, id)),
         get: () => fs.getDocs(ref).then(wrapQuery),
+        // 조건 조회. 예) where('memberUids','array-contains', uid)
+        where: (field, op, value) => queryApi(fs.query(ref, fs.where(field, op, value))),
       };
     },
     doc: path => docApi(fs.doc(fdb, full(path))),
+    // update()에 쓰는 특수 값
+    arrayUnion: (...v) => fs.arrayUnion(...v),
+    arrayRemove: (...v) => fs.arrayRemove(...v),
+    deleteField: () => fs.deleteField(),
   };
 }
 let _offlineTimer = null;
@@ -603,6 +631,7 @@ function onAuthUser(user){
   state.db = makeFirestoreAdapter(_fb.fs, _fb.fdb, 'users/' + user.uid);
   state.dbAvailable = true;
   startUserData();
+  startGroups();
   // 계정 정보(이름·이메일·사진)는 로그인할 때마다 최신으로 남김
   const u = state.user;
   safePersist(()=>state.rootDb.doc('users/' + u.uid).set({ name: u.name, email: u.email, photoURL: u.photoURL, updatedAt: new Date().toISOString() }));
@@ -621,6 +650,7 @@ function stopUserData(){
   _dataGen++;
   _unsubs.forEach(fn=>{ try{ fn && fn(); }catch(e){} });
   _unsubs = [];
+  stopGroups();
   state.db = null; state.dbAvailable = false;
   _reportedDbErrors.clear();
   resetUserState();
@@ -844,6 +874,446 @@ function applyLegacyImport(plan){
   toast(`${copied}개를 내 공간으로 가져왔어요.` + (skipped ? ` (이미 있던 ${skipped}개는 건너뜀)` : ''), 'ok');
 }
 
+/* ---- 그룹 ----
+ * groups/{gid} = { name, ownerUid, memberUids, members:{uid:{name,photoURL,role}}, createdAt, gearCategories }
+ * groups/{gid}/checklists|gear/{id} — 멤버 모두가 함께 보고 고침.
+ * Checklist·Gear 탭만 공간(내 공간 | 그룹)을 바꿔 볼 수 있고, 나머지 탭(Home 포함)은 항상 개인 공간.
+ * 선택한 공간은 기기에 기억(localStorage campbase.space.<uid>). 권한은 firestore.rules가 지킨다. */
+state.groups = [];                 // 내가 속한 그룹(실시간)
+state.space = 'me';                // 'me' 또는 그룹 id
+state.groupChecklists = [];        // 선택한 그룹의 체크리스트
+state.groupGear = [];              // 선택한 그룹의 장비
+let _groupsUnsub = null, _spaceUnsubs = [], _spaceGen = 0, _pendingSpace = null;
+const SPACE_KEY_PREFIX = 'campbase.space.';
+const INVITE_DAYS = 7;
+const INVITE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // 헷갈리는 0/O/1/I 제외
+const INVITE_LEN = 6;
+
+function currentGroup(){ return state.space==='me' ? null : (state.groups.find(g=>g.id===state.space) || null); }
+function inGroupSpace(){ return !!currentGroup(); }
+function isGroupOwner(g){ return !!(g && state.user && g.ownerUid===state.user.uid); }
+function groupById(gid){ return state.groups.find(g=>g.id===gid) || null; }
+function groupDb(gid){ return makeFirestoreAdapter(_fb.fs, _fb.fdb, 'groups/' + gid); }
+function spaceDb(){ const g = currentGroup(); return g ? groupDb(g.id) : state.db; }
+function memberName(g, uid){ const m = g && g.members && g.members[uid]; return (m && m.name) || '알 수 없음'; }
+
+// Checklist·Gear 코드가 보는 "지금 공간"의 데이터
+const SP = {
+  get checklists(){ return inGroupSpace() ? state.groupChecklists : state.checklists; },
+  set checklists(v){ if(inGroupSpace()) state.groupChecklists = v; else state.checklists = v; },
+  get gear(){ return inGroupSpace() ? state.groupGear : state.gear; },
+  set gear(v){ if(inGroupSpace()) state.groupGear = v; else state.gear = v; },
+  get gearCategories(){ const g = currentGroup(); return g ? g.gearCategories : state.gearCategories; },
+  set gearCategories(v){ const g = currentGroup(); if(g) g.gearCategories = v; else state.gearCategories = v; },
+};
+
+function normalizeGroup(id, d){
+  d = d || {};
+  return {
+    ...d, id,
+    name: d.name || '이름 없는 그룹',
+    memberUids: Array.isArray(d.memberUids) ? d.memberUids : [],
+    members: (d.members && typeof d.members==='object') ? d.members : {},
+    gearCategories: (Array.isArray(d.gearCategories) && d.gearCategories.length) ? d.gearCategories : [...DEFAULT_GEAR_CATEGORIES],
+  };
+}
+function loadSavedSpace(uid){ try{ return localStorage.getItem(SPACE_KEY_PREFIX + uid) || 'me'; }catch(e){ return 'me'; } }
+function saveSpace(){ if(!state.user) return; try{ localStorage.setItem(SPACE_KEY_PREFIX + state.user.uid, state.space); }catch(e){} }
+
+function startGroups(){
+  const gen = _dataGen, u = state.user.uid;
+  const saved = loadSavedSpace(u);
+  _pendingSpace = saved !== 'me' ? saved : null;
+  _groupsUnsub = state.rootDb.collection('groups').where('memberUids', 'array-contains', u).onSnapshot(snap=>{
+    if(gen !== _dataGen) return;
+    state.groups = snap.docs.map(d=>normalizeGroup(d.id, unfreeze(d.data())))
+      .sort((a,b)=> String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || a.name.localeCompare(b.name, 'ko'));
+    // 기기에 기억해 둔 그룹 공간으로 복귀
+    if(_pendingSpace && state.groups.some(g=>g.id===_pendingSpace)){ const p = _pendingSpace; _pendingSpace = null; selectSpace(p, true); return; }
+    // 보고 있던 그룹에서 나가졌거나 그룹이 삭제됨
+    if(state.space!=='me' && !state.groups.some(g=>g.id===state.space)){
+      selectSpace('me', true);
+      toast('그룹에 더 이상 속해 있지 않아서 내 공간으로 돌아왔어요.');
+      return;
+    }
+    if(['checklist','gear','settings'].includes(state.currentView)) renderView();
+  }, e=>{ if(gen===_dataGen) reportDbError(e); });
+}
+function stopGroups(){
+  if(_groupsUnsub){ try{ _groupsUnsub(); }catch(e){} }
+  _groupsUnsub = null;
+  stopSpaceData();
+  state.groups = []; state.space = 'me'; _pendingSpace = null;
+}
+function stopSpaceData(){
+  _spaceGen++;
+  _spaceUnsubs.forEach(fn=>{ try{ fn && fn(); }catch(e){} });
+  _spaceUnsubs = [];
+  state.groupChecklists = []; state.groupGear = [];
+}
+function startSpaceData(gid){
+  const gen = _spaceGen, db = groupDb(gid);
+  const onErr = e=>{
+    if(gen !== _spaceGen) return;
+    if(e && e.code==='permission-denied'){ selectSpace('me', true); toast('이 그룹에 더 이상 접근할 수 없어서 내 공간으로 돌아왔어요.'); }
+    else reportDbError(e);
+  };
+  _spaceUnsubs.push(db.collection('checklists').onSnapshot(snap=>{
+    if(gen !== _spaceGen) return;
+    state.groupChecklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    if(state.currentView==='checklist') renderView();
+  }, onErr));
+  _spaceUnsubs.push(db.collection('gear').onSnapshot(snap=>{
+    if(gen !== _spaceGen) return;
+    state.groupGear = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    if(state.currentView==='gear') renderView();
+  }, onErr));
+}
+// 공간 전환(Checklist·Gear 탭 위의 칩)
+function selectSpace(space, keepPending){
+  if(!keepPending) _pendingSpace = null;
+  if(space!=='me' && !state.groups.some(g=>g.id===space)) space = 'me';
+  const changed = space !== state.space;
+  stopSpaceData();
+  state.space = space;
+  saveSpace();
+  if(space!=='me') startSpaceData(space);
+  if(changed) state.gearCategory = 'all';   // 공간마다 카테고리가 다름
+  if(['checklist','gear','settings'].includes(state.currentView)) renderView();
+}
+function spaceChipsHtml(){
+  if(!state.user || !state.groups.length) return '';
+  const chips = [{id:'me', label:'내 공간'}, ...state.groups.map(g=>({id:g.id, label:g.name}))];
+  const g = currentGroup();
+  return `
+    <div class="space-bar">
+      <div class="seg-group space-chips">
+        ${chips.map(c=>`<div class="seg-btn space-chip ${c.id===state.space?'active':''}" data-action="space-pick" data-space="${esc(c.id)}">${c.id==='me'?icon('home'):icon('users')} ${esc(c.label)}</div>`).join('')}
+      </div>
+      ${g ? `<div class="space-note">${icon('users')}<span><b>${esc(g.name)}</b> 그룹 공간 · 멤버 ${g.memberUids.length}명 — 여기서 바꾸면 멤버 모두에게 보여요.</span></div>` : ''}
+    </div>`;
+}
+
+/* ---- 그룹 관리 (Settings → 내 그룹) ---- */
+function groupsSectionHtml(){
+  const u = state.user;
+  if(!u) return '';
+  return `
+    <div class="section-head"><div><h1>내 그룹</h1><div class="section-desc">그룹 멤버끼리 Checklist·Gear를 함께 보고 고칠 수 있어요. 캠핑 기록·Home·요리는 항상 나만 보는 개인 공간이에요.</div></div></div>
+    <div class="card" id="groups-card">
+      ${state.groups.length ? state.groups.map(g=>{
+        const owner = isGroupOwner(g);
+        return `
+        <div class="list-row group-row" data-gid="${esc(g.id)}" style="align-items:center;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;">
+            <div class="name">${esc(g.name)} <span class="tag ${owner?'accent':''}">${owner?'그룹장':'멤버'}</span></div>
+            <div class="meta">멤버 ${g.memberUids.length}명</div>
+          </div>
+          <div class="row-actions" style="flex-wrap:wrap;">
+            <button class="btn btn-sm" data-action="group-members" data-gid="${esc(g.id)}">멤버</button>
+            <button class="btn btn-sm" data-action="group-invite" data-gid="${esc(g.id)}">초대 코드</button>
+            ${owner ? `
+              <button class="btn btn-sm" data-action="group-rename" data-gid="${esc(g.id)}">이름 변경</button>
+              <button class="btn btn-sm btn-danger" data-action="group-delete" data-gid="${esc(g.id)}">삭제</button>
+            ` : `<button class="btn btn-sm btn-danger" data-action="group-leave" data-gid="${esc(g.id)}">나가기</button>`}
+          </div>
+        </div>`;
+      }).join('') : `<div class="empty">아직 그룹이 없어요. 그룹을 만들거나, 친구에게 받은 초대 코드로 참여해보세요.</div>`}
+    </div>
+    <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn btn-primary" data-action="group-new">${icon('plus')} 그룹 만들기</button>
+      <button class="btn" data-action="group-join">${icon('users')} 코드로 참여</button>
+    </div>
+    <div style="height:24px;"></div>`;
+}
+function newGroupModal(){
+  openModal(`
+    <h3>그룹 만들기</h3>
+    <div class="field"><label>그룹 이름</label><input id="grp-name" maxlength="40" placeholder="예: 캠핑팸"></div>
+    <p style="margin:0;color:var(--text-dim);font-size:12.5px;line-height:1.6;">만든 사람이 그룹장이 돼요. 만든 뒤 초대 코드를 친구에게 보내면 함께 쓸 수 있어요.</p>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="group-new-save">${icon('save')} 만들기</button>
+    </div>`);
+}
+async function createGroup(){
+  const el = document.getElementById('grp-name');
+  const name = (el ? el.value : '').trim();
+  if(!name){ toast('그룹 이름을 입력해주세요.'); return; }
+  if(name.length > 40){ toast('그룹 이름은 40자까지 쓸 수 있어요.'); return; }
+  if(!state.dbAvailable || !state.user){ toast('로그인한 뒤에 만들 수 있어요.'); return; }
+  const u = state.user, gid = uid('grp');
+  const data = {
+    name, ownerUid: u.uid, memberUids: [u.uid],
+    members: { [u.uid]: { name: u.name || u.email || '', photoURL: u.photoURL || '', role: 'owner' } },
+    createdAt: new Date().toISOString(),
+    gearCategories: [...DEFAULT_GEAR_CATEGORIES],
+  };
+  closeModal();
+  try{
+    await state.rootDb.doc('groups/' + gid).set(data);
+    toast(`'${name}' 그룹을 만들었어요. 초대 코드로 친구를 불러보세요.`, 'ok');
+  }catch(e){ console.error('[group]', e); toast('그룹을 만들지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail'); }
+}
+function makeInviteCode(){
+  const bytes = new Uint8Array(INVITE_LEN);
+  if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(bytes);
+  else for(let i=0;i<bytes.length;i++) bytes[i] = Math.floor(Math.random()*256);
+  return Array.from(bytes, b=>INVITE_CHARS[b % INVITE_CHARS.length]).join('');
+}
+function fmtDate(ms){ const d = new Date(ms); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`; }
+async function createInvite(gid){
+  const g = groupById(gid);
+  if(!g || !state.dbAvailable){ toast('그룹을 찾지 못했어요.'); return; }
+  const expiresAt = Date.now() + INVITE_DAYS * 24 * 60 * 60 * 1000;
+  let lastErr = null;
+  for(let attempt=0; attempt<4; attempt++){
+    const code = makeInviteCode();
+    try{
+      await state.rootDb.doc('groupInvites/' + code).set({ gid, groupName: g.name, createdBy: state.user.uid, expiresAt, createdAt: new Date().toISOString() });
+      openModal(`
+        <h3>초대 코드</h3>
+        <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;"><b style="color:var(--text);">${esc(g.name)}</b> 그룹 초대 코드예요. 친구에게 보내면 Settings → 내 그룹 → <b>코드로 참여</b>에서 입력해 참여할 수 있어요.</p>
+        <div class="invite-code" id="invite-code">${code}</div>
+        <p style="margin:8px 0 0;color:var(--text-dim);font-size:12px;text-align:center;">${fmtDate(expiresAt)}까지 쓸 수 있어요 (${INVITE_DAYS}일)</p>
+        <div class="modal-actions">
+          <button class="btn" data-action="modal-close">닫기</button>
+          <button class="btn btn-primary" data-action="invite-copy" data-code="${code}">${icon('save')} 코드 복사</button>
+        </div>`);
+      return;
+    }catch(e){ lastErr = e; }   // 같은 코드가 이미 있으면(드물게) 새 코드로 다시 시도
+  }
+  console.error('[invite]', lastErr);
+  toast('초대 코드를 만들지 못했어요.' + (lastErr && lastErr.code ? ' (' + lastErr.code + ')' : ''), 'fail');
+}
+function copyText(text, okMsg){
+  const done = ()=>toast(okMsg || '복사했어요.', 'ok');
+  const fallback = ()=>{
+    try{
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove(); done();
+    }catch(e){ toast('자동 복사가 안 돼요. 코드를 길게 눌러 직접 복사해주세요.'); }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fallback);
+  else fallback();
+}
+function joinGroupModal(){
+  openModal(`
+    <h3>코드로 그룹 참여</h3>
+    <div class="field"><label>초대 코드</label><input id="join-code" maxlength="12" autocapitalize="characters" autocomplete="off" placeholder="예: K7PQ2M" style="text-transform:uppercase;letter-spacing:2px;font-family:'JetBrains Mono',monospace;"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="group-join-check">확인</button>
+    </div>`);
+}
+function normalizeCode(v){ return String(v||'').toUpperCase().replace(/[\s-]/g, ''); }
+let _joinBusy = false;
+async function checkJoinCode(){
+  const el = document.getElementById('join-code');
+  const code = normalizeCode(el ? el.value : '');
+  if(!new RegExp('^[' + INVITE_CHARS + ']{6,8}$').test(code)){ toast('코드를 다시 확인해주세요. (영문 대문자와 숫자 6자리)'); return; }
+  if(!state.dbAvailable || _joinBusy) return;
+  _joinBusy = true;
+  try{
+    const snap = await state.rootDb.doc('groupInvites/' + code).get();
+    if(!snap.exists){ toast('없는 코드예요. 코드를 다시 확인해주세요.', 'fail'); return; }
+    const inv = unfreeze(snap.data()) || {};
+    if(!(Number(inv.expiresAt) > Date.now())){ toast('만료된 코드예요. 그룹 멤버에게 새 코드를 받아주세요.', 'fail'); return; }
+    if(state.groups.some(g=>g.id===inv.gid)){ toast(`이미 '${inv.groupName || ''}' 그룹 멤버예요.`); closeModal(); return; }
+    confirmModal(`'${inv.groupName || '이름 없는 그룹'}' 그룹에 참여할까요? 참여하면 그룹의 체크리스트와 장비를 함께 보고 고칠 수 있어요.`, '참여', ()=>joinGroup(code, inv));
+  }catch(e){
+    console.error('[join]', e);
+    toast('코드를 확인하지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail');
+  }finally{ _joinBusy = false; }
+}
+async function joinGroup(code, inv){
+  const u = state.user;
+  try{
+    await state.rootDb.doc('groups/' + inv.gid).update({
+      memberUids: state.rootDb.arrayUnion(u.uid),
+      ['members.' + u.uid]: { name: u.name || u.email || '', photoURL: u.photoURL || '', role: 'member' },
+      joinCode: code,     // 규칙이 이 코드로 참여 자격을 확인해요
+    });
+    toast(`'${inv.groupName || ''}' 그룹에 참여했어요. Checklist·Gear 탭 위에서 그룹 공간을 고를 수 있어요.`, 'ok');
+  }catch(e){
+    console.error('[join]', e);
+    toast('참여하지 못했어요. 코드가 만료됐거나 그룹이 삭제됐을 수 있어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail');
+  }
+}
+function groupMembersModal(gid){
+  const g = groupById(gid);
+  if(!g) return;
+  const owner = isGroupOwner(g);
+  const uids = [...g.memberUids].sort((a,b)=> (a===g.ownerUid?-1:b===g.ownerUid?1:0) || memberName(g,a).localeCompare(memberName(g,b),'ko'));
+  openModal(`
+    <h3>${esc(g.name)} 멤버 (${uids.length}명)</h3>
+    <div id="members-list">
+      ${uids.map(m=>{
+        const info = g.members[m] || {};
+        const isOwnerRow = m===g.ownerUid;
+        const initial = esc((memberName(g,m)).trim().charAt(0).toUpperCase() || '?');
+        return `
+        <div class="list-row member-row" style="align-items:center;">
+          ${info.photoURL ? `<img class="account-photo small" src="${esc(info.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<div class="account-photo small">${initial}</div>`}
+          <div style="flex:1;min-width:0;">
+            <div class="name">${esc(memberName(g,m))}${state.user && m===state.user.uid ? ' <span class="tag">나</span>' : ''}</div>
+            <div class="meta">${isOwnerRow ? '그룹장' : '멤버'}</div>
+          </div>
+          ${owner && !isOwnerRow ? `<button class="btn btn-sm btn-danger" data-action="group-kick" data-gid="${esc(g.id)}" data-uid="${esc(m)}">내보내기</button>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="modal-actions"><button class="btn" data-action="modal-close">닫기</button></div>`);
+}
+async function removeMember(gid, memberUid, okMsg){
+  try{
+    await state.rootDb.doc('groups/' + gid).update({
+      memberUids: state.rootDb.arrayRemove(memberUid),
+      ['members.' + memberUid]: state.rootDb.deleteField(),
+    });
+    toast(okMsg, 'ok');
+  }catch(e){ console.error('[group]', e); toast('처리하지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail'); }
+}
+function kickMember(gid, memberUid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g)) return;
+  const nm = memberName(g, memberUid);
+  confirmModal(`'${nm}' 님을 '${g.name}' 그룹에서 내보낼까요? 그 사람이 만든 항목은 그룹에 남아요.`, '내보내기', ()=>removeMember(gid, memberUid, `${nm} 님을 내보냈어요.`));
+}
+function leaveGroup(gid){
+  const g = groupById(gid);
+  if(!g) return;
+  if(isGroupOwner(g)){ toast('그룹장은 나갈 수 없어요. 그룹을 삭제해주세요.'); return; }
+  confirmModal(`'${g.name}' 그룹에서 나갈까요? 내가 만든 항목은 그룹에 남고, 다시 참여하려면 새 초대 코드가 필요해요.`, '나가기', ()=>{
+    if(state.space===gid) selectSpace('me');   // 권한이 없어지기 전에 그룹 구독부터 끊음
+    removeMember(gid, state.user.uid, `'${g.name}' 그룹에서 나왔어요.`);
+  });
+}
+function renameGroupModalOpen(gid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g)) return;
+  openModal(`
+    <h3>그룹 이름 변경</h3>
+    <div class="field"><label>그룹 이름</label><input id="grp-rename" maxlength="40" value="${esc(g.name)}"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="group-rename-save" data-gid="${esc(g.id)}">${icon('save')} 변경</button>
+    </div>`);
+}
+async function renameGroup(gid){
+  const g = groupById(gid);
+  const el = document.getElementById('grp-rename');
+  const name = (el ? el.value : '').trim();
+  if(!g || !isGroupOwner(g)) return;
+  if(!name){ toast('그룹 이름을 입력해주세요.'); return; }
+  closeModal();
+  if(name===g.name) return;
+  g.name = name; renderView();
+  try{ await state.rootDb.doc('groups/' + gid).update({ name }); toast('그룹 이름을 바꿨어요.', 'ok'); }
+  catch(e){ console.error('[group]', e); toast('이름을 바꾸지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail'); }
+}
+function deleteGroupConfirm(gid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g)) return;
+  confirmModal(`'${g.name}' 그룹을 삭제할까요? 그룹의 체크리스트·장비가 멤버 모두에게서 사라지고 되돌릴 수 없어요.`, '삭제', ()=>{
+    // 한 번 더 확인
+    confirmModal(`정말 '${g.name}' 그룹과 그 안의 데이터를 모두 지울까요? (멤버 ${g.memberUids.length}명)`, '완전히 삭제', ()=>deleteGroup(gid));
+  });
+}
+async function deleteGroup(gid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g)) return;
+  if(state.space===gid) selectSpace('me');
+  toast('그룹을 삭제하는 중…');
+  try{
+    const gdb = groupDb(gid);
+    for(const c of ['checklists','gear']){
+      const snap = await gdb.collection(c).get();
+      await Promise.all(snap.docs.map(d=>gdb.collection(c).doc(d.id).delete()));
+    }
+    try{
+      const inv = await state.rootDb.collection('groupInvites').where('gid', '==', gid).get();
+      await Promise.all(inv.docs.map(d=>state.rootDb.doc('groupInvites/' + d.id).delete()));
+    }catch(e){ console.warn('[group] invites', e); }   // 초대 코드는 못 지워도 그룹이 없으면 참여할 수 없음
+    await state.rootDb.doc('groups/' + gid).delete();
+    toast(`'${g.name}' 그룹을 삭제했어요.`, 'ok');
+  }catch(e){ console.error('[group]', e); toast('그룹을 삭제하지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail'); }
+}
+
+/* ---- 그룹으로 보내기: 개인 공간의 체크리스트(리스트 단위)·장비(여러 개)를 그룹에 "복사" ---- */
+function groupSelectHtml(){
+  return `<div class="field"><label>보낼 그룹</label><select id="send-group">${state.groups.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('')}</select></div>`;
+}
+function needGroupsToast(){ toast('먼저 Settings → 내 그룹에서 그룹을 만들거나 참여해주세요.'); }
+function sendChecklistModal(listId){
+  const list = state.checklists.find(c=>c.id===listId);
+  if(!list) return;
+  if(!state.groups.length){ needGroupsToast(); return; }
+  openModal(`
+    <h3>그룹으로 보내기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">'<b style="color:var(--text);">${esc(list.title)}</b>' 리스트(항목 ${(list.items||[]).length}개)를 그룹에 <b>복사</b>해요. 내 공간의 리스트는 그대로 남아요.</p>
+    ${groupSelectHtml()}
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="cl-send-go" data-id="${esc(list.id)}">${icon('send')} 보내기</button>
+    </div>`);
+}
+function sendChecklist(listId){
+  const list = state.checklists.find(c=>c.id===listId);
+  const sel = document.getElementById('send-group');
+  const g = sel && groupById(sel.value);
+  if(!list || !g){ toast('보낼 그룹을 골라주세요.'); return; }
+  const u = state.user.uid;
+  const copy = unfreeze(stripId(list));
+  copy.items = (copy.items||[]).map(it=>({...it, addedBy: it.addedBy || u}));
+  copy.addedBy = u; copy.updatedBy = u;
+  const newId = uid('cl'), gdb = groupDb(g.id);
+  safePersist(()=>gdb.collection('checklists').doc(newId).set(copy));
+  closeModal();
+  toast(`'${list.title}' 리스트를 '${g.name}' 그룹으로 복사했어요.`, 'ok');
+}
+function sendGearModal(){
+  if(!state.groups.length){ needGroupsToast(); return; }
+  if(!state.gear.length){ toast('보낼 장비가 없어요.'); return; }
+  const items = [...state.gear].sort((a,b)=> String(a.category||'').localeCompare(String(b.category||''),'ko') || String(a.name||'').localeCompare(String(b.name||''),'ko'));
+  openModal(`
+    <h3>장비를 그룹으로 보내기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">고른 장비를 그룹에 <b>복사</b>해요. 내 공간의 장비는 그대로 남고, 그룹에 없는 카테고리는 그룹에 추가돼요.</p>
+    ${groupSelectHtml()}
+    <div class="field">
+      <label style="display:flex;justify-content:space-between;align-items:center;">보낼 장비 <span class="link-btn" data-action="gear-send-all">모두 선택</span></label>
+      <div class="send-list">
+        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="send-gear" value="${esc(gr.id)}"> <span>${esc(gr.name)}</span> <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="gear-send-go">${icon('send')} 보내기</button>
+    </div>`);
+}
+function sendGear(){
+  const sel = document.getElementById('send-group');
+  const g = sel && groupById(sel.value);
+  const ids = Array.from(document.querySelectorAll('.send-gear:checked')).map(el=>el.value);
+  if(!g){ toast('보낼 그룹을 골라주세요.'); return; }
+  if(!ids.length){ toast('보낼 장비를 골라주세요.'); return; }
+  const u = state.user.uid, gdb = groupDb(g.id);
+  const picked = state.gear.filter(x=>ids.includes(x.id));
+  picked.forEach(item=>{
+    const copy = { ...unfreeze(stripId(item)), addedBy: u, updatedBy: u };
+    const newId = uid('g');
+    safePersist(()=>gdb.collection('gear').doc(newId).set(copy));
+  });
+  // 그룹 카테고리에 없는 장비 카테고리는 그룹에 추가('기타' 앞에)
+  const merged = mergeGearCategories(g.gearCategories, picked.map(x=>x.category || '기타'));
+  if(merged.length !== g.gearCategories.length){
+    g.gearCategories = merged;
+    safePersist(()=>state.rootDb.doc('groups/' + g.id).update({ gearCategories: merged }));
+  }
+  closeModal();
+  toast(`장비 ${picked.length}개를 '${g.name}' 그룹으로 복사했어요.`, 'ok');
+}
+
 /* ---- Home 위젯 표시 여부: 이제 계정(users/{uid}/settings/app)에 저장.
  * 예전 버전이 기기에 남긴 값(localStorage)은 계정에 저장된 값이 없을 때의 기본값으로만 읽는다. ---- */
 const HOME_WIDGETS_KEY = 'campbase.homeWidgets';
@@ -959,7 +1429,11 @@ function applyBackup(d){
   toast(state.dbAvailable ? '백업을 가져왔어요. 내 계정의 모든 기기에 반영돼요.' : '백업을 불러왔어요. (미리보기 모드라 저장되지는 않아요)', 'ok');
 }
 
-function onSaveFail(e){ toast('저장에 실패했어요. 다시 시도해주세요.' + (e&&e.code?' ('+e.code+')':''), 'fail'); }
+function onSaveFail(e){
+  console.error('[save]', e);
+  if(e && e.code==='permission-denied'){ toast('저장 권한이 없어요. Firestore 규칙을 게시했는지, 아직 그 그룹 멤버인지 확인해주세요.', 'fail'); return; }
+  toast('저장에 실패했어요. 다시 시도해주세요.' + (e&&e.code?' ('+e.code+')':''), 'fail');
+}
 // safePersist: never lets a persistence call block the caller. Any SYNCHRONOUS throw
 // (e.g. from building a bad path) or ASYNC rejection is caught here and turned into a
 // toast — the caller's own state update + re-render + success toast always run regardless.
@@ -971,10 +1445,22 @@ function safePersist(fn){
 }
 function persistCamping(item){ if(state.dbAvailable) safePersist(()=>state.db.collection('campingLogs').doc(item.id).set(stripId(item))); }
 function deleteCampingRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('campingLogs').doc(id).delete()); }
-function persistGear(item){ if(state.dbAvailable) safePersist(()=>state.db.collection('gear').doc(item.id).set(stripId(item))); }
-function deleteGearRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('gear').doc(id).delete()); }
-function persistChecklist(list){ if(state.dbAvailable) safePersist(()=>state.db.collection('checklists').doc(list.id).set(stripId(list))); }
-function deleteChecklistRemote(id){ if(state.dbAvailable) safePersist(()=>state.db.collection('checklists').doc(id).delete()); }
+// 장비·체크리스트는 "지금 보고 있는 공간"(내 공간 또는 선택한 그룹)에 저장. 그룹이면 addedBy/updatedBy를 남김.
+function stampGroupItem(item){
+  if(!inGroupSpace() || !state.user) return;
+  if(!item.addedBy) item.addedBy = state.user.uid;
+  item.updatedBy = state.user.uid;
+}
+function persistGear(item){ if(!state.dbAvailable) return; stampGroupItem(item); const db = spaceDb(); safePersist(()=>db.collection('gear').doc(item.id).set(stripId(item))); }
+function deleteGearRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('gear').doc(id).delete()); }
+function persistChecklist(list){ if(!state.dbAvailable) return; stampGroupItem(list); const db = spaceDb(); safePersist(()=>db.collection('checklists').doc(list.id).set(stripId(list))); }
+function deleteChecklistRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('checklists').doc(id).delete()); }
+// 장비 카테고리: 그룹이면 groups/{gid}.gearCategories, 내 공간이면 users/{uid}/settings/app
+function persistGearCategories(){
+  const g = currentGroup();
+  if(!g){ persistAppSettings(); return; }
+  if(state.dbAvailable) safePersist(()=>state.rootDb.doc('groups/' + g.id).update({ gearCategories: g.gearCategories }));
+}
 function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc(SETTINGS_DOC).set({weatherLocation:state.weatherLocation, gearCategories:state.gearCategories, homeWidgets:state.homeWidgets})); }
 function persistWeatherLocation(loc){ state.weatherLocation = loc; persistAppSettings(); }
 function persistCookingCheck(id, data){ if(state.dbAvailable) safePersist(()=>state.db.collection('cookingChecks').doc(id).set(data)); }
@@ -1120,7 +1606,10 @@ function renderSettings(){
       </div>
       <button class="btn" data-action="logout">로그아웃</button>
     </div>
-    <div class="section-head" style="margin-top:24px;"><div><h1>기존 공유 데이터 가져오기</h1><div class="section-desc">로그인 기능이 생기기 전, 모두가 함께 쓰던 데이터를 내 개인 공간으로 복사해요. 원본은 그대로 남고, 이미 내 공간에 있는 항목은 덮어쓰지 않고 건너뛰어요.</div></div></div>
+    <div style="height:24px;"></div>
+  ` : '';
+  const legacyBlock = u ? `
+    <div class="section-head"><div><h1>기존 공유 데이터 가져오기</h1><div class="section-desc">로그인 기능이 생기기 전, 모두가 함께 쓰던 데이터를 내 개인 공간으로 복사해요. 원본은 그대로 남고, 이미 내 공간에 있는 항목은 덮어쓰지 않고 건너뛰어요.</div></div></div>
     <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn" data-action="legacy-import">${icon('refresh')} 기존 공유 데이터 가져오기</button>
     </div>
@@ -1128,6 +1617,8 @@ function renderSettings(){
   ` : '';
   return `
     ${accountBlock}
+    ${groupsSectionHtml()}
+    ${legacyBlock}
     <div class="section-head"><div><h1>Home 위젯</h1><div class="section-desc">Home 화면에 보여줄 위젯을 켜고 끌 수 있어요. 끄면 Home에서 해당 영역이 완전히 사라져요. 이 설정은 내 계정에 저장돼서 다른 기기에서도 똑같이 적용돼요.</div></div></div>
     <div class="card">
       ${HOME_WIDGET_DEFS.map(it=>`
@@ -1298,15 +1789,20 @@ function saveCampForm(id){
 /* ============================ GEAR ============================ */
 function renderGear(){
   const filter = state.gearCategory || 'all';
-  const gearCats = ['all', ...state.gearCategories];
+  const gearCats = ['all', ...SP.gearCategories];
   const gearCatLabels = {all:'전체'};
   const byCat = {};
-  state.gear.forEach(g=>{ byCat[g.category]=(byCat[g.category]||0)+1; });
-  const filtered = state.gear.filter(g=> filter==='all' || g.category===filter);
+  SP.gear.forEach(g=>{ byCat[g.category]=(byCat[g.category]||0)+1; });
+  const filtered = SP.gear.filter(g=> filter==='all' || g.category===filter);
+  const grp = currentGroup();
   return `
+    ${spaceChipsHtml()}
     <div class="section-head">
-      <div><h1>내 장비</h1><div class="section-desc">보유 장비를 카테고리별로 등록하고 한눈에 확인하세요.</div></div>
-      <button class="btn btn-accent" data-action="gear-new">${icon('plus')} 장비 추가</button>
+      <div><h1>${grp ? esc(grp.name) + ' 장비' : '내 장비'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 고치는 장비 목록이에요.' : '보유 장비를 카테고리별로 등록하고 한눈에 확인하세요.'}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${!grp && state.groups.length ? `<button class="btn" data-action="gear-send">${icon('send')} 그룹으로 보내기</button>` : ''}
+        <button class="btn btn-accent" data-action="gear-new">${icon('plus')} 장비 추가</button>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="seg-group" style="flex:1;">
@@ -1319,7 +1815,7 @@ function renderGear(){
         <div class="list-row">
           <div style="flex:1;">
             <div class="name">${esc(g.name)}</div>
-            <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}</div>
+            <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}${grp && g.addedBy ? ' · ' + esc(memberName(grp, g.addedBy)) + ' 추가' : ''}</div>
           </div>
           <div class="row-actions">
             <button class="icon-btn" data-action="gear-edit" data-id="${g.id}">${icon('edit')}</button>
@@ -1331,7 +1827,7 @@ function renderGear(){
   `;
 }
 function gearFormModal(id){
-  const g = id ? state.gear.find(x=>x.id===id) : null;
+  const g = id ? SP.gear.find(x=>x.id===id) : null;
   openModal(`
     <h3>${g?'장비 수정':'장비 추가'}</h3>
     <div class="field"><label>이름</label><input id="gf-name" value="${g?esc(g.name):''}" placeholder="예: 스텔스 5 텐트"></div>
@@ -1340,7 +1836,7 @@ function gearFormModal(id){
         <select id="gf-brand">${GEAR_BRANDS.map(b=>`<option ${g&&g.brand===b?'selected':''}>${b}</option>`).join('')}</select>
       </div>
       <div class="field"><label>카테고리</label>
-        <select id="gf-category">${state.gearCategories.map(c=>`<option ${g&&g.category===c?'selected':''}>${c}</option>`).join('')}</select>
+        <select id="gf-category">${SP.gearCategories.map(c=>`<option ${g&&g.category===c?'selected':''}>${c}</option>`).join('')}</select>
       </div>
     </div>
     <div class="field-row">
@@ -1366,8 +1862,8 @@ function saveGearForm(id){
     weight: Number(document.getElementById('gf-weight').value)||0,
     date: document.getElementById('gf-date').value || '',
   };
-  if(id){ state.gear = state.gear.map(g=>g.id===id?item:g); }
-  else{ state.gear.push(item); }
+  if(id){ SP.gear = SP.gear.map(g=>g.id===id?item:g); }
+  else{ SP.gear.push(item); }
   persistGear(item);
   closeModal(); renderView(); toast('저장했어요.');
 }
@@ -1378,7 +1874,7 @@ function categoryManageModal(){
     <h3>카테고리 관리</h3>
     <div class="section-desc" style="margin-bottom:12px;">이름을 바꾸면 해당 카테고리로 등록된 장비도 함께 바뀌고, 삭제하면 그 장비는 '기타'로 옮겨져요.</div>
     <div id="cat-manage-list">
-      ${state.gearCategories.map(c=>categoryRowHtml(c)).join('')}
+      ${SP.gearCategories.map(c=>categoryRowHtml(c)).join('')}
     </div>
     <div class="field-row" style="margin-top:12px;align-items:flex-end;">
       <div class="field" style="flex:1;margin-bottom:0;"><input id="cat-new-name" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-action=gear-cat-add]').click();}"></div>
@@ -1405,9 +1901,9 @@ function categoryRowHtml(c){
 }
 function addGearCategory(name){
   if(!name){ toast('카테고리 이름을 입력해주세요.'); return; }
-  if(state.gearCategories.includes(name)){ toast('이미 있는 카테고리예요.'); return; }
-  state.gearCategories.push(name);
-  persistAppSettings();
+  if(SP.gearCategories.includes(name)){ toast('이미 있는 카테고리예요.'); return; }
+  SP.gearCategories.push(name);
+  persistGearCategories();
   categoryManageModal();
   renderView();
   toast('카테고리를 추가했어요.');
@@ -1415,23 +1911,23 @@ function addGearCategory(name){
 function renameGearCategory(oldName, newName){
   if(!newName){ toast('이름을 입력해주세요.'); return; }
   if(newName===oldName) return;
-  if(state.gearCategories.includes(newName)){ toast('이미 있는 이름이에요.'); return; }
-  state.gearCategories = state.gearCategories.map(c=>c===oldName?newName:c);
-  state.gear.forEach(g=>{ if(g.category===oldName){ g.category=newName; persistGear(g); } });
+  if(SP.gearCategories.includes(newName)){ toast('이미 있는 이름이에요.'); return; }
+  SP.gearCategories = SP.gearCategories.map(c=>c===oldName?newName:c);
+  SP.gear.forEach(g=>{ if(g.category===oldName){ g.category=newName; persistGear(g); } });
   if(state.gearCategory===oldName) state.gearCategory=newName;
-  persistAppSettings();
+  persistGearCategories();
   categoryManageModal();
   renderView();
   toast('카테고리 이름을 바꿨어요.');
 }
 function deleteGearCategory(cat){
   if(cat==='기타'){ toast("'기타'는 삭제할 수 없어요."); return; }
-  state.gearCategories = state.gearCategories.filter(c=>c!==cat);
-  if(!state.gearCategories.includes('기타')) state.gearCategories.push('기타');
-  const moved = state.gear.filter(g=>g.category===cat);
+  SP.gearCategories = SP.gearCategories.filter(c=>c!==cat);
+  if(!SP.gearCategories.includes('기타')) SP.gearCategories.push('기타');
+  const moved = SP.gear.filter(g=>g.category===cat);
   moved.forEach(g=>{ g.category='기타'; persistGear(g); });
   if(state.gearCategory===cat) state.gearCategory='all';
-  persistAppSettings();
+  persistGearCategories();
   categoryManageModal();
   renderView();
   toast(moved.length ? `카테고리를 삭제했어요. 장비 ${moved.length}개는 기타로 옮겨졌어요.` : '카테고리를 삭제했어요.');
@@ -1466,15 +1962,17 @@ function renderChecklist(){
     {key:'done', label:'완료'},
     {key:'undone', label:'미완료'},
   ];
+  const grp = currentGroup();
   return `
+    ${spaceChipsHtml()}
     <div class="section-head">
-      <div><h1>준비물 체크</h1><div class="section-desc">대분류(리스트) 안에 소분류를 만들어 항목을 정리하세요.</div></div>
+      <div><h1>${grp ? esc(grp.name) + ' 준비물' : '준비물 체크'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 체크하는 준비물이에요.' : '대분류(리스트) 안에 소분류를 만들어 항목을 정리하세요.'}</div></div>
       <button class="btn btn-accent" data-action="cl-new-list">${icon('plus')} 새 리스트</button>
     </div>
     <div class="seg-group" style="margin-bottom:16px;">
       ${clFilters.map(f=>`<div class="seg-btn ${f.key===filter?'active':''}" data-action="cl-filter" data-filter="${f.key}">${f.label}</div>`).join('')}
     </div>
-    ${state.checklists.length ? state.checklists.map(cl=>{
+    ${SP.checklists.length ? SP.checklists.map(cl=>{
       const allItems = cl.items||[];
       const decided = allItems.filter(isDecided).length;
       const total = allItems.length;
@@ -1489,6 +1987,7 @@ function renderChecklist(){
           <button class="icon-btn" data-action="cl-list-rename" data-id="${cl.id}" title="리스트 이름 변경">${icon('edit')}</button>
           ${decided>0 ? `<button class="icon-btn" data-action="cl-list-reset" data-id="${cl.id}" title="전부 미정으로 초기화">${icon('refresh')}</button>` : ''}
           <button class="icon-btn" data-action="cl-add-item" data-id="${cl.id}" title="새 항목 추가">${icon('plus')}</button>
+          ${!grp && state.groups.length ? `<button class="icon-btn" data-action="cl-send" data-id="${cl.id}" title="그룹으로 보내기(복사)">${icon('send')}</button>` : ''}
           <button class="icon-btn btn-danger" data-action="cl-del-list" data-id="${cl.id}">${icon('trash')}</button>
         </h3>
         ${groups.length ? groups.map(gr=>{
@@ -1534,12 +2033,12 @@ function saveNewChecklist(){
   const title = document.getElementById('ncl-title').value.trim();
   if(!title){ toast('리스트 이름을 입력해주세요.'); return; }
   const list = { id: uid('cl'), title, items: [] };
-  state.checklists.push(list);
+  SP.checklists.push(list);
   persistChecklist(list);
   closeModal(); renderView(); toast('리스트를 만들었어요.');
 }
 function addChecklistItemModal(listId, presetGroup){
-  const list = state.checklists.find(c=>c.id===listId);
+  const list = SP.checklists.find(c=>c.id===listId);
   const existingGroups = Array.from(new Set(((list&&list.items)||[]).map(it=>it.group||'기타')));
   openModal(`
     <h3>항목 추가</h3>
@@ -1562,15 +2061,17 @@ function saveChecklistItem(listId){
   const label = labelEl.value.trim();
   if(!label){ toast('항목 이름을 입력해주세요.'); return; }
   const group = (groupEl ? groupEl.value : '').trim() || '기타';
-  const list = state.checklists.find(c=>c.id===listId);
+  const list = SP.checklists.find(c=>c.id===listId);
   if(!list){ toast('리스트를 찾지 못했어요.'); return; }
   list.items = list.items || [];
-  list.items.push({ id: uid('i'), label, status:'pending', group });
+  const newItem = { id: uid('i'), label, status:'pending', group };
+  if(inGroupSpace() && state.user) newItem.addedBy = state.user.uid;
+  list.items.push(newItem);
   persistChecklist(list);
   closeModal(); renderView(); toast('항목을 추가했어요.');
 }
 function resetChecklist(listId){
-  const list = state.checklists.find(c=>c.id===listId);
+  const list = SP.checklists.find(c=>c.id===listId);
   if(!list) return;
   confirmModal(`'${list.title}' 리스트의 체크를 모두 초기화할까요? (다음 캠핑에 다시 쓸 때 편해요)`, '초기화', ()=>{
     (list.items||[]).forEach(it=>{ it.status = 'pending'; delete it.checked; });
@@ -1579,7 +2080,7 @@ function resetChecklist(listId){
   });
 }
 function renameListModal(listId){
-  const list = state.checklists.find(c=>c.id===listId);
+  const list = SP.checklists.find(c=>c.id===listId);
   if(!list) return;
   openModal(`
     <h3>리스트 이름 변경</h3>
@@ -1593,7 +2094,7 @@ function renameListModal(listId){
 function renameChecklistTitle(listId, newTitle){
   const nm = (newTitle||'').trim();
   if(!nm){ toast('이름을 입력해주세요.'); return; }
-  const list = state.checklists.find(c=>c.id===listId);
+  const list = SP.checklists.find(c=>c.id===listId);
   if(!list) return;
   list.title = nm;
   persistChecklist(list);
@@ -1612,7 +2113,7 @@ function renameGroupModal(listId, groupName){
 function renameChecklistGroup(listId, oldName, newName){
   const nm = (newName||'').trim();
   if(!nm){ toast('이름을 입력해주세요.'); return; }
-  const list = state.checklists.find(c=>c.id===listId);
+  const list = SP.checklists.find(c=>c.id===listId);
   if(!list) return;
   (list.items||[]).forEach(it=>{ if((it.group||'기타')===oldName) it.group = nm; });
   persistChecklist(list);
@@ -1733,9 +2234,9 @@ function wireGlobalActions(){
       case 'gear-new': gearFormModal(); break;
       case 'gear-edit': gearFormModal(id); break;
       case 'gear-del': {
-        const target = state.gear.find(g=>g.id===id);
+        const target = SP.gear.find(g=>g.id===id);
         confirmModal(`'${target?target.name:'이 장비'}'를 삭제할까요? 되돌릴 수 없어요.`, '삭제', ()=>{
-          state.gear = state.gear.filter(g=>g.id!==id);
+          SP.gear = SP.gear.filter(g=>g.id!==id);
           deleteGearRemote(id); renderView(); toast('장비를 삭제했어요.');
         });
         break;
@@ -1789,6 +2290,7 @@ function wireGlobalActions(){
       case 'home-cat-nav': {
         const tab = a.getAttribute('data-tab');
         const filterVal = a.getAttribute('data-filter');
+        if(state.space!=='me') selectSpace('me');   // Home 통계는 개인 공간 기준
         if(tab==='camping') state.campingFilter = filterVal;
         if(tab==='gear') state.gearCategory = filterVal;
         if(tab==='checklist') state.checklistFilter = filterVal;
@@ -1800,9 +2302,9 @@ function wireGlobalActions(){
       case 'cl-new-list': newChecklistModal(); break;
       case 'cl-new-list-save': saveNewChecklist(); break;
       case 'cl-del-list': {
-        const target = state.checklists.find(c=>c.id===id);
+        const target = SP.checklists.find(c=>c.id===id);
         confirmModal(`'${target?target.title:'이 리스트'}' 전체를 삭제할까요? 안의 항목도 모두 사라지고 되돌릴 수 없어요.`, '삭제', ()=>{
-          state.checklists = state.checklists.filter(c=>c.id!==id);
+          SP.checklists = SP.checklists.filter(c=>c.id!==id);
           deleteChecklistRemote(id); renderView(); toast('리스트를 삭제했어요.');
         });
         break;
@@ -1816,6 +2318,24 @@ function wireGlobalActions(){
       case 'login-google': signInWithGoogle(); break;
       case 'logout': confirmModal('로그아웃할까요? 다시 로그인하면 내 기록이 그대로 보여요.', '로그아웃', ()=>signOutNow()); break;
       case 'legacy-import': startLegacyImport(); break;
+      case 'space-pick': selectSpace(a.getAttribute('data-space')); break;
+      case 'group-new': newGroupModal(); break;
+      case 'group-new-save': createGroup(); break;
+      case 'group-join': joinGroupModal(); break;
+      case 'group-join-check': checkJoinCode(); break;
+      case 'group-invite': createInvite(a.getAttribute('data-gid')); break;
+      case 'invite-copy': copyText(a.getAttribute('data-code'), '초대 코드를 복사했어요.'); break;
+      case 'group-members': groupMembersModal(a.getAttribute('data-gid')); break;
+      case 'group-kick': kickMember(a.getAttribute('data-gid'), a.getAttribute('data-uid')); break;
+      case 'group-leave': leaveGroup(a.getAttribute('data-gid')); break;
+      case 'group-rename': renameGroupModalOpen(a.getAttribute('data-gid')); break;
+      case 'group-rename-save': renameGroup(a.getAttribute('data-gid')); break;
+      case 'group-delete': deleteGroupConfirm(a.getAttribute('data-gid')); break;
+      case 'cl-send': sendChecklistModal(id); break;
+      case 'cl-send-go': sendChecklist(id); break;
+      case 'gear-send': sendGearModal(); break;
+      case 'gear-send-all': document.querySelectorAll('.send-gear').forEach(el=>{ el.checked = true; }); break;
+      case 'gear-send-go': sendGear(); break;
       case 'cl-list-rename-save': {
         const input = document.getElementById('cl-title-name');
         renameChecklistTitle(id, input ? input.value : '');
@@ -1836,7 +2356,7 @@ function wireGlobalActions(){
       }
       case 'cl-item-status': {
         const listId = a.getAttribute('data-list'), itemId = a.getAttribute('data-item'), val = a.getAttribute('data-val');
-        const list = state.checklists.find(c=>c.id===listId);
+        const list = SP.checklists.find(c=>c.id===listId);
         if(list){
           const it = (list.items||[]).find(i=>i.id===itemId);
           if(it){
@@ -1851,7 +2371,7 @@ function wireGlobalActions(){
       }
       case 'cl-del-item': {
         const listId = a.getAttribute('data-list'), itemId = a.getAttribute('data-item');
-        const list = state.checklists.find(c=>c.id===listId);
+        const list = SP.checklists.find(c=>c.id===listId);
         if(list){ list.items = (list.items||[]).filter(i=>i.id!==itemId); persistChecklist(list); renderView(); }
         break;
       }
