@@ -235,10 +235,10 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   // 8. Settings: 기존 공유 데이터 가져오기(빈 상태) + 백업 내보내기 + 로그아웃
   await page.click('[data-nav="settings"]');
   await page.waitForTimeout(150);
-  await page.click('[data-action="legacy-import"]');
+  // 예전 공유 데이터가 없으면 가져오기 버튼은 숨겨짐
   await page.waitForTimeout(300);
-  if (await page.locator('[data-action="confirm-yes"]').count()) await page.click('[data-action="modal-close"]');
-  log('legacy import (empty)');
+  if (await page.locator('[data-action="legacy-import"]').count()) issues.push('legacy-import button shown although there is no legacy data');
+  log('legacy import hidden (no legacy data)');
   await page.click('[data-action="backup-export"]');
   await page.waitForTimeout(120);
   await page.click('[data-action="modal-close"]');

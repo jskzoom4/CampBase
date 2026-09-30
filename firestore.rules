@@ -105,22 +105,20 @@ service cloud.firestore {
         && (resource.data.createdBy == me() || groupDoc(resource.data.gid).data.ownerUid == me());
     }
 
-    // ── 3. 전환 기간: 예전 공유 저장소(최상위 경로) ─────────────────
-    // 아직 업데이트하지 않은 예전 APK(로그인 없음)가 계속 쓸 수 있도록 지금은 예전처럼 열어둬요.
-    // 새 앱은 Settings → "기존 공유 데이터 가져오기"에서 읽기만 해요.
+    // ── 3. 전환 기간: 예전 공유 저장소(최상위 경로) — 1단계(읽기 전용) 적용 중 ──────
+    // 모두 로그인 버전으로 옮겼으므로 예전 공유 데이터는 "로그인한 사람만 읽기"만 돼요(쓰기·삭제 불가).
+    // 새 앱은 Settings → "기존 공유 데이터 가져오기"에서 읽기만 해요. (데이터가 없으면 버튼이 숨겨져요)
+    // 로그인 없는 예전 APK(build-3 이하)는 이제 이 데이터를 읽거나 쓸 수 없어요.
     //
-    // 모두 새 앱으로 옮기고 나면 아래 순서로 닫아요.
-    //   (1단계) 로그인한 사람만 읽기 전용 — 아래 다섯 줄의 "if true"를
-    //           read:  "if request.auth != null"  으로,  write: "if false" 로 바꾸기
-    //           예) match /gear/{id} { allow read: if request.auth != null; allow write: if false; }
-    //   (2단계) 삭제 — 가져오기가 더 필요 없으면 "전환 기간" 블록(아래 다섯 줄)을 통째로 지우기
+    //   (2단계) 삭제 — 더 가져올 사람이 없으면 Firebase 콘솔 데이터 탭에서 예전 컬렉션을 지운 뒤,
+    //           아래 "전환 기간" 블록(시작~끝 표시 사이)을 통째로 지우고 게시
     //           → 그 경로는 4번 규칙에 따라 전부 거부돼요.
     // ── 전환 기간 시작 ──
-    match /campingLogs/{id}   { allow read, write: if true; }
-    match /gear/{id}          { allow read, write: if true; }
-    match /checklists/{id}    { allow read, write: if true; }
-    match /cookingChecks/{id} { allow read, write: if true; }
-    match /app/{id}           { allow read, write: if id == 'settings'; }
+    match /campingLogs/{id}   { allow read: if request.auth != null; allow write: if false; }
+    match /gear/{id}          { allow read: if request.auth != null; allow write: if false; }
+    match /checklists/{id}    { allow read: if request.auth != null; allow write: if false; }
+    match /cookingChecks/{id} { allow read: if request.auth != null; allow write: if false; }
+    match /app/{id}           { allow read: if request.auth != null && id == 'settings'; allow write: if false; }
     // ── 전환 기간 끝 ──
 
     // ── 4. 그 밖의 경로 ───────────────────────────────────────

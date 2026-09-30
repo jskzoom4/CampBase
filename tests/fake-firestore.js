@@ -99,7 +99,8 @@
       if (seg.length === 2) return !!me();
       return !!(f && f.field === 'gid' && f.op === '==' && isMemberOf(f.value));
     }
-    if (window.__fakeLegacyClosed) return false;
+    // 전환 기간 1단계: 로그인한 사람만 읽기
+    if (window.__fakeLegacyClosed || !me()) return false;
     if (LEGACY.includes(seg[0])) return seg.length <= 2;
     if (seg[0] === 'app') return seg.length === 2 && seg[1] === 'settings';
     return false;
@@ -143,10 +144,7 @@
       if (!after) return before.createdBy === me() || (store['groups/' + before.gid] || {}).ownerUid === me();
       return false;
     }
-    if (window.__fakeLegacyClosed) return false;
-    if (LEGACY.includes(seg[0])) return seg.length === 2;
-    if (seg[0] === 'app') return seg.length === 2 && seg[1] === 'settings';
-    return false;
+    return false;   // 예전 공유 경로(legacy)는 읽기 전용
   }
   const denied = () => Object.assign(new Error('Missing or insufficient permissions.'), { code: 'permission-denied' });
   function guardRead(ref) { window.__fsAccess.push(ref.path); if (!canRead(ref)) throw denied(); }
@@ -181,7 +179,8 @@
       .sort().map(p => ({ id: p.split('/').pop(), data: store[p] }));
   }
   function qSnap(ref, prev) {
-    const docs = colDocs(ref.path, ref.filters);
+    const all = colDocs(ref.path, ref.filters);
+    const docs = ref.limit ? all.slice(0, ref.limit) : all;
     const prevMap = new Map((prev || []).map(d => [d.id, JSON.stringify(d.data)]));
     const changes = [];
     docs.forEach(d => { const j = JSON.stringify(d.data); if (prevMap.get(d.id) !== j) changes.push({ type: prevMap.has(d.id) ? 'modified' : 'added', doc: d }); prevMap.delete(d.id); });
@@ -232,7 +231,8 @@
       if (segs(path) % 2 !== 1) throw new Error('Invalid collection reference: ' + path);
       return { type: 'col', path };
     },
-    query: (ref, ...constraints) => ({ type: 'query', path: ref.path, filters: constraints }),
+    query: (ref, ...constraints) => ({ type: 'query', path: ref.path, filters: constraints.filter(c => !('limit' in c)), limit: (constraints.find(c => 'limit' in c) || {}).limit }),
+    limit: n => ({ limit: n }),
     where: (field, op, value) => ({ field, op, value }),
     arrayUnion: (...values) => ({ __op: 'arrayUnion', values }),
     arrayRemove: (...values) => ({ __op: 'arrayRemove', values }),

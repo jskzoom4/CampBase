@@ -589,6 +589,8 @@ function makeFirestoreAdapter(fs, fdb, base){
         get: () => fs.getDocs(ref).then(wrapQuery),
         // 조건 조회. 예) where('memberUids','array-contains', uid)
         where: (field, op, value) => queryApi(fs.query(ref, fs.where(field, op, value))),
+        // 앞에서 n개만(있는지 확인용)
+        limit: n => queryApi(fs.query(ref, fs.limit(n))),
       };
     },
     doc: path => docApi(fs.doc(fdb, full(path))),
@@ -646,6 +648,7 @@ function onAuthUser(user){
   state.dbAvailable = true;
   startUserData();
   startGroups();
+  checkLegacyAvailable();
   // 계정 정보(이름·이메일·사진)는 로그인할 때마다 최신으로 남김
   const u = state.user;
   safePersist(()=>state.rootDb.doc('users/' + u.uid).set({ name: u.name, email: u.email, photoURL: u.photoURL, updatedAt: new Date().toISOString() }));
@@ -658,6 +661,7 @@ function resetUserState(){
   state.homeWidgets = {...DEFAULT_HOME_WIDGETS};
   loadLocalHomeWidgets();
   state.campingFilter = 'all'; state.gearCategory = 'all'; state.checklistFilter = 'all'; state.gearOwnerFilter = 'all';
+  state.legacyAvailable = false;
   state.currentView = 'home';
 }
 function stopUserData(){
@@ -808,6 +812,25 @@ async function signOutNow(){
  * 원본은 그대로 두고, 내 공간에 이미 같은 id가 있으면 덮어쓰지 않고 건너뛴다. */
 const LEGACY_LABELS = {campingLogs:'캠핑 기록', gear:'장비', checklists:'체크리스트', cookingChecks:'요리 재료 체크'};
 let _legacyBusy = false;
+state.legacyAvailable = false;   // 예전 공유 데이터가 남아 있을 때만 Settings에 가져오기 버튼을 보임
+function legacySettingsUseful(d){ return !!d && ((Array.isArray(d.gearCategories) && d.gearCategories.length > 0) || !!d.weatherLocation); }
+async function checkLegacyAvailable(){
+  const gen = _dataGen;
+  let found = false;
+  try{
+    for(const c of USER_COLLECTIONS){
+      const snap = await state.rootDb.collection(c).limit(1).get();
+      if(snap.docs.length){ found = true; break; }
+    }
+    if(!found){
+      const st = await state.rootDb.doc(LEGACY_SETTINGS_DOC).get();
+      found = st.exists && legacySettingsUseful(unfreeze(st.data()));
+    }
+  }catch(e){ found = false; }   // 규칙으로 닫혔거나(2단계) 연결 문제 → 버튼 숨김
+  if(gen !== _dataGen) return;
+  state.legacyAvailable = found;
+  if(state.currentView==='settings') renderView();
+}
 async function readUserCollections(db){
   const out = {};
   for(const c of USER_COLLECTIONS){
@@ -843,7 +866,7 @@ async function startLegacyImport(){
       plan.copy[c] = legacy[c].filter(d=>!have.has(d.id));
       plan.skipped += legacy[c].length - plan.copy[c].length;
     });
-    const hasSettings = (Array.isArray(legacySettings.gearCategories) && legacySettings.gearCategories.length) || !!legacySettings.weatherLocation;
+    const hasSettings = legacySettingsUseful(legacySettings);
     if(plan.total === 0 && !hasSettings){ toast('가져올 기존 공유 데이터가 없어요.'); return; }
     const countText = USER_COLLECTIONS.map(c=>`${LEGACY_LABELS[c]} ${plan.counts[c]}개`).join(', ');
     const skipText = plan.skipped ? ` 내 공간에 이미 있는 ${plan.skipped}개는 덮어쓰지 않고 건너뛰어요.` : '';
@@ -1631,7 +1654,7 @@ function renderSettings(){
     </div>
     <div style="height:24px;"></div>
   ` : '';
-  const legacyBlock = u ? `
+  const legacyBlock = (u && state.legacyAvailable) ? `
     <div class="section-head"><div><h1>기존 공유 데이터 가져오기</h1><div class="section-desc">로그인 기능이 생기기 전, 모두가 함께 쓰던 데이터를 내 개인 공간으로 복사해요. 원본은 그대로 남고, 이미 내 공간에 있는 항목은 덮어쓰지 않고 건너뛰어요.</div></div></div>
     <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn" data-action="legacy-import">${icon('refresh')} 기존 공유 데이터 가져오기</button>
