@@ -242,6 +242,20 @@
   .send-row:last-child{border-bottom:none;}
   .send-row span:first-of-type{flex:1;}
   .link-btn{color:var(--brand);cursor:pointer;font-weight:600;}
+  /* ---- 담당자·장비 주인 ---- */
+  .mini-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;
+    background:var(--surface-2);color:var(--text-dim);font-size:10.5px;font-weight:700;vertical-align:middle;}
+  .member-pick .mini-avatar{width:28px;height:28px;font-size:12px;}
+  .member-pick.active{background:color-mix(in srgb, var(--brand) 10%, transparent);border-radius:8px;}
+  .member-pick .pick-check{width:18px;height:18px;color:var(--brand);}
+  .assignee-chip{display:inline-flex;align-items:center;gap:5px;max-width:110px;flex:none;border:1px dashed var(--border);background:transparent;
+    color:var(--text-dim);border-radius:999px;padding:3px 9px 3px 4px;font-size:11.5px;cursor:pointer;}
+  .assignee-chip svg{width:14px;height:14px;margin-left:3px;}
+  .assignee-chip span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .assignee-chip.set{border-style:solid;color:var(--text);background:var(--surface-2);}
+  .owner-tag{display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11.5px;font-weight:600;color:var(--text-dim);
+    background:var(--surface-2);border-radius:999px;padding:2px 8px 2px 2px;vertical-align:middle;}
+  .owner-filter .seg-btn{display:inline-flex;align-items:center;gap:5px;}
   .account-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2);
     display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);}
 </style>
@@ -643,7 +657,7 @@ function resetUserState(){
   state.gearCategories = [...DEFAULT_GEAR_CATEGORIES];
   state.homeWidgets = {...DEFAULT_HOME_WIDGETS};
   loadLocalHomeWidgets();
-  state.campingFilter = 'all'; state.gearCategory = 'all'; state.checklistFilter = 'all';
+  state.campingFilter = 'all'; state.gearCategory = 'all'; state.checklistFilter = 'all'; state.gearOwnerFilter = 'all';
   state.currentView = 'home';
 }
 function stopUserData(){
@@ -895,7 +909,16 @@ function isGroupOwner(g){ return !!(g && state.user && g.ownerUid===state.user.u
 function groupById(gid){ return state.groups.find(g=>g.id===gid) || null; }
 function groupDb(gid){ return makeFirestoreAdapter(_fb.fs, _fb.fdb, 'groups/' + gid); }
 function spaceDb(){ const g = currentGroup(); return g ? groupDb(g.id) : state.db; }
-function memberName(g, uid){ const m = g && g.members && g.members[uid]; return (m && m.name) || '알 수 없음'; }
+function memberName(g, uid){ const m = g && g.members && g.members[uid]; return (m && m.name) || '나간 멤버'; }
+function memberAvatarHtml(g, uid){
+  const m = (g && g.members && g.members[uid]) || {};
+  if(m.photoURL) return `<img class="mini-avatar" src="${esc(m.photoURL)}" alt="" referrerpolicy="no-referrer">`;
+  return `<span class="mini-avatar">${esc((memberName(g, uid).trim().charAt(0) || '?').toUpperCase())}</span>`;
+}
+// 그룹 멤버 목록(그룹장 먼저, 이름순)
+function sortedMemberUids(g){
+  return [...(g.memberUids||[])].sort((a,b)=> (a===g.ownerUid?-1:b===g.ownerUid?1:0) || memberName(g,a).localeCompare(memberName(g,b),'ko'));
+}
 
 // Checklist·Gear 코드가 보는 "지금 공간"의 데이터
 const SP = {
@@ -978,7 +1001,7 @@ function selectSpace(space, keepPending){
   state.space = space;
   saveSpace();
   if(space!=='me') startSpaceData(space);
-  if(changed) state.gearCategory = 'all';   // 공간마다 카테고리가 다름
+  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; }   // 공간마다 카테고리·멤버가 다름
   if(['checklist','gear','settings'].includes(state.currentView)) renderView();
 }
 function spaceChipsHtml(){
@@ -1144,7 +1167,7 @@ function groupMembersModal(gid){
   const g = groupById(gid);
   if(!g) return;
   const owner = isGroupOwner(g);
-  const uids = [...g.memberUids].sort((a,b)=> (a===g.ownerUid?-1:b===g.ownerUid?1:0) || memberName(g,a).localeCompare(memberName(g,b),'ko'));
+  const uids = sortedMemberUids(g);
   openModal(`
     <h3>${esc(g.name)} 멤버 (${uids.length}명)</h3>
     <div id="members-list">
@@ -1793,8 +1816,19 @@ function renderGear(){
   const gearCatLabels = {all:'전체'};
   const byCat = {};
   SP.gear.forEach(g=>{ byCat[g.category]=(byCat[g.category]||0)+1; });
-  const filtered = SP.gear.filter(g=> filter==='all' || g.category===filter);
   const grp = currentGroup();
+  // 그룹 공간: 주인(누구 장비인지)으로 거르기. 'all' | 'none'(공용) | uid
+  const ownerFilter = grp ? (state.gearOwnerFilter || 'all') : 'all';
+  const byOwner = {};
+  if(grp) SP.gear.forEach(g=>{ const k = g.ownerUid || 'none'; byOwner[k] = (byOwner[k]||0) + 1; });
+  const filtered = SP.gear.filter(g=> (filter==='all' || g.category===filter)
+    && (ownerFilter==='all' || (ownerFilter==='none' ? !g.ownerUid : g.ownerUid===ownerFilter)));
+  const ownerChips = grp ? [
+    {key:'all', label:'모든 주인'},
+    ...sortedMemberUids(grp).map(u=>({key:u, label:memberName(grp,u), n:byOwner[u]||0, avatar:true})),
+    ...Object.keys(byOwner).filter(k=>k!=='none' && !grp.memberUids.includes(k)).map(u=>({key:u, label:memberName(grp,u), n:byOwner[u]})),
+    {key:'none', label:'공용(주인 없음)', n:byOwner.none||0},
+  ] : [];
   return `
     ${spaceChipsHtml()}
     <div class="section-head">
@@ -1810,11 +1844,14 @@ function renderGear(){
       </div>
       <button class="btn btn-sm btn-ghost" data-action="gear-cat-manage">${icon('edit')} 카테고리 관리</button>
     </div>
+    ${grp ? `<div class="seg-group owner-filter" style="margin:-6px 0 16px;">
+      ${ownerChips.map(c=>`<div class="seg-btn ${c.key===ownerFilter?'active':''}" data-action="gear-owner-filter" data-owner="${esc(c.key)}">${c.avatar?memberAvatarHtml(grp,c.key):''}${esc(c.label)}${c.n!==undefined?` <span class="num" style="opacity:.65;">${c.n}</span>`:''}</div>`).join('')}
+    </div>` : ''}
     <div class="card">
       ${filtered.length ? filtered.map(g=>`
         <div class="list-row">
           <div style="flex:1;">
-            <div class="name">${esc(g.name)}</div>
+            <div class="name">${esc(g.name)}${grp && g.ownerUid ? ` <span class="owner-tag">${memberAvatarHtml(grp, g.ownerUid)}${esc(memberName(grp, g.ownerUid))}</span>` : ''}</div>
             <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}${grp && g.addedBy ? ' · ' + esc(memberName(grp, g.addedBy)) + ' 추가' : ''}</div>
           </div>
           <div class="row-actions">
@@ -1822,12 +1859,13 @@ function renderGear(){
             <button class="icon-btn btn-danger" data-action="gear-del" data-id="${g.id}">${icon('trash')}</button>
           </div>
         </div>
-      `).join('') : `<div class="empty">${filter==='all' ? '등록된 장비가 없어요.' : '이 카테고리에는 장비가 없어요.'}</div>`}
+      `).join('') : `<div class="empty">${filter==='all' && ownerFilter==='all' ? '등록된 장비가 없어요.' : '이 조건에 맞는 장비가 없어요.'}</div>`}
     </div>
   `;
 }
 function gearFormModal(id){
   const g = id ? SP.gear.find(x=>x.id===id) : null;
+  const grp = currentGroup();
   openModal(`
     <h3>${g?'장비 수정':'장비 추가'}</h3>
     <div class="field"><label>이름</label><input id="gf-name" value="${g?esc(g.name):''}" placeholder="예: 스텔스 5 텐트"></div>
@@ -1844,6 +1882,12 @@ function gearFormModal(id){
       <div class="field"><label>무게(kg)</label><input type="number" step="0.1" id="gf-weight" value="${g?(g.weight||''):''}"></div>
     </div>
     <div class="field"><label>구매일</label><input type="date" id="gf-date" value="${g?(g.date||''):''}"></div>
+    ${grp ? `<div class="field"><label>주인 (누구 장비인지)</label>
+      <select id="gf-owner">
+        <option value="">공용 · 주인 없음</option>
+        ${sortedMemberUids(grp).map(u=>`<option value="${esc(u)}" ${g&&g.ownerUid===u?'selected':''}>${esc(memberName(grp,u))}${state.user&&u===state.user.uid?' (나)':''}</option>`).join('')}
+        ${g && g.ownerUid && !grp.memberUids.includes(g.ownerUid) ? `<option value="${esc(g.ownerUid)}" selected>${esc(memberName(grp,g.ownerUid))}</option>` : ''}
+      </select></div>` : ''}
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="gear-save" data-id="${id||''}">${icon('save')} 저장</button>
@@ -1853,7 +1897,10 @@ function gearFormModal(id){
 function saveGearForm(id){
   const name = document.getElementById('gf-name').value.trim();
   if(!name){ toast('장비 이름을 입력해주세요.'); return; }
+  // 수정할 때는 기존 필드(addedBy, ownerUid 등)를 그대로 두고 폼 값만 덮어씀
+  const prev = id ? (SP.gear.find(x=>x.id===id) || {}) : {};
   const item = {
+    ...prev,
     id: id || uid('g'),
     name,
     brand: document.getElementById('gf-brand').value,
@@ -1862,6 +1909,8 @@ function saveGearForm(id){
     weight: Number(document.getElementById('gf-weight').value)||0,
     date: document.getElementById('gf-date').value || '',
   };
+  const ownerEl = document.getElementById('gf-owner');
+  if(inGroupSpace() && ownerEl){ if(ownerEl.value) item.ownerUid = ownerEl.value; else delete item.ownerUid; }
   if(id){ SP.gear = SP.gear.map(g=>g.id===id?item:g); }
   else{ SP.gear.push(item); }
   persistGear(item);
@@ -1956,13 +2005,16 @@ function groupChecklistItems(items){
   return ordered.map(g=>({group:g, items:map[g]}));
 }
 function renderChecklist(){
-  const filter = state.checklistFilter || 'all';
+  const grp = currentGroup();
+  const myUid = state.user ? state.user.uid : null;
+  // '내 담당'은 그룹 공간에서만
+  const filter = (state.checklistFilter==='mine' && !grp) ? 'all' : (state.checklistFilter || 'all');
   const clFilters = [
     {key:'all', label:'전체'},
     {key:'done', label:'완료'},
     {key:'undone', label:'미완료'},
+    ...(grp ? [{key:'mine', label:'내 담당'}] : []),
   ];
-  const grp = currentGroup();
   return `
     ${spaceChipsHtml()}
     <div class="section-head">
@@ -1977,7 +2029,8 @@ function renderChecklist(){
       const decided = allItems.filter(isDecided).length;
       const total = allItems.length;
       const allDone = total>0 && decided===total;
-      const visible = allItems.filter(it=> filter==='all' || (filter==='done'&&isDecided(it)) || (filter==='undone'&&!isDecided(it)));
+      const visible = allItems.filter(it=> filter==='all' || (filter==='done'&&isDecided(it)) || (filter==='undone'&&!isDecided(it))
+        || (filter==='mine' && !!myUid && it.assigneeUid===myUid));
       const groups = groupChecklistItems(visible);
       return `
       <div class="card checklist-group">
@@ -2010,6 +2063,7 @@ function renderChecklist(){
                   <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="안 가져감 (일부러 제외)">${icon('close')}</button>
                 </div>
                 <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}</span>
+                ${grp ? assigneeChipHtml(grp, cl.id, it) : ''}
                 <button class="icon-btn btn-danger" data-action="cl-del-item" data-list="${cl.id}" data-item="${it.id}">${icon('trash')}</button>
               </div>
             `;}).join('')}
@@ -2019,6 +2073,45 @@ function renderChecklist(){
     }).join('') : '<div class="card empty">아직 체크리스트가 없어요. 새 리스트를 만들어보세요.</div>'}
   `;
 }
+/* ---- 그룹 체크리스트 담당자 (assigneeUid: 멤버 uid만 저장, 이름은 그룹 members에서 찾음) ---- */
+function assigneeChipHtml(g, listId, it){
+  const a = it.assigneeUid;
+  return `<button class="assignee-chip ${a?'set':''}" data-action="cl-assign" data-list="${listId}" data-item="${it.id}" title="담당자 지정">`
+    + (a ? `${memberAvatarHtml(g, a)}<span>${esc(memberName(g, a))}</span>` : `${icon('users')}<span>담당</span>`)
+    + `</button>`;
+}
+function assignModal(listId, itemId){
+  const g = currentGroup();
+  const list = SP.checklists.find(c=>c.id===listId);
+  const it = list && (list.items||[]).find(i=>i.id===itemId);
+  if(!g || !it) return;
+  openModal(`
+    <h3>담당자 지정</h3>
+    <p style="margin:0 0 8px;color:var(--text-dim);font-size:13px;">'<b style="color:var(--text);">${esc(it.label)}</b>'을(를) 챙길 사람을 골라주세요.</p>
+    <div id="assign-list">
+      ${sortedMemberUids(g).map(u=>`
+        <div class="list-row member-pick ${it.assigneeUid===u?'active':''}" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="${esc(u)}" style="align-items:center;cursor:pointer;">
+          ${memberAvatarHtml(g, u)}
+          <div style="flex:1;" class="name">${esc(memberName(g, u))}${state.user && u===state.user.uid ? ' <span class="tag">나</span>' : ''}</div>
+          ${it.assigneeUid===u ? icon('check','pick-check') : ''}
+        </div>`).join('')}
+    </div>
+    <div class="modal-actions">
+      ${it.assigneeUid ? `<button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button>` : ''}
+      <button class="btn" data-action="modal-close">닫기</button>
+    </div>`);
+}
+function setAssignee(listId, itemId, assignee){
+  const g = currentGroup();
+  const list = SP.checklists.find(c=>c.id===listId);
+  const it = list && (list.items||[]).find(i=>i.id===itemId);
+  if(!g || !it) return;
+  if(assignee) it.assigneeUid = assignee; else delete it.assigneeUid;
+  persistChecklist(list);
+  closeModal(); renderView();
+  toast(assignee ? `${memberName(g, assignee)} 님이 '${it.label}' 담당이에요.` : '담당자를 해제했어요.');
+}
+
 function newChecklistModal(){
   openModal(`
     <h3>새 체크리스트</h3>
@@ -2332,6 +2425,12 @@ function wireGlobalActions(){
       case 'group-rename-save': renameGroup(a.getAttribute('data-gid')); break;
       case 'group-delete': deleteGroupConfirm(a.getAttribute('data-gid')); break;
       case 'cl-send': sendChecklistModal(id); break;
+      case 'cl-assign': assignModal(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
+      case 'cl-assign-set': setAssignee(a.getAttribute('data-list'), a.getAttribute('data-item'), a.getAttribute('data-uid')); break;
+      case 'gear-owner-filter':
+        state.gearOwnerFilter = a.getAttribute('data-owner') || 'all';
+        renderView();
+        break;
       case 'cl-send-go': sendChecklist(id); break;
       case 'gear-send': sendGearModal(); break;
       case 'gear-send-all': document.querySelectorAll('.send-gear').forEach(el=>{ el.checked = true; }); break;

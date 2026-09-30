@@ -48,6 +48,11 @@
   카테고리 저장은 `persistGearCategories()`(그룹이면 그룹 문서, 아니면 개인 설정).
 - 그룹 데이터 구독은 `selectSpace()` → `startSpaceData()`/`stopSpaceData()`. 권한이 없어지면(내보내짐·삭제) 조용히 내 공간으로 돌아온다.
 - "그룹으로 보내기": 개인 체크리스트(리스트 단위)·장비(여러 개)를 새 id로 그룹에 **복사**. 없는 장비 카테고리는 그룹에 추가.
+- **담당자(그룹 체크리스트 항목)**: 항목의 `assigneeUid`(멤버 uid만 저장, 선택). 이름·사진은 그룹 `members`에서 찾아 표시(`memberName()`, `memberAvatarHtml()`),
+  나간 멤버면 "나간 멤버". 항목 옆 `assignee-chip` → `assignModal()` → `setAssignee()`. 필터 `'mine'`("내 담당")은 그룹 공간에서만.
+- **장비 주인(그룹 장비)**: 장비의 `ownerUid`(선택). 장비 폼의 `#gf-owner`(그룹 공간에서만), 목록의 `owner-tag`, 주인 필터 `state.gearOwnerFilter`(`'all'|'none'|uid`, 공간 바꾸면 초기화).
+- 담당자·주인은 **개인 공간에서는 보이지 않는다.** 필드가 없는 기존 항목도 그대로 보인다.
+- 장비 수정(`saveGearForm`)은 기존 필드(`addedBy`, `ownerUid` 등)를 유지하고 폼 값만 덮어쓴다.
 
 ## 배포 흐름
 - 브랜치/PR에 push → GitHub Actions가 APK 빌드(5~10분) → 그 실행 화면 아래 **Artifacts**(`campbase-apk-번호`, zip)에서 받아 폰에서 테스트.
@@ -83,7 +88,7 @@
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
 node tests/smoke.test.js        # 로그인 후 모든 탭의 주요 동작 클릭 스모크 테스트 + 로그아웃
-node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
+node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·담당자·장비 주인·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
