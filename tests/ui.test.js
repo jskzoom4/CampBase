@@ -120,7 +120,7 @@ function seed() {
   check('아이콘만 있는 ⋯ 버튼에 aria-label, 최소 40×40', await moreBtn.getAttribute('aria-label') !== null && await moreBtn.evaluate(el => { const r = el.getBoundingClientRect(); return r.width >= 40 && r.height >= 40; }));
   check('앱 전체: 아이콘만 있는 버튼에는 모두 aria-label', await D.evaluate(() => [...document.querySelectorAll('button.icon-btn')].every(b => b.getAttribute('aria-label'))));
   await moreBtn.click();
-  check('⋯ 누르면 메뉴 열림 + aria-expanded + 첫 항목에 초점', await menu.isVisible() && (await moreBtn.getAttribute('aria-expanded')) === 'true' && await isFocused(D, '.more-item[data-action="cl-list-rename"]'));
+  check('⋯ 누르면 메뉴 열림 + aria-expanded + 첫 항목에 초점', await menu.isVisible() && (await moreBtn.getAttribute('aria-expanded')) === 'true' && await isFocused(D, '.more-item[data-action="cl-gear-import"]'));
   check('위험한 항목(삭제)은 빨간색으로 맨 아래', await menu.evaluate(m => { const items = [...m.querySelectorAll('.more-item')]; const last = items[items.length - 1]; return last.dataset.action === 'cl-del-list' && last.classList.contains('danger') && items.filter(i => i.classList.contains('danger')).length === 1; }));
   await D.keyboard.press('ArrowDown');
   const second = await D.evaluate(() => document.activeElement.dataset.action);
@@ -128,7 +128,7 @@ function seed() {
   const wrapped = await D.evaluate(() => document.activeElement.dataset.action);
   await D.keyboard.press('Home');
   const home = await D.evaluate(() => document.activeElement.dataset.action);
-  check('키보드: 화살표로 항목 이동(끝에서 처음으로 돌아감), Home', second === 'cl-list-reset' && wrapped === 'cl-del-list' && home === 'cl-list-rename', { second, wrapped, home });
+  check('키보드: 화살표로 항목 이동(끝에서 처음으로 돌아감), Home', second === 'cl-list-rename' && wrapped === 'cl-del-list' && home === 'cl-gear-import', { second, wrapped, home });
   await D.keyboard.press('Escape');
   check('Esc로 닫힘 + ⋯ 버튼으로 초점 복귀', !(await menu.isVisible()) && (await moreBtn.getAttribute('aria-expanded')) === 'false' && await moreBtn.evaluate(el => el === document.activeElement));
   await moreBtn.click();

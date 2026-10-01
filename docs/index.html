@@ -231,6 +231,20 @@
   .panel-list{padding:8px 12px 10px 16px;border-top:1px solid var(--border);}
   .panel-list > h3{margin-bottom:4px;}
   .panel-list.checklist-group{margin-bottom:0;}
+  .tp-desc{padding:4px 16px 0;font-size:12.5px;line-height:1.5;color:var(--text-dim);white-space:pre-line;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  /* 장비에서 불러오기(H-1) */
+  .gpk-src{margin-bottom:10px;}
+  .gpk-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .gpk-all{display:flex;align-items:center;gap:8px;min-height:40px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .gpk-all input{width:18px;height:18px;margin:0;accent-color:var(--brand);}
+  .gpk-count{font-size:12.5px;color:var(--text-dim);}
+  .gpk-list{max-height:min(46vh, 380px);}
+  .gpk-sec-row{background:var(--surface-2);margin:0 -8px;padding-left:10px !important;padding-right:10px !important;font-weight:700;}
+  .gpk-sec:first-child .gpk-sec-row{margin-top:-4px;}
+  .gpk-row{padding-left:14px !important;}
+  .gpk-row, .gpk-sec-row{min-height:40px;}
+  .gpk-row.is-dup{color:var(--text-dim);cursor:default;}
+  .cl-empty .btn{margin-top:8px;}
   .tp-empty{border-top:1px solid var(--border);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:13px;color:var(--text-dim);text-align:center;}
   .tp-empty-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
   .section-desc.one-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -3123,6 +3137,7 @@ function checklistListHtml(cl, ctx, inPanel){
           ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
           <button class="btn btn-sm cl-add-btn" data-action="cl-add-item" data-id="${cl.id}">${icon('plus')} 항목 추가</button>
           ${moreMenuHtml('cl:' + cl.id, [
+            { action:'cl-gear-import', attrs:{'data-id':cl.id}, icon:'gear', label:'장비에서 불러오기' },
             { action:'cl-list-rename', attrs:{'data-id':cl.id}, icon:'edit', label:'이름 변경' },
             decided>0 ? { action:'cl-list-reset', attrs:{'data-id':cl.id}, icon:'refresh', label:'전부 미정으로 초기화' } : null,
             { action:'cl-save-template', attrs:{'data-id':cl.id}, icon:'template', label:'템플릿으로 저장' },
@@ -3159,7 +3174,9 @@ function checklistListHtml(cl, ctx, inPanel){
               </div>
             `;}).join('')}
           </div>`;
-        }).join('') : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`}
+        }).join('') : (filter==='all' && !allItems.length
+          ? `<div class="empty cl-empty">항목이 없어요.<br><button class="btn btn-sm" data-action="cl-gear-import" data-id="${cl.id}">${icon('gear')} 장비에서 불러오기</button></div>`
+          : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`)}
       </div>`;
 }
 /* ============================ 캠핑 일정 ============================
@@ -3255,6 +3272,7 @@ function tripPanelHtml(trip, space, g, lists, filtersHtml, ctx){
         <span class="tp-where">${where}</span>
         ${members.length ? `<span class="avatar-stack trip-members" role="img" aria-label="${members.length}명 참가" title="${esc(members.map(u=>memberName(g,u)).join(', '))}">${members.slice(0, 5).map(u=>memberAvatarHtml(g,u)).join('')}${members.length > 5 ? `<span class="mini-avatar more-count">+${members.length - 5}</span>` : ''}</span>` : ''}
       </div>
+      ${trip.description ? `<div class="tp-desc">${esc(trip.description)}</div>` : ''}
       <div class="trip-progress">
         <div class="trip-bar-track" role="progressbar" aria-label="준비 진행률" aria-valuemin="0" aria-valuemax="${pr.total}" aria-valuenow="${pr.decided}"><span style="width:${pct}%"></span></div>
         <span class="trip-progress-text">준비 <b class="num">${pr.decided}/${pr.total}</b>${g ? ` · 내 담당 <b class="num">${pr.mine}</b>` : ''}</span>
@@ -3267,6 +3285,7 @@ function tripPanelHtml(trip, space, g, lists, filtersHtml, ctx){
         <div class="tp-empty">
           <span>이 일정에 연결된 준비물이 없어요</span>
           <span class="tp-empty-actions">
+            <button class="btn btn-sm btn-primary" data-action="trip-gear-import" data-trip="${esc(trip.id)}">${icon('gear')} 장비에서 불러오기</button>
             <button class="btn btn-sm" data-action="cl-new-list">${icon('plus')} 리스트</button>
             <button class="btn btn-sm" data-action="trip-tpl-import" data-trip="${esc(trip.id)}">${icon('template')} 템플릿에서 가져오기</button>
           </span>
@@ -3313,7 +3332,7 @@ function tripFormModal(id){
   if(id && !t) return;
   const g = currentGroup();
   const tpls = SP.templates;
-  _tripStartMethod = tpls.length ? 'template' : 'empty';
+  _tripStartMethod = tpls.length ? 'template' : ((SP.gear.length || (g && state.gear.length)) ? 'gear' : 'empty');
   const picked = new Set(t ? tripMembers(t, g) : (g ? g.memberUids : []));
   const linkable = SP.checklists;
   openModal(`
@@ -3328,6 +3347,7 @@ function tripFormModal(id){
       <div class="field"><label>캠핑장 이름</label><input id="tf-campsite" value="${t ? esc(t.campsiteName||'') : ''}" placeholder="예: 홍천 강변 캠핑장"></div>
       <div class="field"><label>지역</label><input id="tf-region" value="${t ? esc(t.region||'') : ''}" placeholder="예: 홍천"></div>
     </div>
+    <div class="field"><label for="tf-desc">메모 (Description)</label><textarea id="tf-desc" rows="3" maxlength="1000" placeholder="예: 사이트 A-12, 장작은 현장 구매, 금요일 6시 출발">${t ? esc(t.description||'') : ''}</textarea></div>
     ${g ? `<div class="field"><label>참가 멤버</label>
       <div class="send-list" id="tf-members">
         ${sortedMemberUids(g).map(u=>`<label class="send-row"><input type="checkbox" class="tf-member" value="${esc(u)}" ${picked.has(u)?'checked':''}> ${memberAvatarHtml(g,u)} <span class="sr-name">${esc(memberName(g,u))}${state.user&&u===state.user.uid?' (나)':''}</span></label>`).join('')}
@@ -3336,6 +3356,7 @@ function tripFormModal(id){
     <div class="field">
       <label>체크리스트 시작 방법</label>
       <div class="seg-group" id="tf-start-method">
+        <div class="seg-btn ${_tripStartMethod==='gear'?'active':''}" data-action="trip-start-pick" data-val="gear">장비에서 고르기</div>
         <div class="seg-btn ${_tripStartMethod==='template'?'active':''}" data-action="trip-start-pick" data-val="template">템플릿에서 복사</div>
         <div class="seg-btn" data-action="trip-start-pick" data-val="link">기존 리스트 연결</div>
         <div class="seg-btn ${_tripStartMethod==='empty'?'active':''}" data-action="trip-start-pick" data-val="empty">빈 리스트</div>
@@ -3350,6 +3371,9 @@ function tripFormModal(id){
       <label>연결할 리스트</label>
       ${linkable.length ? `<select id="tf-link">${linkable.map(l=>`<option value="${esc(l.id)}">${esc(l.title)}${l.tripId ? ' (다른 일정에 연결됨)' : ''}</option>`).join('')}</select>`
         : `<div class="meta" style="font-size:12.5px;color:var(--text-dim);">연결할 리스트가 없어요. 빈 리스트로 시작해보세요.</div>`}
+    </div>
+    <div class="field tf-method" data-method="gear" style="${_tripStartMethod==='gear'?'':'display:none;'}">
+      <div class="meta" style="font-size:12.5px;color:var(--text-dim);">'일정 이름 준비물' 리스트를 만들고, 바로 Gear 장비를 골라 불러와요(전체 선택 가능).</div>
     </div>
     <div class="field tf-method" data-method="empty" style="${_tripStartMethod==='empty'?'':'display:none;'}">
       <div class="meta" style="font-size:12.5px;color:var(--text-dim);">'일정 이름 준비물' 리스트를 새로 만들어 연결해요.</div>
@@ -3408,6 +3432,8 @@ function saveTripForm(id){
   const g = currentGroup();
   const prev = id ? (SP.trips.find(t=>t.id===id) || {}) : {};
   const trip = { ...prev, id: id || uid('trip'), title, startDate, endDate, campsiteName: val('tf-campsite'), region: val('tf-region') };
+  const desc = val('tf-desc');
+  if(desc) trip.description = desc; else delete trip.description;
   if(g){
     const picked = Array.from(document.querySelectorAll('.tf-member:checked')).map(el=>el.value);
     if(!picked.length){ toast('참가 멤버를 한 명 이상 골라주세요.'); return; }
@@ -3430,6 +3456,7 @@ function saveTripForm(id){
     }else{
       const list = { id: uid('cl'), title: title + ' 준비물', items: [], tripId: trip.id };
       SP.checklists.push(list); persistChecklist(list);
+      if(_tripStartMethod==='gear'){ state.tripFilter = trip.id; closeModal(); renderView(); toast(msg, 'ok'); gearPickModal(list.id); return; }
     }
     state.tripFilter = trip.id;
   }
@@ -3635,26 +3662,130 @@ function addGearToChecklist(){
   const ids = Array.from(document.querySelectorAll('.g2c-gear:checked')).map(el=>el.value);
   if(!list){ toast('넣을 리스트를 골라주세요.'); return; }
   if(!ids.length){ toast('추가할 장비를 골라주세요.'); return; }
+  const { added, skipped } = addGearItemsToList(list, SP.gear, ids, false);
+  setGearSelecting(false);
+  closeModal(); renderView();
+  toast(`'${list.title}'에 ${added}개 추가` + (skipped ? `, ${skipped}개는 이미 있음` : '') + '.', added ? 'ok' : '');
+}
+// 장비 → 리스트 항목 넣기(공통): 같은 이름(normName)은 건너뜀. 그룹이면 addedBy, 주인(지금 멤버)·내 장비는 담당자로
+function addGearItemsToList(list, gearArr, ids, fromMine){
   const grp = currentGroup(), me = state.user ? state.user.uid : null;
   list.items = Array.isArray(list.items) ? list.items : [];
   const have = new Set(list.items.map(it=>normName(it.label)));
   let added = 0, skipped = 0;
-  SP.gear.filter(gr=>ids.includes(gr.id)).forEach(gr=>{
+  gearArr.filter(gr=>ids.includes(gr.id)).forEach(gr=>{
     const key = normName(gr.name);
     if(!key || have.has(key)){ skipped++; return; }
     have.add(key);
-    const item = { id: uid('i'), label: gr.name, status:'pending', group: gr.category || '기타' };
+    const item = { id: uid('i'), label: gr.name, status:'pending', group: String(gr.category || '').trim() || '기타' };
     if(grp){
       if(me) item.addedBy = me;
-      if(gr.ownerUid && grp.memberUids.includes(gr.ownerUid)) item.assigneeUid = gr.ownerUid;
+      if(fromMine && me) item.assigneeUid = me;
+      else if(gr.ownerUid && grp.memberUids.includes(gr.ownerUid)) item.assigneeUid = gr.ownerUid;
     }
     list.items.push(item);
     added++;
   });
   if(added) persistChecklist(list);
-  setGearSelecting(false);
+  return { added, skipped };
+}
+/* ---- 장비에서 불러오기(H-1): 일정 만들기 → 리스트에서 Gear 장비를 골라 불러와 체크 ----
+ * 장비는 카테고리 묶음별로(대분류 기준), 전체 선택·묶음 선택, 리스트에 이미 있는 이름은 회색(고를 수 없음).
+ * 그룹 공간에서는 [그룹 장비 | 내 장비]를 바꿔 고를 수 있음(내 장비는 내가 담당자). */
+let _gpk = { listId:'', src:'space' };
+function gearPickModal(listId, src){
+  const list = SP.checklists.find(l=>l.id===listId);
+  if(!list) return;
+  const grp = currentGroup();
+  src = grp && src==='me' ? 'me' : 'space';
+  _gpk = { listId, src };
+  const gear = src==='me' ? state.gear : SP.gear;
+  const tree = src==='me' ? gearCatTree(myGearCats(), state.gearCategoryMeta, gear) : gearCatTree(SP.gearCategories, SP.gearCategoryMeta, gear);
+  const have = new Set((list.items||[]).map(it=>normName(it.label)));
+  const order = n => n.kind==='major' ? [n.key, ...n.subs.map(x=>x.key)] : [n.key];
+  const sections = tree.map(n=>{
+    const ord = order(n);
+    const items = gear.filter(g=>gearTopKey(g, tree)===n.key).sort((a,b)=>{
+      const ia = ord.indexOf(String(a.category||'').trim()), ib = ord.indexOf(String(b.category||'').trim());
+      return (ia<0?99:ia) - (ib<0?99:ib) || String(a.name||'').localeCompare(String(b.name||''), 'ko');
+    });
+    return { n, items };
+  }).filter(x=>x.items.length);
+  const secId = key => 'gpk-' + (key===GEAR_UNCAT ? 'none' : encodeURIComponent(key).replace(/%/g,'_'));
+  const row = (g, n) => {
+    const dup = have.has(normName(g.name));
+    const c = String(g.category||'').trim();
+    return `<label class="send-row gpk-row ${dup?'is-dup':''}"><input type="checkbox" class="gpk-item" value="${esc(g.id)}" data-sec="${esc(n.key)}" data-action="gpk-toggle" ${dup?'disabled':''}>
+      <span class="sr-name">${esc(g.name)}</span>${grp && src==='space' && g.ownerUid ? memberAvatarHtml(grp, g.ownerUid) : ''}${c && c!==n.key ? ` <span class="tag">${esc(c)}</span>` : ''}${dup ? ' <span class="tag">이미 있음</span>' : ''}</label>`;
+  };
+  openModal(`
+    <h3>장비에서 불러오기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">'${esc(list.title)}'에 고른 장비를 항목으로 넣어요. 장비 카테고리가 소분류가 되고, 이미 있는 이름은 건너뛰어요.${grp ? (src==='me' ? ' 내 장비는 내가 담당자가 돼요.' : ' 주인이 있는 장비는 그 사람이 담당자가 돼요.') : ''}</p>
+    ${grp ? `<div class="seg-group seg-sm gpk-src" role="group" aria-label="불러올 장비">
+      <div class="seg-btn ${src==='space'?'active':''}" data-action="gpk-src" data-src="space">그룹 장비 <span class="num" style="opacity:.65;">${SP.gear.length}</span></div>
+      <div class="seg-btn ${src==='me'?'active':''}" data-action="gpk-src" data-src="me">내 장비 <span class="num" style="opacity:.65;">${state.gear.length}</span></div>
+    </div>` : ''}
+    ${sections.length ? `
+    <div class="gpk-top">
+      <label class="gpk-all"><input type="checkbox" id="gpk-all" data-action="gpk-toggle"> 전체 선택</label>
+      <span class="gpk-count" id="gpk-count" aria-live="polite">0개 선택</span>
+    </div>
+    <div class="send-list gpk-list">
+      ${sections.map(({n, items})=>`
+        <div class="gpk-sec" id="${secId(n.key)}">
+          <label class="send-row gpk-sec-row"><input type="checkbox" class="gpk-sec-box" data-sec="${esc(n.key)}" data-action="gpk-toggle"> <span class="sr-name">${esc(n.name)}</span> <span class="tag num">${items.length}</span></label>
+          ${items.map(g=>row(g, n)).join('')}
+        </div>`).join('')}
+    </div>` : `<div class="empty" style="padding:20px 8px;">${src==='me' ? '내 장비가 없어요.' : '장비가 없어요.'} Gear 탭에서 먼저 장비를 추가해 주세요.</div>`}
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="gpk-go" id="gpk-go" disabled>${icon('checklist')} 불러오기</button>
+    </div>`);
+  gpkSync();
+}
+// 체크 상태 맞추기: 전체/묶음 체크박스는 아래 항목을 따라가고(일부만이면 indeterminate), 개수·버튼 갱신
+function gpkSync(changed){
+  const items = Array.from(document.querySelectorAll('.gpk-item:not(:disabled)'));
+  if(changed && changed.id==='gpk-all') items.forEach(el=>{ el.checked = changed.checked; });
+  else if(changed && changed.classList.contains('gpk-sec-box')){
+    const k = changed.getAttribute('data-sec');
+    items.filter(el=>el.getAttribute('data-sec')===k).forEach(el=>{ el.checked = changed.checked; });
+  }
+  const setBox = (box, list) => {
+    if(!box) return;
+    const n = list.filter(el=>el.checked).length;
+    box.checked = list.length > 0 && n===list.length;
+    box.indeterminate = n > 0 && n < list.length;
+    box.disabled = !list.length;
+  };
+  document.querySelectorAll('.gpk-sec-box').forEach(box=>{ const k = box.getAttribute('data-sec'); setBox(box, items.filter(el=>el.getAttribute('data-sec')===k)); });
+  setBox(document.getElementById('gpk-all'), items);
+  const n = items.filter(el=>el.checked).length;
+  const cnt = document.getElementById('gpk-count'); if(cnt) cnt.textContent = n + '개 선택';
+  const go = document.getElementById('gpk-go');
+  if(go){ go.disabled = !n; go.innerHTML = `${icon('checklist')} ${n ? n + '개 ' : ''}불러오기`; }
+}
+function gearPickGo(){
+  const list = SP.checklists.find(l=>l.id===_gpk.listId);
+  if(!list){ closeModal(); return; }
+  const ids = Array.from(document.querySelectorAll('.gpk-item:checked')).map(el=>el.value);
+  if(!ids.length){ toast('불러올 장비를 골라주세요.'); return; }
+  const fromMine = _gpk.src==='me';
+  const r = addGearItemsToList(list, fromMine ? state.gear : SP.gear, ids, fromMine);
   closeModal(); renderView();
-  toast(`'${list.title}'에 ${added}개 추가` + (skipped ? `, ${skipped}개는 이미 있음` : '') + '.', added ? 'ok' : '');
+  toast(`'${list.title}'에 ${r.added}개 불러왔어요` + (r.skipped ? ` (${r.skipped}개는 이미 있음)` : '') + '.', r.added ? 'ok' : '');
+}
+// 일정에 리스트가 없을 때: '일정 이름 준비물' 리스트를 만들어 연결하고 바로 장비 고르기
+function tripGearImport(tripId){
+  const t = SP.trips.find(x=>x.id===tripId);
+  if(!t) return;
+  let list = SP.checklists.find(l=>l.tripId===tripId);
+  if(!list){
+    list = { id: uid('cl'), title: t.title + ' 준비물', items: [], tripId };
+    SP.checklists.push(list); persistChecklist(list);
+    renderView();
+  }
+  gearPickModal(list.id);
 }
 function setAssignee(listId, itemId, assignee){
   const g = currentGroup();
@@ -4314,6 +4445,10 @@ function wireGlobalActions(){
       case 'gear-pick': toggleGearPick(id); break;
       case 'g2c-all': document.querySelectorAll('.g2c-gear').forEach(el=>{ el.checked = true; }); break;
       case 'g2c-go': addGearToChecklist(); break;
+      case 'cl-gear-import': gearPickModal(id); break;
+      case 'trip-gear-import': tripGearImport(a.getAttribute('data-trip')); break;
+      case 'gpk-src': gearPickModal(_gpk.listId, a.getAttribute('data-src')); break;
+      case 'gpk-go': gearPickGo(); break;
       case 'gear-send-all': document.querySelectorAll('.send-gear').forEach(el=>{ el.checked = true; }); break;
       case 'gear-send-go': sendGear(); break;
       case 'cl-list-rename-save': {
@@ -4435,6 +4570,7 @@ function wireGlobalActions(){
       }
       return;
     }
+    if(e.target.matches && e.target.matches('[data-action="gpk-toggle"]')){ gpkSync(e.target); return; }
     const tw = e.target.closest('[data-action="toggle-widget"]');
     if(tw){
       toggleHomeWidget(tw.getAttribute('data-key'));
