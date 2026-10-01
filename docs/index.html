@@ -1459,7 +1459,6 @@ async function createInvite(gid){
         <div class="invite-code" id="invite-code">${code}</div>
         <p style="margin:8px 0 0;color:var(--text-dim);font-size:12px;text-align:center;">${fmtDate(expiresAt)}까지 쓸 수 있어요 (${INVITE_DAYS}일)</p>
         <div class="modal-actions">
-          <button class="btn" data-action="modal-close">닫기</button>
           <button class="btn btn-primary" data-action="invite-copy" data-code="${code}">${icon('save')} 코드 복사</button>
         </div>`);
       return;
@@ -1545,7 +1544,7 @@ function groupMembersModal(gid){
         </div>`;
       }).join('')}
     </div>
-    <div class="modal-actions"><button class="btn" data-action="modal-close">닫기</button></div>`);
+  `);
 }
 async function removeMember(gid, memberUid, okMsg){
   try{
@@ -1740,7 +1739,6 @@ function showExportModal(title, json, fname){
     </p>
     <textarea id="backup-text" class="backup-text" readonly>${esc(json)}</textarea>
     <div class="modal-actions">
-      <button class="btn" data-action="modal-close">닫기</button>
       <button class="btn btn-primary" data-action="backup-copy">${icon('save')} 복사</button>
     </div>
   `);
@@ -2385,7 +2383,7 @@ function reviewDetailModal(key){
           </div>
         </div>`).join('')}
     </div>
-    <div class="modal-actions"><button class="btn" data-action="modal-close">닫기</button></div>`);
+  `);
 }
 function refreshReviewModal(){ if(_reviewModalKey && document.getElementById('review-detail')) reviewDetailModal(_reviewModalKey); }
 function editMyReviewSource(logId){
@@ -2702,9 +2700,6 @@ function categoryManageModal(){
     <div class="field-row" style="margin-top:12px;align-items:flex-end;">
       <div class="field" style="flex:1;margin-bottom:0;"><input id="cat-new-name" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-action=gear-cat-add]').click();}"></div>
       <button class="btn btn-primary" data-action="gear-cat-add">${icon('plus')} 추가</button>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" data-action="modal-close">닫기</button>
     </div>
   `);
 }
@@ -3266,10 +3261,7 @@ function assignModal(listId, itemId){
           ${it.assigneeUid===u ? icon('check','pick-check') : ''}
         </div>`).join('')}
     </div>
-    <div class="modal-actions">
-      ${it.assigneeUid ? `<button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button>` : ''}
-      <button class="btn" data-action="modal-close">닫기</button>
-    </div>`);
+    ${it.assigneeUid ? `<div class="modal-actions"><button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button></div>` : ''}`);
 }
 /* ---- 장비 ↔ 준비물 ----
  * 이름 비교: 공백·대소문자 무시, 한쪽이 다른 쪽을 포함하면 "비슷함"(추천용), 완전히 같으면 "같은 이름"(중복 건너뛰기용). */
