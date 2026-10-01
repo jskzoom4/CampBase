@@ -256,17 +256,17 @@
   .cl-subgroup-head{display:flex;align-items:center;gap:2px;padding:5px 2px 6px;border-bottom:1px dashed var(--border);margin-bottom:2px;}
   .cl-subgroup-head .spacer{flex:1;}
   .cl-subgroup-name{font-size:11.5px;font-weight:700;color:var(--text-dim);letter-spacing:.3px;text-transform:uppercase;}
-  .check-row{display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid var(--border);}
+  .check-row{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 2px;border-bottom:1px solid var(--border);}
   .check-row:last-child{border-bottom:none;}
   .check-row .label{flex:1;font-size:13.5px;}
   .checklist-group h3 .btn{font-family:"Work Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-weight:600;}
   .checklist-group h3 .tag, .cl-subgroup-head .tag{font-family:"Work Sans","Apple SD Gothic Neo",sans-serif;}
   .check-row .label.done{text-decoration:line-through;color:var(--text-dim);}
   .check-row .label.skip{color:var(--text-dim);font-style:italic;}
-  .cl-status-group{display:flex;gap:4px;flex:none;}
-  .cl-status-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--bg);
+  .cl-status-group{display:flex;gap:8px;flex:none;}
+  .cl-status-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg);
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);padding:0;}
-  .cl-status-btn svg{width:14px;height:14px;}
+  .cl-status-btn svg{width:17px;height:17px;}
   .cl-status-btn:hover{background:var(--surface-2);}
   .cl-status-btn.packed.active{background:var(--good);border-color:var(--good);color:#fff;}
   .cl-status-btn.skip.active{background:var(--text-dim);border-color:var(--text-dim);color:var(--bg);}
@@ -308,7 +308,9 @@
   /* ---- 버튼 누르는 영역(최소 40×40) ---- */
   .icon-btn{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:8px;}
   .cl-status-btn, .assignee-chip{position:relative;}
-  .cl-status-btn::after, .assignee-chip::after{content:"";position:absolute;inset:-7px -3px;}
+  /* 가져감/안 가져감: 보이는 크기 32px, 누르는 영역 40×40(투명 여백 4px — 두 버튼 사이 간격 8px이라 서로 겹치지 않음) */
+  .cl-status-btn::after{content:"";position:absolute;inset:-4px;}
+  .assignee-chip::after{content:"";position:absolute;inset:-7px -3px;}
   /* ---- 키보드 초점 표시: 키보드로 움직일 때만 브랜드 초록 2px ---- */
   :focus-visible{outline:2px solid var(--brand-text);outline-offset:2px;}
   :focus:not(:focus-visible){outline:none;}
