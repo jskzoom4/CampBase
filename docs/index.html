@@ -2157,6 +2157,12 @@ function modeOf(values){
   values.filter(Boolean).forEach(v=>{ n[v] = (n[v]||0) + 1; if(n[v] > bn){ best = v; bn = n[v]; } });
   return best;
 }
+// 묶을 때만 normName으로 정규화하고, 보여줄 이름은 그 묶음에서 가장 많이 쓰인 원래 이름(같으면 최근 것). rs는 최근 순.
+function displayNameOf(rs){
+  const count = {}, firstAt = {};
+  rs.forEach((r, i)=>{ const n = String(r.name || '').trim(); if(!n) return; count[n] = (count[n] || 0) + 1; if(!(n in firstAt)) firstAt[n] = i; });
+  return Object.keys(count).sort((a,b)=> count[b] - count[a] || firstAt[a] - firstAt[b])[0] || '';
+}
 function groupReviewCards(reviews){
   const by = {};
   reviews.forEach(r=>{ const k = normName(r.name) || '-'; (by[k] = by[k] || []).push(r); });
@@ -2164,7 +2170,7 @@ function groupReviewCards(reviews){
     rs = [...rs].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
     const rated = rs.filter(r=>Number(r.rating) > 0);
     return {
-      key, name: rs[0].name || '이름 없음', region: (rs.find(r=>r.region && String(r.region).trim()) || {}).region || '',
+      key, name: displayNameOf(rs) || '이름 없음', region: (rs.find(r=>r.region && String(r.region).trim()) || {}).region || '',
       reviews: rs, count: rs.length,
       avg: rated.length ? rated.reduce((s,r)=>s + Number(r.rating), 0) / rated.length : 0,
       latest: (rs.find(r=>r.date) || {}).date || '',
