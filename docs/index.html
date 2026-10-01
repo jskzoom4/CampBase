@@ -649,7 +649,6 @@ function campComparator(sortKey){
   }
 }
 const DEFAULT_GEAR_CATEGORIES = ['텐트','침낭/매트','조리용품','조명','체어/테이블','기타'];
-const GEAR_BRANDS = ['Snow Peak','Coleman','Helinox','Kovea','Nordisk','Naturehike','DOD','BlackYak','Quechua','Nemo','기타'];
 const CHART_COLORS = ['#2f6f4f','#d98e2f','#3a7f5c','#c1503f','#6b9bd1','#9a7fd1','#c9c4b6'];
 // 기상청 단기예보 격자좌표(LCC 변환식으로 산출, RE=6371.00877 GRID=5 SLAT1=30 SLAT2=60 OLON=126 OLAT=38 XO=43 YO=136) +
 // GTS SYNOP 최인접 관측소(stationId, 47XXX에서 47 뗀 값) + 생활기상지수 지역코드(areaNo, 확인 안 된 지역은 null=광주/전남)
@@ -2639,6 +2638,12 @@ function toggleGearPick(id){
   const row = document.querySelector(`.gear-row[data-id="${CSS.escape(id)}"]`);
   if(row) row.focus({ preventScroll: true });
 }
+// 브랜드는 직접 입력(G-3). 이 공간에서 이미 쓴 브랜드만 입력 도움말로 보여줌
+function usedGearBrands(){
+  const seen = new Set();
+  SP.gear.forEach(g=>{ const b = String(g.brand||'').trim(); if(b && b!=='기타') seen.add(b); });
+  return [...seen].sort((a,b)=>a.localeCompare(b,'ko'));
+}
 function gearFormModal(id){
   const g = id ? SP.gear.find(x=>x.id===id) : null;
   const grp = currentGroup();
@@ -2647,7 +2652,8 @@ function gearFormModal(id){
     <div class="field"><label>이름</label><input id="gf-name" value="${g?esc(g.name):''}" placeholder="예: 스텔스 5 텐트"></div>
     <div class="field-row">
       <div class="field"><label>브랜드</label>
-        <select id="gf-brand">${GEAR_BRANDS.map(b=>`<option ${g&&g.brand===b?'selected':''}>${b}</option>`).join('')}</select>
+        <input id="gf-brand" value="${g?esc(g.brand||''):''}" placeholder="예: 스노우피크" list="gf-brand-list" autocomplete="off">
+        <datalist id="gf-brand-list">${usedGearBrands().map(b=>`<option value="${esc(b)}"></option>`).join('')}</datalist>
       </div>
       <div class="field"><label>카테고리</label>
         <select id="gf-category">${SP.gearCategories.map(c=>`<option ${g&&g.category===c?'selected':''}>${c}</option>`).join('')}</select>
@@ -2679,7 +2685,7 @@ function saveGearForm(id){
     ...prev,
     id: id || uid('g'),
     name,
-    brand: document.getElementById('gf-brand').value,
+    brand: document.getElementById('gf-brand').value.trim(),
     category: document.getElementById('gf-category').value,
     price: Number(document.getElementById('gf-price').value)||0,
     weight: Number(document.getElementById('gf-weight').value)||0,
