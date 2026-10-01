@@ -110,10 +110,13 @@
   .chev-mini{width:12px!important;height:12px!important;opacity:.6;}
 
   /* ---- forms/modal ---- */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(20,24,20,.5);display:flex;align-items:center;justify-content:center;
+  /* 모달 = [본문(안쪽만 스크롤)] + [고정 버튼 바(.modal-foot)]. 높이는 키보드를 뺀 실제 보이는 화면(--vvh) 기준 */
+  .modal-backdrop{position:fixed;left:0;right:0;top:var(--vvt, 0px);height:var(--vvh, 100dvh);background:rgba(20,24,20,.5);display:flex;align-items:center;justify-content:center;
     padding:20px;z-index:50;}
-  .modal{background:var(--surface);border-radius:16px;padding:22px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal{background:var(--surface);border-radius:16px;padding:0;width:100%;max-width:440px;max-height:min(88vh, calc(var(--vvh, 100dvh) - 40px));
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:22px;overscroll-behavior:contain;}
+  .modal-foot{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:12px 22px 14px;border-top:1px solid var(--border);background:var(--surface);}
   .modal h3{margin:0 0 14px;font-size:17px;}
   .field{margin-bottom:12px;}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:5px;}
@@ -342,7 +345,15 @@
     .toast{bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 18px);}
     .stat-grid{grid-template-columns:1fr;}
     .field-row{flex-direction:column;}
-    .modal-backdrop{align-items:flex-end;padding:12px 12px calc(12px + var(--safe-bottom));}
+    /* 휴대폰: 아래에서 올라오는 시트(최대 높이 90%, 안쪽만 스크롤), 버튼 바는 아래 고정 */
+    .modal-backdrop{align-items:flex-end;padding:0;}
+    .modal{max-width:none;border-radius:18px 18px 0 0;max-height:calc(var(--vvh, 100dvh) * .9);}
+    .modal-body{padding:20px 18px;}
+    .modal-foot{padding:10px 18px calc(12px + var(--safe-bottom));}
+    body.kbd-open .modal-foot{padding-bottom:10px;}
+    .modal-foot .btn{flex:1;justify-content:center;min-height:44px;}
+    .modal-backdrop .modal{animation:cb-sheet-in .2s ease both;}
+    .modal-backdrop.closing .modal{animation:cb-sheet-out .15s ease both;}
   }
   /* ---- 버튼 누르는 영역(최소 40×40) ---- */
   .icon-btn{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:8px;}
@@ -377,6 +388,8 @@
   .modal-backdrop.closing{animation:cb-fade-out .15s ease both;pointer-events:none;}
   .modal-backdrop.closing .modal{animation:cb-pop-out .15s ease both;}
   @keyframes cb-fade-in{from{opacity:0;}to{opacity:1;}}
+  @keyframes cb-sheet-in{from{opacity:.6;transform:translateY(40px);}to{opacity:1;transform:none;}}
+  @keyframes cb-sheet-out{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(40px);}}
   @keyframes cb-fade-out{from{opacity:1;}to{opacity:0;}}
   @keyframes cb-pop-in{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
   @keyframes cb-pop-out{from{opacity:1;transform:none;}to{opacity:0;transform:scale(.96);}}
@@ -3499,11 +3512,15 @@ function openModal(html){
     <div class="modal-backdrop" id="modal-backdrop">
       <div class="modal" role="dialog" aria-modal="true">
         <button type="button" class="icon-btn modal-x" data-action="modal-close" aria-label="닫기" title="닫기">${icon('close')}</button>
-        ${html}
+        <div class="modal-body">${html}</div>
       </div>
     </div>`;
   const bd = document.getElementById('modal-backdrop');
   const modal = bd.querySelector('.modal');
+  // 맨 아래 버튼 줄(.modal-actions)은 본문 밖 고정 버튼 바로 옮김(3-5) — 스크롤하지 않아도 저장/취소가 보임
+  const body = modal.querySelector('.modal-body');
+  const acts = body.lastElementChild;
+  if(acts && acts.classList.contains('modal-actions')){ acts.classList.remove('modal-actions'); acts.classList.add('modal-foot'); modal.appendChild(acts); }
   const h = modal.querySelector('h3');
   if(h){ h.id = 'modal-title'; modal.setAttribute('aria-labelledby', 'modal-title'); }
   bd.addEventListener('click', e=>{ if(e.target===bd && !modalHasInputs(modal)) closeModal(); });
@@ -4014,6 +4031,9 @@ function wireGlobalActions(){
     const typing = !!el && (el.tagName==='TEXTAREA' || el.tagName==='SELECT' || (el.tagName==='INPUT' && !['checkbox','radio','button','file','submit'].includes(el.type)));
     const vv = window.visualViewport;
     const shrunk = !!vv && vv.height < window.innerHeight * 0.75;
+    if(vv){ document.documentElement.style.setProperty('--vvh', vv.height + 'px'); document.documentElement.style.setProperty('--vvt', vv.offsetTop + 'px'); }
+    // 모달 안 입력칸은 키보드가 올라온 뒤에도 보이게(고정 버튼 바는 본문 밖이라 가리지 않음)
+    if(typing && el.closest('.modal-body')) setTimeout(()=>{ try{ el.scrollIntoView({ block:'nearest' }); }catch(e){} }, 250);
     document.body.classList.toggle('kbd-open', typing || shrunk);
   };
   // 화면 안에 고정 위치로 띄운 ⋯ 메뉴는 본문이 스크롤되면 닫음(버튼과 떨어지지 않게)
@@ -4024,6 +4044,8 @@ function wireGlobalActions(){
   document.addEventListener('focusin', kbdCheck);
   document.addEventListener('focusout', ()=>setTimeout(kbdCheck, 50));
   if(window.visualViewport) window.visualViewport.addEventListener('resize', kbdCheck);
+  if(window.visualViewport) window.visualViewport.addEventListener('scroll', kbdCheck);
+  kbdCheck();
   document.addEventListener('change', (e)=>{
    try{
     if(e.target && (e.target.id === 'backup-file' || e.target.id === 'group-backup-file')){
