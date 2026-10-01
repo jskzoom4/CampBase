@@ -235,8 +235,7 @@
   .review-card{cursor:pointer;display:flex;flex-direction:column;gap:10px;}
   .review-card:hover{border-color:var(--brand);}
   .review-card .name{font-weight:700;font-size:14.5px;}
-  .review-card .meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
-  .review-card-head{display:flex;gap:10px;align-items:flex-start;}
+  .review-card .meta{font-size:12px;color:var(--text-dim);}
   .review-avg{flex:none;font-size:14px;font-weight:700;}
   .review-star{color:var(--text-dim);}
   .review-summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
@@ -282,6 +281,22 @@
   .ing-row .cl-status-btn{pointer-events:none;}
   .ing-row .cl-status-btn::after{display:none;}
   @media (prefers-reduced-motion: reduce){ .recipe-chev{transition:none;} }
+  /* ---- 별점 입력(3-6) ---- */
+  .star-input{display:flex;align-items:center;gap:0;flex-wrap:wrap;}
+  .star-btn{width:40px;height:40px;border:none;background:none;padding:0;font-size:26px;line-height:1;cursor:pointer;color:var(--text-dim);border-radius:8px;}
+  .star-btn.on{color:var(--text);}
+  .star-text{font-size:12.5px;color:var(--text-dim);margin-left:6px;}
+  /* ---- 캠핑 기록·그룹 후기 줄 정렬(3-7) ---- */
+  .camp-row{align-items:center;}
+  .camp-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .camp-line1{display:flex;align-items:baseline;gap:10px;}
+  .camp-line1 .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px;}
+  .stars{flex:none;font-size:13px;letter-spacing:1px;color:var(--text);}
+  .stars-off{color:var(--text-dim);}
+  .camp-row .meta, .review-card .meta{margin-top:0;font-size:12px;color:var(--text-dim);}
+  .camp-line3{font-size:12.5px;color:var(--text-dim);line-height:1.8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .camp-line3 .tag{vertical-align:1px;}
+  .review-card{gap:4px;}
   .app-version{text-align:center;font-size:12px;color:var(--text-dim);margin:28px 0 8px;}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
@@ -2135,21 +2150,14 @@ function renderMyCamping(){
     </div>
     <div class="card">
       ${logs.length ? logs.map(c=>`
-        <div class="list-row">
-          <div style="flex:1;">
-            <div class="name">${esc(c.name)}${sharedGroupNames(c).map(n=>` <span class="tag share-tag">${icon('users')}${esc(n)} 공유</span>`).join('')}</div>
-            <div class="meta">
-              ${c.date?esc(c.date):''}${c.region?' · '+esc(c.region):''} ·
-              <span class="tag">${esc(c.siteType||'기타')}</span>
-              ${c.siteSize?' · '+esc(c.siteSize):''}
-              ${c.rating?' · '+'★'.repeat(Math.max(0,Math.min(5,c.rating))):''}
+        <div class="list-row camp-row">
+          <div class="camp-main">
+            <div class="camp-line1"><span class="name">${esc(c.name)}</span>${starsHtml(c.rating)}</div>
+            <div class="meta">${[c.date, c.region].filter(Boolean).map(esc).join(' · ') || '날짜·지역 없음'}</div>
+            <div class="camp-line3">
+              <span class="tag">${esc(c.siteType||'기타')}</span>${c.siteSize ? ` <span class="tag">${esc(c.siteSize)}</span>` : ''}${sharedGroupNames(c).map(n=>` <span class="tag share-tag">${icon('users')}${esc(n)} 공유</span>`).join('')}
+              ${campSummary(c) ? ` <span class="camp-summary">${esc(campSummary(c))}</span>` : ''}
             </div>
-            ${(c.checkinTime||c.checkoutTime||c.toiletCondition||c.storeCondition) ? `<div class="meta">${[
-              (c.checkinTime||c.checkoutTime) ? ('입/퇴실 '+esc(c.checkinTime||'?')+'~'+esc(c.checkoutTime||'?')) : '',
-              c.toiletCondition ? ('화장실 '+esc(c.toiletCondition)) : '',
-              c.storeCondition ? ('매점 '+esc(c.storeCondition)) : '',
-            ].filter(Boolean).join(' · ')}</div>` : ''}
-            ${c.notes?`<div class="notes">${esc(c.notes)}</div>`:''}
           </div>
           <div class="row-actions">
             <button class="icon-btn" data-action="camp-edit" data-id="${c.id}" title="수정" aria-label="'${esc(c.name)}' 기록 수정">${icon('edit')}</button>
@@ -2308,14 +2316,10 @@ function renderGroupReviews(g){
     </div>
     ${shown.length ? `<div class="grid review-grid">${shown.map(c=>`
       <div class="card review-card" data-action="review-open" data-key="${esc(c.key)}">
-        <div class="review-card-head">
-          <div style="flex:1;min-width:0;">
-            <div class="name">${esc(c.name)}</div>
-            <div class="meta">${c.region ? esc(c.region) + ' · ' : ''}후기 ${c.count}개${c.latest ? ' · 최근 방문 ' + esc(c.latest) : ''}</div>
-          </div>
-          <div class="review-avg"><span class="review-star">★</span> <span class="num">${fmtAvg(c.avg)}</span></div>
-        </div>
+        <div class="camp-line1"><span class="name">${esc(c.name)}</span><span class="review-avg" aria-label="평균 평점 ${fmtAvg(c.avg)}"><span class="review-star">★</span> <span class="num">${fmtAvg(c.avg)}</span></span></div>
+        <div class="meta">${[c.region ? esc(c.region) : '', c.latest ? '최근 방문 ' + esc(c.latest) : ''].filter(Boolean).join(' · ')}</div>
         <div class="review-summary">
+          <span class="tag">후기 ${c.count}개</span>
           ${c.toilet ? `<span class="tag">화장실 ${esc(c.toilet)}</span>` : ''}
           ${c.store ? `<span class="tag">매점 ${esc(c.store)}</span>` : ''}
           <span class="review-authors">${c.authors.map(u=>`<span title="${esc(memberName(g,u))}">${memberAvatarHtml(g,u)}</span>`).join('')}</span>
@@ -2377,6 +2381,41 @@ function removeReviewConfirm(rid){
     renderView(); toast('그룹에서 후기를 내렸어요.');
   });
 }
+// 3-7 캠핑 기록·그룹 후기 줄: 1줄 이름 + 오른쪽 별점, 2줄 날짜 · 지역, 3줄 태그와 후기 요약
+function starsHtml(r){
+  r = Math.max(0, Math.min(5, Math.round(Number(r) || 0)));
+  if(!r) return '';
+  return `<span class="stars" role="img" aria-label="평점 ${r}/5">${'★'.repeat(r)}<span class="stars-off">${'☆'.repeat(5 - r)}</span></span>`;
+}
+function campSummary(c){
+  if(c.notes) return c.notes;
+  return [ (c.checkinTime||c.checkoutTime) ? ('입/퇴실 ' + (c.checkinTime||'?') + '~' + (c.checkoutTime||'?')) : '',
+    c.toiletCondition ? ('화장실 ' + c.toiletCondition) : '', c.storeCondition ? ('매점 ' + c.storeCondition) : '' ].filter(Boolean).join(' · ');
+}
+// 3-6 별점 입력: 별 5개를 눌러 선택(같은 별을 다시 누르면 0), 키보드는 radiogroup(←→↑↓·Home·End). 값은 숨은 #cf-rating에.
+function starInputHtml(v){
+  v = Math.max(0, Math.min(5, Math.round(Number(v) || 0)));
+  return `<input type="hidden" id="cf-rating" value="${v}">
+    <div class="star-input" id="cf-stars" role="radiogroup" aria-labelledby="cf-rating-label">
+      ${[1,2,3,4,5].map(n=>`<button type="button" role="radio" class="star-btn ${n<=v?'on':''}" aria-checked="${n===v}" aria-label="${n}점" data-action="cf-star" data-val="${n}" tabindex="${(v ? n===v : n===1) ? 0 : -1}">${n<=v ? '★' : '☆'}</button>`).join('')}
+      <span class="star-text" aria-hidden="true">${v ? v + '점' : '평점 없음'}</span>
+    </div>`;
+}
+function setStarValue(v, focus){
+  const box = document.getElementById('cf-stars'), input = document.getElementById('cf-rating');
+  if(!box || !input) return;
+  v = Math.max(0, Math.min(5, v));
+  input.value = String(v);
+  box.querySelectorAll('.star-btn').forEach(b=>{
+    const n = Number(b.getAttribute('data-val'));
+    b.classList.toggle('on', n <= v);
+    b.textContent = n <= v ? '★' : '☆';
+    b.setAttribute('aria-checked', String(n === v));
+    b.tabIndex = (v ? n === v : n === 1) ? 0 : -1;
+  });
+  box.querySelector('.star-text').textContent = v ? v + '점' : '평점 없음';
+  if(focus){ const t = box.querySelector(`.star-btn[data-val="${v || 1}"]`); if(t) t.focus(); }
+}
 // prefill: 일정에서 "후기 남기기"로 열 때 { name, region, date, tripRef:{space, tripId} }
 let _campTripRef = null;
 function campFormModal(id, prefill){
@@ -2405,7 +2444,7 @@ function campFormModal(id, prefill){
     </div>
     <div class="field-row">
       <div class="field"><label>사이트 크기</label><input id="cf-size" value="${c?esc(c.siteSize||''):''}" placeholder="예: 5x5m"></div>
-      <div class="field"><label>평점(0~5)</label><input type="number" min="0" max="5" id="cf-rating" value="${c&&c.rating?c.rating:''}"></div>
+      <div class="field"><label id="cf-rating-label">평점</label>${starInputHtml(c && c.rating ? Number(c.rating) : 0)}</div>
     </div>
     <div class="form-subhead">이용 후기 상세</div>
     <div class="field-row">
@@ -3833,6 +3872,11 @@ function wireGlobalActions(){
         renderView();
         break;
 
+      case 'cf-star': {
+        const cur = Number((document.getElementById('cf-rating') || {}).value || 0), n = Number(a.getAttribute('data-val'));
+        setStarValue(cur === n ? 0 : n, false);
+        break;
+      }
       case 'camp-view': selectCampView(a.getAttribute('data-view') || 'me'); break;
       case 'cf-share-toggle': {
         const gid = a.getAttribute('data-gid');
@@ -4014,6 +4058,14 @@ function wireGlobalActions(){
   document.addEventListener('keydown', (e)=>{
    try{
     if(menuKeydown(e)) return;
+    const star = e.target.closest && e.target.closest('.star-btn');
+    if(star && ['ArrowRight','ArrowUp','ArrowLeft','ArrowDown','Home','End'].includes(e.key)){
+      e.preventDefault();
+      const cur = Number((document.getElementById('cf-rating') || {}).value || 0);
+      const next = e.key==='Home' ? 1 : e.key==='End' ? 5 : (e.key==='ArrowRight' || e.key==='ArrowUp') ? Math.min(5, cur + 1) : Math.max(0, cur - 1);
+      setStarValue(next, true);
+      return;
+    }
     const pick = e.target.closest && e.target.closest('[data-action="gear-pick"]');
     if(pick && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); toggleGearPick(pick.getAttribute('data-id')); return; }
     if(e.key==='Escape'){

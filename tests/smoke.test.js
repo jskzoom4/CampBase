@@ -52,6 +52,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   page.on('pageerror', err => issues.push('PAGEERROR: ' + err.message));
 
   const srv = require('child_process').spawn('python3', ['-m','http.server','8767','-d',SITE], {stdio:'ignore'});
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await new Promise(r=>setTimeout(r,700));
   await page.goto('http://127.0.0.1:8767/');
   // 0. 로그인 화면 → Google로 시작하기

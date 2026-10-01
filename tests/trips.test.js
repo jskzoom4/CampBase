@@ -32,6 +32,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
 
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   const server = {};
@@ -272,7 +273,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
   check('후기 폼 미리 채움: 캠핑장 이름·지역·날짜(시작일)', (await A.inputValue('#cf-name')) === '춘천 호수 캠핑장' && (await A.inputValue('#cf-region')) === '춘천' && (await A.inputValue('#cf-date')) === ymd(-4));
-  await A.fill('#cf-rating', '5');
+  await A.click('#cf-stars [data-val="5"]');
   await A.click('[data-action="camp-save"]');
   await settle();
   const review = docsUnder(A_ + 'campingLogs/').find(c => c.name === '춘천 호수 캠핑장');

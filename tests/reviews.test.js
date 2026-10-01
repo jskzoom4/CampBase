@@ -31,6 +31,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
 
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   const server = {};
@@ -169,7 +170,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
   check('그룹 일정에서 "후기 남기기" → 그 그룹 공유가 기본으로 켜짐', (await shareChip(A, '캠핑팸').getAttribute('class')).includes('active') && !(await shareChip(A, '회사캠핑').getAttribute('class')).includes('active'));
-  await A.fill('#cf-rating', '4');
+  await A.click('#cf-stars [data-val="4"]');
   await A.click('[data-action="camp-save"]');
   await settle();
   const tripLog = Object.entries(server).find(([k, v]) => k.startsWith(A_ + 'campingLogs/') && v.tripRef && v.tripRef.tripId === 'gt');
