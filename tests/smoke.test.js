@@ -230,8 +230,11 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   log('cooking filters');
   await page.locator('[data-action="cook-filter"]').first().click();
   await page.waitForTimeout(100);
+  // 레시피는 접힌 상태 → 첫 레시피를 펼친 뒤 재료 줄을 눌러 체크(3-4)
+  await page.locator('[data-action="cook-open"]').first().click();
+  await page.waitForTimeout(120);
   const cookCb = page.locator('[data-action="cook-toggle"]').first();
-  if (await cookCb.count()) { await cookCb.click({ force: true }); await page.waitForTimeout(150); log('cooking toggle'); }
+  if (await cookCb.count()) { await cookCb.click(); await page.waitForTimeout(150); log('cooking toggle'); }
 
   // 8. Settings: 기존 공유 데이터 가져오기(빈 상태) + 백업 내보내기 + 로그아웃
   await page.click('[data-nav="settings"]');

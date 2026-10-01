@@ -260,6 +260,25 @@
     .select-bar{left:12px;right:12px;transform:none;max-width:none;width:auto;bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 10px);}
     body.gear-selecting #main{padding-bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 120px);}
   }
+  /* ---- Cooking 접기/펼치기(3-4) ---- */
+  .recipe-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start;}
+  .recipe-card{padding:0;}
+  .recipe-head{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:12px 12px 12px 16px;border:none;background:none;
+    text-align:left;cursor:pointer;border-radius:var(--radius);color:var(--text);}
+  .recipe-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .recipe-main .name{font-weight:700;font-size:14px;}
+  .recipe-meta{font-size:12px;color:var(--text-dim);}
+  .recipe-chev{width:16px;height:16px;flex:none;color:var(--text-dim);transition:transform .15s ease;}
+  .recipe-card.open .recipe-chev{transform:rotate(90deg);}
+  .recipe-body{padding:0 16px 14px;border-top:1px solid var(--border);}
+  .ing-row{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:6px 2px;border:none;border-bottom:1px solid var(--border);
+    background:none;text-align:left;cursor:pointer;font-size:13.5px;color:var(--text);}
+  .ing-row:last-child{border-bottom:none;}
+  .ing-row .label{flex:1;}
+  .ing-row .label.done{text-decoration:line-through;color:var(--text-dim);}
+  .ing-row .cl-status-btn{pointer-events:none;}
+  .ing-row .cl-status-btn::after{display:none;}
+  @media (prefers-reduced-motion: reduce){ .recipe-chev{transition:none;} }
   .app-version{text-align:center;font-size:12px;color:var(--text-dim);margin:28px 0 8px;}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
@@ -3389,34 +3408,56 @@ function renderCooking(){
     <div class="seg-group" style="margin-bottom:16px;">
       ${cats.map(c=>`<div class="seg-btn ${c===activeCat?'active':''}" data-action="cook-filter" data-cat="${c}">${esc(catLabels[c]||c)}</div>`).join('')}
     </div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
-      ${list.length ? list.map(r=>recipeCardHtml(r)).join('') : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
+    <div class="grid recipe-grid">
+      ${list.length ? (()=>{ const open = cookOpenSet(); return list.map(r=>recipeCardHtml(r, open.has(r.id))).join(''); })() : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
     </div>
   `;
 }
-function recipeCardHtml(r){
+// 3-4: 레시피 카드는 접힌 상태(이름·종류·난이도·시간·재료 n/m)로, 눌러서 펼침(여러 개 가능, 기기에 기억).
+//      재료는 줄 전체가 체크 버튼(40px 이상), 체크 모양은 체크리스트의 "가져감"과 같은 스타일.
+const COOK_OPEN_KEY = 'campbase.cookOpen';
+function cookOpenSet(){ try{ const v = JSON.parse(localStorage.getItem(COOK_OPEN_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(e){ return new Set(); } }
+function toggleCookOpen(rid){
+  const set = cookOpenSet();
+  if(set.has(rid)) set.delete(rid); else set.add(rid);
+  try{ localStorage.setItem(COOK_OPEN_KEY, JSON.stringify([...set])); }catch(e){}
+  renderView();
+  const b = document.querySelector(`[data-action="cook-open"][data-recipe="${CSS.escape(rid)}"]`);
+  if(b) b.focus({ preventScroll: true });
+}
+function toggleCookIngredient(rid, idx){
+  const cur = new Set((state.cookingChecks[rid] && state.cookingChecks[rid].checked) || []);
+  if(cur.has(idx)) cur.delete(idx); else cur.add(idx);
+  state.cookingChecks[rid] = { checked: [...cur] };
+  persistCookingCheck(rid, state.cookingChecks[rid]);
+  renderView();
+  const b = document.querySelector(`[data-action="cook-toggle"][data-recipe="${CSS.escape(rid)}"][data-idx="${idx}"]`);
+  if(b) b.focus({ preventScroll: true });
+}
+function recipeCardHtml(r, open){
   const checked = new Set((state.cookingChecks[r.id] && state.cookingChecks[r.id].checked) || []);
-  const doneCount = checked.size, total = r.ingredients.length;
+  const doneCount = [...checked].filter(i=>i < r.ingredients.length).length, total = r.ingredients.length;
   return `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
-        <div class="name">${esc(r.name)}</div>
-        <span class="tag">${esc(r.category)}</span>
-      </div>
-      <div class="section-desc" style="margin:4px 0 10px;">${esc(r.difficulty)} · ${esc(r.time)}</div>
-      <div style="margin-bottom:8px;">
-        ${r.ingredients.map((ing,i)=>`
-          <div class="check-row">
-            <input type="checkbox" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}" ${checked.has(i)?'checked':''}>
-            <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
-          </div>
-        `).join('')}
-      </div>
-      <div class="section-desc" style="margin-bottom:10px;line-height:1.5;">${esc(r.steps)}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+    <div class="card recipe-card ${open ? 'open' : ''}">
+      <button type="button" class="recipe-head" data-action="cook-open" data-recipe="${r.id}" aria-expanded="${open}" aria-controls="recipe-${r.id}">
+        <span class="recipe-main">
+          <span class="name">${esc(r.name)}</span>
+          <span class="recipe-meta">${esc(r.category)} · ${esc(r.difficulty)} · ${esc(r.time)}</span>
+        </span>
         <span class="tag ${total && doneCount===total ? 'done-tag' : ''}">재료 ${doneCount}/${total}</span>
+        ${icon('chev', 'recipe-chev')}
+      </button>
+      ${open ? `<div class="recipe-body" id="recipe-${r.id}">
+        <div class="ing-list">
+          ${r.ingredients.map((ing,i)=>`
+            <button type="button" class="ing-row" role="checkbox" aria-checked="${checked.has(i)}" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}">
+              <span class="cl-status-btn packed ${checked.has(i)?'active':''}" aria-hidden="true">${icon('check')}</span>
+              <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
+            </button>`).join('')}
+        </div>
+        <div class="section-desc" style="margin:10px 0;line-height:1.5;">${esc(r.steps)}</div>
         <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
-      </div>
+      </div>` : ''}
     </div>
   `;
 }
@@ -3768,6 +3809,8 @@ function wireGlobalActions(){
         renderNav(); renderView();
         break;
 
+      case 'cook-open': toggleCookOpen(a.getAttribute('data-recipe')); break;
+      case 'cook-toggle': toggleCookIngredient(a.getAttribute('data-recipe'), Number(a.getAttribute('data-idx'))); break;
       case 'cook-filter':
         state.cookingCategory = a.getAttribute('data-cat');
         renderView();
@@ -3983,17 +4026,6 @@ function wireGlobalActions(){
   if(window.visualViewport) window.visualViewport.addEventListener('resize', kbdCheck);
   document.addEventListener('change', (e)=>{
    try{
-    const cc = e.target.closest('[data-action="cook-toggle"]');
-    if(cc){
-      const rid = cc.getAttribute('data-recipe');
-      const idx = Number(cc.getAttribute('data-idx'));
-      const cur = new Set((state.cookingChecks[rid] && state.cookingChecks[rid].checked) || []);
-      if(cc.checked) cur.add(idx); else cur.delete(idx);
-      state.cookingChecks[rid] = {checked:[...cur]};
-      persistCookingCheck(rid, state.cookingChecks[rid]);
-      renderView();
-      return;
-    }
     if(e.target && (e.target.id === 'backup-file' || e.target.id === 'group-backup-file')){
       const f = e.target.files && e.target.files[0];
       const taId = e.target.id === 'backup-file' ? 'backup-text-in' : 'group-backup-text-in';
