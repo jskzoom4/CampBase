@@ -382,6 +382,11 @@
   .space-note{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--text-dim);
     background:color-mix(in srgb, var(--brand) 10%, transparent);border:1px solid color-mix(in srgb, var(--brand) 30%, transparent);border-radius:9px;padding:7px 10px;}
   .space-note svg{width:15px;height:15px;flex:none;color:var(--brand-text);}
+  .space-note span{flex:1;min-width:0;}
+  .space-note-ok{flex:none;}
+  .space-members{display:inline-flex;align-items:center;gap:4px;align-self:center;font-size:12px;font-weight:600;color:var(--text-dim);
+    background:var(--surface-2);border-radius:999px;padding:4px 10px;}
+  .space-members svg{width:13px;height:13px;}
   .invite-code{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;letter-spacing:6px;text-align:center;
     padding:14px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);user-select:all;}
   .send-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:9px;padding:4px 8px;background:var(--bg);}
@@ -1270,9 +1275,19 @@ function spaceChipsHtml(){
     <div class="space-bar">
       <div class="seg-group space-chips">
         ${chips.map(c=>`<div class="seg-btn space-chip ${c.id===state.space?'active':''}" data-action="space-pick" data-space="${esc(c.id)}">${c.id==='me'?icon('home'):icon('users')} ${esc(c.label)}</div>`).join('')}
+        ${g && spaceNoteSeen(g.id) ? `<span class="space-members" title="${esc(g.name)} 그룹 공간 — 여기서 바꾸면 멤버 모두에게 보여요">${icon('users')} 멤버 ${g.memberUids.length}명</span>` : ''}
       </div>
-      ${g ? `<div class="space-note">${icon('users')}<span><b>${esc(g.name)}</b> 그룹 공간 · 멤버 ${g.memberUids.length}명 — 여기서 바꾸면 멤버 모두에게 보여요.</span></div>` : ''}
+      ${g && !spaceNoteSeen(g.id) ? `<div class="space-note">${icon('users')}<span><b>${esc(g.name)}</b> 그룹 공간 · 멤버 ${g.memberUids.length}명 — 여기서 바꾸면 멤버 모두에게 보여요.</span><button class="btn btn-sm space-note-ok" data-action="space-note-ok" data-gid="${esc(g.id)}">알겠어요</button></div>` : ''}
     </div>`;
+}
+// 그룹 공간 안내(3-2): 그룹마다 처음 한 번만 크게, "알겠어요"를 누르면 이후엔 칩 옆 작은 "멤버 n명"만(기기에 기억)
+const SPACE_NOTE_KEY_PREFIX = 'campbase.spaceNoteSeen.';
+function spaceNoteSeenList(){ if(!state.user) return []; try{ const v = JSON.parse(localStorage.getItem(SPACE_NOTE_KEY_PREFIX + state.user.uid) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
+function spaceNoteSeen(gid){ return spaceNoteSeenList().includes(gid); }
+function markSpaceNoteSeen(gid){
+  if(!state.user) return;
+  const list = spaceNoteSeenList(); if(!list.includes(gid)) list.push(gid);
+  try{ localStorage.setItem(SPACE_NOTE_KEY_PREFIX + state.user.uid, JSON.stringify(list)); }catch(e){}
 }
 
 /* ---- 그룹 관리 (Settings → 내 그룹) ---- */
@@ -3790,6 +3805,7 @@ function wireGlobalActions(){
       case 'logout': confirmModal('로그아웃할까요? 다시 로그인하면 내 기록이 그대로 보여요.', '로그아웃', ()=>signOutNow()); break;
       case 'legacy-import': startLegacyImport(); break;
       case 'space-pick': selectSpace(a.getAttribute('data-space')); break;
+      case 'space-note-ok': markSpaceNoteSeen(a.getAttribute('data-gid')); renderView(); break;
       case 'group-new': newGroupModal(); break;
       case 'group-new-save': createGroup(); break;
       case 'group-join': joinGroupModal(); break;
