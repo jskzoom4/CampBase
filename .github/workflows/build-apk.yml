@@ -77,6 +77,16 @@ jobs:
             exit 1
           fi
 
+      - name: 빌드 번호를 앱에 넣기 (새 버전 안내·Settings의 "앱 버전"용)
+        env:
+          RUN_NO: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+        run: |
+          # 저장소에는 커밋하지 않는 생성 파일(docs/vendor/는 .gitignore). 웹(GitHub Pages)에는 없어도 앱은 정상 동작해요.
+          mkdir -p docs/vendor
+          echo "window.CAMPBASE_BUILD = { number: $RUN_NO, sha: '${SHA:0:7}' };" > docs/vendor/build-info.js
+          cat docs/vendor/build-info.js
+
       - name: 안드로이드 프로젝트 만들기
         run: npx cap add android
 

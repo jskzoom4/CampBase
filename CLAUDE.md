@@ -13,11 +13,13 @@
 - `docs/index.html` — 앱 전체(HTML+CSS+JS 한 파일, 바닐라 JS, 빌드 도구 없음). 로그인 화면(`#login-screen`) + 탭: Home / Camping / Gear / Checklist / Cooking / Settings.
 - `docs/firebase-config.js` — Firebase 프로젝트 `campbase-f5df5` 연결값(비밀 아님).
 - `docs/sw.js`, `docs/manifest.webmanifest`, `docs/icons/` — 웹(홈 화면 설치)용.
+- `firestore.rules.final` — 전환 기간 2단계용 초안(`firestore.rules`에서 전환 기간 블록만 뺀 것). **`firestore.rules`를 바꾸면 이 파일도 같이 바꿔야 한다**(규칙 테스트가 둘이 어긋나면 실패).
 - `firestore.rules` — Firestore 보안 규칙. `users/{uid}/**`는 본인만, `groups/**`·`groupInvites`는 그룹 규칙(아래), 최상위 legacy 경로는 "전환 기간" 블록(현재 1단계: 로그인한 사람만 읽기 전용), 나머지는 거부.
 - `firebase.json` — 에뮬레이터(규칙 테스트)용 설정. 실제 배포에는 쓰지 않음.
 - `capacitor.config.json`, `package.json`, `assets/`, `keystore/` — 안드로이드 APK 빌드용(Capacitor 6 + `@capacitor-firebase/authentication` 6.x, `skipNativeAuth: true`).
 - `android-config/google-services.json` — APK 구글 로그인용. 워크플로가 `android/app/`로 복사한다.
-- `.github/workflows/build-apk.yml` — 모든 브랜치/PR에서 APK 빌드 → Actions Artifacts. **main일 때만** Releases에 올림.
+- `.github/workflows/build-apk.yml` — 모든 브랜치/PR에서 APK 빌드 → Actions Artifacts. **main일 때만** Releases(태그 `build-<run_number>`)에 올림.
+  빌드 때 `docs/vendor/build-info.js`(`window.CAMPBASE_BUILD = { number: run_number, sha }`, 커밋 안 함)를 만든다.
 - `tests/` — 가짜 Firestore/Auth로 돌리는 자동 테스트 + 에뮬레이터 테스트.
 
 ## 로그인과 저장 구조
@@ -34,6 +36,18 @@
   Settings → "기존 공유 데이터 가져오기"에서 **읽기만** 한다(내 공간으로 복사, 같은 id는 건너뜀, 원본 유지).
   로그인 직후 `checkLegacyAvailable()`이 legacy 데이터가 남아 있는지 `limit(1)`로 확인해서, 없거나 읽을 수 없으면(규칙 삭제 후) 버튼을 숨긴다(`state.legacyAvailable`).
 - 설정값이 비어 있으면 미리보기 모드(로그인 없음, 예시 데이터, 저장 안 함).
+
+## 삭제 되돌리기 · 백업 · 앱 버전
+- 체크리스트 항목·리스트·장비·캠핑 기록 삭제는 `deleteDocWithUndo(kind, id, msg)` / `deleteChecklistItemWithUndo(listId, itemId)`를 쓴다.
+  지우기 직전 문서를 기억해 두고 5초(`UNDO_MS`) 동안 토스트에 "되돌리기"(`data-action="undo-delete"`)를 보여준다. 마지막 삭제 하나만 기억(`_undo`), 일반 `toast()`가 뜨면 사라짐.
+  되돌리면 **삭제한 그 공간**(그 사이 공간을 바꿔도)에 같은 id·같은 내용 그대로(`addedBy`, `updatedBy`, `assigneeUid`, `ownerUid` 등) `restoreDocRemote()`로 다시 저장. 항목은 리스트의 원래 위치로.
+  확인 모달(리스트·장비·캠핑 기록)은 그대로 두고 확인 뒤 삭제에 되돌리기가 붙는다. 그룹 삭제·나가기·내보내기는 되돌리기 없음.
+- 새로 "지우기" 기능을 만들면 되돌리기도 붙일 것.
+- 그룹 백업(그룹장만, Settings → 내 그룹): `{ app:'campbase-group', version:1, exportedAt, groupName, gearCategories, checklists, gear }`.
+  가져오기는 그 그룹의 체크리스트·장비·카테고리를 교체(멤버·이름 유지). 개인 백업(`app:'campbase'`)과 서로 섞이면 거부.
+- 앱 버전: APK면 `vendor/build-info.js`를 읽어 Settings 맨 아래 "앱 버전: 빌드 N"(웹은 "웹 버전", 웹은 이 파일을 요청하지 않음).
+  APK는 열 때 `checkForUpdate()`가 하루 한 번(`campbase.updateCheck`) GitHub 공개 API `releases/latest`의 `build-N`을 보고, 내 빌드보다 크면 `#update-banner`.
+  받기 = `openExternal(LATEST_APK_URL)`(Capacitor가 앱 밖 주소를 기본 브라우저로 엶), 닫은 번호는 `campbase.updateDismissed`. 실패는 조용히.
 
 ## 그룹
 - `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, joinCode? }`
@@ -75,7 +89,8 @@
 - **새 Firestore 컬렉션/문서 경로를 쓰면 `firestore.rules`에도 추가**해야 한다(개인 데이터는 `users/{uid}/` 아래면 이미 허용됨).
   규칙은 GitHub에 올려도 자동 적용되지 않으므로, 사용자에게 "Firebase 콘솔 → Firestore → 규칙 탭에 붙여넣고 게시"를 꼭 안내할 것.
 - 그룹 규칙(참여·나가기·내보내기·이름 변경·삭제 권한)은 `firestore.rules`에만 있다. 앱에서 그룹 문서를 바꾸는 방식을 바꾸면 규칙과 `tests/firestore-rules.test.js`도 함께 확인할 것.
-- 전환 기간 블록(legacy 경로)은 **1단계(로그인한 사람만 읽기 전용)가 적용된 상태**. 남은 건 2단계(콘솔에서 legacy 데이터 삭제 → 블록 삭제). legacy에 쓰는 코드는 만들지 않는다(규칙이 거부함).
+- 전환 기간 블록(legacy 경로)은 **1단계(로그인한 사람만 읽기 전용)가 적용된 상태**. 남은 건 2단계(콘솔에서 legacy 데이터 삭제 → `firestore.rules.final` 게시 → 저장소에서 `.final`을 `firestore.rules`로 교체). legacy에 쓰는 코드는 만들지 않는다(규칙이 거부함).
+  legacy를 읽을 수 없어도(규칙 삭제 후) 앱은 정상 동작해야 한다(`tests/stability.test.js` 5번).
 - 저장소에 예시 데이터를 자동으로 쓰지 않는다(예시는 설정값이 없을 때의 미리보기 모드에서만 화면에 채움).
 - Home 위젯 켜기/끄기는 계정(`users/{uid}/settings/app.homeWidgets`)에 저장. 예전 기기 값(`localStorage` `campbase.homeWidgets`)은 계정 값이 없을 때의 기본값으로만 읽는다.
 - Camping 탭의 분류는 지역(`regionOf()`)이다. Home의 캠핑 통계도 같은 기준이어야 `home-cat-nav` 이동이 맞는다.
@@ -84,12 +99,13 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 앞의 셋은 꼭 실행, 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 앞의 넷은 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
 node tests/smoke.test.js        # 로그인 후 모든 탭의 주요 동작 클릭 스모크 테스트 + 로그아웃
 node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·담당자·장비 주인·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
+node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
@@ -99,7 +115,7 @@ node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함�
   npm i --no-save playwright firebase-tools@13 @firebase/rules-unit-testing@3 firebase@10.12.2
   npx firebase emulators:exec --only firestore,auth --project demo-campbase "node tests/firestore-rules.test.js && node tests/emulator-e2e.test.js"
   ```
-  `firestore.rules`를 바꾸면 이것도 실행. e2e는 진짜 SDK(`vendor/` 방식) + 네이티브 로그인 흉내로 앱을 끝까지 돌린다.
+  `firestore.rules`를 바꾸면 이것도 실행(규칙 테스트는 `firestore.rules.final`도 함께 검사). e2e는 진짜 SDK(`vendor/` 방식) + 네이티브 로그인 흉내로 앱을 끝까지 돌린다.
 - 실제 안드로이드 빌드·네이티브 구글 로그인은 GitHub Actions + 실제 폰에서만 확인할 수 있다. push 후 Actions 결과를 확인할 것.
 
 ## 참고

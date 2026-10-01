@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, deleteDoc, updateDoc, collection, getDocs, query, where, arrayUnion, arrayRemove, deleteField, setLogLevel } = require('firebase/firestore');
+const { doc, getDoc, setDoc, deleteDoc, updateDoc, collection, getDocs, query, where, limit, arrayUnion, arrayRemove, deleteField, setLogLevel } = require('firebase/firestore');
 setLogLevel('silent');   // 거부될 때마다 찍히는 SDK 경고는 숨김(거부가 기대값인 테스트가 많음)
 
 const results = [];
@@ -185,6 +185,41 @@ async function check(name, p) {
   await check('2단계(삭제): legacy 읽기 거부', assertFails(getDocs(collection(a2, 'gear'))));
   await check('2단계(삭제): 개인 공간은 그대로 동작', assertSucceeds(setDoc(doc(a2, 'users/alice/gear/g2'), { v: 1 })));
   await env2.cleanup();
+
+  // 5. firestore.rules.final(2단계 게시용 초안): 지금 규칙에서 전환 기간 블록만 뺀 것과 내용이 같아야 함
+  const finalRules = fs.readFileSync(path.join(__dirname, '..', 'firestore.rules.final'), 'utf8');
+  const norm = t => t.split('\n').map(l => l.replace(/\/\/.*$/, '').trim()).filter(Boolean).join('\n');
+  await check('firestore.rules.final = firestore.rules에서 전환 기간 블록만 뺀 것(주석 제외)', Promise.resolve().then(() => {
+    if (norm(finalRules) !== norm(stage2)) throw new Error('firestore.rules.final이 firestore.rules와 어긋났어요. 규칙을 바꿨다면 .final도 같이 바꿔주세요.');
+  }));
+  const env3 = await initializeTestEnvironment({ projectId: 'demo-campbase-final', firestore: { host, port: Number(port), rules: finalRules } });
+  await env3.withSecurityRulesDisabled(async ctx => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'gear/legacy1'), { name: '예전 공유 장비' });
+    await setDoc(doc(db, 'app/settings'), { gearCategories: ['텐트'] });
+    await setDoc(doc(db, 'groups/fam'), { name: '캠핑팸', ownerUid: 'alice', memberUids: ['alice'], members: { alice: member('앨리스', 'owner') }, createdAt: 'x' });
+  });
+  const a3 = env3.authenticatedContext('alice').firestore();
+  const b3 = env3.authenticatedContext('bob').firestore();
+  for (const c of ['campingLogs', 'gear', 'checklists', 'cookingChecks']) {
+    await check(`final 규칙: legacy ${c} 읽기·쓰기 거부(로그인해도)`, (async () => {
+      await assertFails(getDocs(query(collection(a3, c), limit(1))));
+      await assertFails(setDoc(doc(a3, `${c}/x`), { v: 1 }));
+    })());
+  }
+  await check('final 규칙: app/settings 읽기 거부', assertFails(getDoc(doc(a3, 'app/settings'))));
+  await check('final 규칙: 개인 공간 읽기·쓰기는 그대로', (async () => {
+    await assertSucceeds(setDoc(doc(a3, 'users/alice/gear/g3'), { v: 1 }));
+    await assertSucceeds(getDocs(collection(a3, 'users/alice/gear')));
+    await assertFails(getDocs(collection(b3, 'users/alice/gear')));
+  })());
+  await check('final 규칙: 그룹 규칙은 그대로(멤버 읽기 허용·비멤버 거부)', (async () => {
+    await assertSucceeds(getDoc(doc(a3, 'groups/fam')));
+    await assertSucceeds(setDoc(doc(a3, 'groups/fam/gear/g1'), { name: '텐트' }));
+    await assertFails(getDoc(doc(b3, 'groups/fam')));
+    await assertFails(getDocs(collection(b3, 'groups/fam/gear')));
+  })());
+  await env3.cleanup();
 
   const failed = results.filter(r => !r).length;
   console.log(`\n${results.length - failed}/${results.length} passed`);
