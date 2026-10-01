@@ -167,6 +167,33 @@ async function check(name, p) {
   await check('참여: 유효한 코드로 자기 자신만 추가하면 허용', assertSucceeds(joinAs(carol, 'carol', 'GOODCD')));
   await check('참여 후: 그룹 데이터 읽기 가능', assertSucceeds(getDocs(collection(carol, 'groups/fam/checklists'))));
 
+  // 그룹 후기 사본 groups/{gid}/sharedReviews/{uid}_{logId}
+  const rv = (uid, logId, extra = {}) => ({ name: '홍천 캠핑장', rating: 4, authorUid: uid, sourceLogId: logId, updatedAt: 'x', ...extra });
+  await check('후기 사본: 멤버가 자기 이름·자기 id로 만들기 허용', Promise.all([
+    assertSucceeds(setDoc(doc(bob, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1'))),
+    assertSucceeds(setDoc(doc(carol, 'groups/fam/sharedReviews/carol_c1'), rv('carol', 'c1'))),
+  ]));
+  await check('후기 사본: 멤버 읽기 허용', assertSucceeds(getDocs(collection(alice, 'groups/fam/sharedReviews'))));
+  await check('후기 사본: 비멤버 읽기 거부', (async () => {
+    const erin = env.authenticatedContext('erin').firestore();
+    await assertFails(getDocs(collection(erin, 'groups/fam/sharedReviews')));
+    await assertFails(getDoc(doc(erin, 'groups/fam/sharedReviews/bob_l1')));
+    await assertFails(getDoc(doc(anon, 'groups/fam/sharedReviews/bob_l1')));
+  })());
+  await check('후기 사본: 비멤버 만들기 거부', assertFails(setDoc(doc(env.authenticatedContext('erin').firestore(), 'groups/fam/sharedReviews/erin_e1'), rv('erin', 'e1'))));
+  await check('후기 사본: 남의 authorUid로 만들기 거부', assertFails(setDoc(doc(bob, 'groups/fam/sharedReviews/bob_l2'), rv('alice', 'l2'))));
+  await check('후기 사본: 남의 id(alice_…)로 만들기 거부', assertFails(setDoc(doc(bob, 'groups/fam/sharedReviews/alice_l3'), rv('bob', 'l3'))));
+  await check('후기 사본: id와 sourceLogId가 다르면 거부', assertFails(setDoc(doc(bob, 'groups/fam/sharedReviews/bob_l4'), rv('bob', 'other'))));
+  await check('후기 사본: 작성자 본인 수정 허용', assertSucceeds(setDoc(doc(bob, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1', { notes: '수정' }))));
+  await check('후기 사본: 남이 덮어쓰기(작성자 변경) 거부', assertFails(setDoc(doc(alice, 'groups/fam/sharedReviews/bob_l1'), rv('alice', 'l1'))));
+  await check('후기 사본: 작성자가 authorUid를 바꾸는 것 거부', assertFails(updateDoc(doc(bob, 'groups/fam/sharedReviews/bob_l1'), { authorUid: 'alice' })));
+  await check('후기 사본: 일반 멤버가 남의 후기 삭제 거부', assertFails(deleteDoc(doc(carol, 'groups/fam/sharedReviews/bob_l1'))));
+  await check('후기 사본: 그룹장은 남의 후기 삭제(내리기) 허용', assertSucceeds(deleteDoc(doc(alice, 'groups/fam/sharedReviews/bob_l1'))));
+  await check('후기 사본: 작성자 본인 삭제 허용', (async () => {
+    await assertSucceeds(setDoc(doc(bob, 'groups/fam/sharedReviews/bob_l5'), rv('bob', 'l5')));
+    await assertSucceeds(deleteDoc(doc(bob, 'groups/fam/sharedReviews/bob_l5')));
+  })());
+
   // 멤버 권한 / 그룹장 권한
   await check('멤버: 장비 카테고리 변경 허용', assertSucceeds(updateDoc(doc(bob, 'groups/fam'), { gearCategories: ['텐트', '해먹', '기타'] })));
   await check('멤버: 그룹 이름 변경 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { name: '밥의 그룹' })));
@@ -178,6 +205,8 @@ async function check(name, p) {
   await check('그룹장: 나가기 거부(그룹을 삭제해야 함)', assertFails(updateDoc(doc(alice, 'groups/fam'), { memberUids: arrayRemove('alice'), 'members.alice': deleteField() })));
   await check('그룹장: 멤버 내보내기 허용', assertSucceeds(updateDoc(doc(alice, 'groups/fam'), { memberUids: arrayRemove('carol'), 'members.carol': deleteField() })));
   await check('내보낸 뒤: 그 사람은 그룹 데이터 읽기 거부', assertFails(getDocs(collection(carol, 'groups/fam/checklists'))));
+  await check('후기 사본: 나간(내보내진) 작성자는 새로 쓰기 거부', assertFails(setDoc(doc(carol, 'groups/fam/sharedReviews/carol_c2'), rv('carol', 'c2'))));
+  await check('후기 사본: 나간 작성자도 자기 사본 삭제 허용', assertSucceeds(deleteDoc(doc(carol, 'groups/fam/sharedReviews/carol_c1'))));
   await check('나가기: 멤버가 자기 자신만 빼면 허용', assertSucceeds(updateDoc(doc(bob, 'groups/fam'), { memberUids: arrayRemove('bob'), 'members.bob': deleteField() })));
 
   // 초대 코드
