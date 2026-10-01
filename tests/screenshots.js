@@ -24,9 +24,17 @@ function seed() {
   const mem = (n, r) => ({ name: n, photoURL: '', role: r });
   s[A + 'campingLogs/c1'] = { name: '홍천 강변 캠핑장', date: '2026-08-16', region: '홍천', siteType: '데크', siteSize: '5x5m', rating: 4, checkinTime: '14:00', checkoutTime: '11:00', toiletCondition: '좋음', storeCondition: '적당함', notes: '계곡 바로 옆이라 시원했어요.', sharedGroupIds: ['grpFam'] };
   s[A + 'campingLogs/c2'] = { name: '가평 숲속 야영장', date: '2026-05-02', region: '가평', siteType: '흙', siteSize: '6x6m', rating: 5, toiletCondition: '보통', storeCondition: '없음', notes: '' };
-  s[A + 'gear/g1'] = { name: '스텔스 5 텐트', brand: 'Snow Peak', category: '텐트', price: 520000, weight: 8.2, date: '2024-04-12' };
+  s[A + 'settings/app'] = { gearCategories: ['텐트', '타프', '침낭', '매트', '체어/테이블', '조리용품', '조명'], homeWidgets: { nextTrip: true, camping: true, gear: true, checklist: true },
+    gearCategoryMeta: { majors: [{ name: '쉘터', desc: '집 짓기 — 텐트·타프' }, { name: '잠자리', desc: '' }, { name: '키친', desc: '요리·식사 도구' }],
+      subs: [{ name: '텐트', major: '쉘터', desc: '4인용 이상' }, { name: '타프', major: '쉘터', desc: '' }, { name: '침낭', major: '잠자리', desc: '' }, { name: '매트', major: '잠자리', desc: '' },
+        { name: '체어/테이블', major: '키친', desc: '' }, { name: '조리용품', major: '키친', desc: '' }] } };
+  s[A + 'gear/g1'] = { name: '스텔스 5 텐트', brand: 'Snow Peak', category: '텐트', price: 520000, weight: 8.2, date: '2024-04-12', comment: '폴대 하나 수리함. 우중 캠핑 땐 그라운드시트 같이' };
   s[A + 'gear/g2'] = { name: '체어 원', brand: 'Helinox', category: '체어/테이블', price: 139000, weight: 0.9, date: '2024-05-20' };
-  s[A + 'gear/g3'] = { name: '부스터 플러스1', brand: 'Kovea', category: '조리용품', price: 78000, weight: 0.4, date: '2023-09-02' };
+  s[A + 'gear/g3'] = { name: '부스터 플러스1', brand: 'Kovea', category: '조리용품', price: 78000, weight: 0.4, date: '2023-09-02', comment: '가스 카트리지 2개' };
+  s[A + 'gear/g4'] = { name: '렉타 타프 L', brand: 'DOD', category: '타프' };
+  s[A + 'gear/g5'] = { name: '오로라 침낭', brand: 'Nanga', category: '침낭', comment: '겨울용(-10도)' };
+  s[A + 'gear/g6'] = { name: '자충 매트', brand: 'Therm-a-Rest', category: '매트' };
+  s[A + 'gear/g7'] = { name: '레일로드 랜턴', brand: 'Barebones', category: '조명' };
   s[A + 'checklists/cl1'] = { title: '기본 캠핑 준비물', items: [
     { id: 'i1', label: '텐트', status: 'packed', group: '텐트/침구' }, { id: 'i2', label: '침낭', status: 'pending', group: '텐트/침구' },
     { id: 'i3', label: '랜턴', status: 'skip', group: '조명/전기' } ] };
@@ -77,7 +85,6 @@ function seed() {
       await nav('camping'); await tryClick('.camp-view-chip:has-text("내 기록")'); await shot('2-camping-mine');
       await tryClick('.camp-view-chip:has-text("캠핑팸")'); await sleep(200); await shot('3-camping-group-reviews');
       await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');
-      if (await tryClick('[data-action="gear-select"]')) { await tryClick('[data-action="gear-pick"]'); await p.locator('[data-action="gear-pick"]').nth(1).click().catch(() => {}); await sleep(200); }
       await shot('4-gear');
       await nav('checklist'); await tryClick('.space-chip:has-text("내 공간")'); await tryClick('[data-action="trip-pick"][data-trip="all"]'); await shot('5-checklist-all');
       await tryClick('.space-chip:has-text("캠핑팸")'); await sleep(200);
@@ -86,6 +93,11 @@ function seed() {
       await p.evaluate(() => { document.getElementById('main').scrollTop = 0; });
       await nav('cooking'); await shot('8-cooking');
       await nav('checklist'); await tryClick('[data-action="trip-new"]'); await sleep(200); await shot('9-modal-trip-group');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');
+      await tryClick('.gear-head-actions .more-btn'); await tryClick('[data-action="gear-cat-manage"]'); await sleep(200); await shot('10-modal-gear-categories');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('[data-action="gear-new"]'); await sleep(200); await shot('11-modal-gear-form');
       await ctx.close();
     }
   }
