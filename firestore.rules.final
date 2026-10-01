@@ -1,0 +1,118 @@
+rules_version = '2';
+
+// 캠프베이스 Firestore 보안 규칙
+// 이 파일은 GitHub에 올려도 자동으로 적용되지 않아요.
+// Firebase 콘솔 → Firestore Database → 규칙(Rules) 탭에 전부 붙여넣고 "게시"를 눌러야 적용돼요.
+//
+// [firestore.rules.final] 전환 기간 마지막 단계(2단계)용 초안이에요. firestore.rules에서
+// "전환 기간"(예전 공유 저장소) 블록만 지운 버전이에요. 아직 게시하지 마세요.
+// 게시 순서: ① 더 가져올 사람이 없는지 확인 → ② 콘솔 데이터 탭에서 예전 최상위 컬렉션
+// (campingLogs, gear, checklists, cookingChecks, app) 삭제 → ③ 이 파일 내용을 규칙 탭에 붙여넣고 게시
+// → ④ 이 파일 내용으로 firestore.rules를 바꾸고 이 파일은 지우기.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 1. 개인 공간 ───────────────────────────────────────────
+    // 구글로 로그인한 본인만 자기 공간(users/{내 uid}/...)을 읽고 쓸 수 있어요.
+    //   users/{uid}                          : 계정 정보 { name, email, photoURL, updatedAt }
+    //   users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}
+    //   users/{uid}/settings/app             : { gearCategories, weatherLocation, homeWidgets }
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // ── 2. 그룹 ─────────────────────────────────────────────────
+    //   groups/{gid} = { name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role } },
+    //                    createdAt, gearCategories?, joinCode? }
+    //   groups/{gid}/checklists|gear/{id}   : 그룹 멤버만 읽기·쓰기
+    //   groupInvites/{code} = { gid, groupName, createdBy, expiresAt(밀리초), createdAt }
+    // 서버 코드 없이 규칙만으로 "누가 무엇을 바꿀 수 있는지"를 정해요.
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function groupDoc(gid) { return get(/databases/$(database)/documents/groups/$(gid)); }
+    function isGroupMember(gid) { return signedIn() && me() in groupDoc(gid).data.memberUids; }
+
+    match /groups/{gid} {
+      function isMember() { return signedIn() && me() in resource.data.memberUids; }
+      function isOwner() { return signedIn() && resource.data.ownerUid == me(); }
+      function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function oldUids() { return resource.data.memberUids.toSet(); }
+      function newUids() { return request.resource.data.memberUids.toSet(); }
+      function membersDiff() { return request.resource.data.members.diff(resource.data.members); }
+      function validName(n) { return n is string && n.size() > 0 && n.size() <= 40; }
+      // 멤버 목록(memberUids)과 멤버 정보(members)가 같은 사람들로만 바뀌었는지
+      function onlyMembersChanged(added, removed) {
+        return changed().hasOnly(['memberUids', 'members', 'joinCode'])
+          && newUids().difference(oldUids()) == added
+          && oldUids().difference(newUids()) == removed
+          && request.resource.data.memberUids.size() == newUids().size()
+          && membersDiff().addedKeys() == added
+          && membersDiff().removedKeys() == removed
+          && membersDiff().changedKeys().size() == 0;
+      }
+      // 참여: 멤버가 아닌 사람이 유효한 초대 코드(joinCode)로 "자기 자신만" 추가
+      function isJoin() {
+        let code = request.resource.data.joinCode;
+        let invite = get(/databases/$(database)/documents/groupInvites/$(code)).data;
+        return signedIn() && !(me() in resource.data.memberUids)
+          && onlyMembersChanged([me()].toSet(), [].toSet())
+          && invite.gid == gid
+          && invite.expiresAt > request.time.toMillis()
+          && request.resource.data.members[me()].role == 'member';
+      }
+      // 나가기: 그룹장이 아닌 멤버가 자기 자신만 제거
+      function isLeave() {
+        return isMember() && !isOwner()
+          && !('joinCode' in changed())
+          && onlyMembersChanged([].toSet(), [me()].toSet());
+      }
+      // 내보내기: 그룹장이 다른 멤버를 제거(자기 자신은 못 뺌)
+      function isKick() {
+        return isOwner()
+          && !('joinCode' in changed())
+          && onlyMembersChanged([].toSet(), oldUids().difference(newUids()))
+          && !(me() in oldUids().difference(newUids()))
+          && oldUids().difference(newUids()).size() > 0;
+      }
+
+      allow read: if isMember();
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == me()
+        && request.resource.data.memberUids == [me()]
+        && request.resource.data.members.keys().hasOnly([me()])
+        && request.resource.data.members[me()].role == 'owner'
+        && validName(request.resource.data.name)
+        && request.resource.data.keys().hasOnly(['name', 'ownerUid', 'memberUids', 'members', 'createdAt', 'gearCategories']);
+      allow update: if
+           (isOwner() && changed().hasOnly(['name']) && validName(request.resource.data.name))       // 이름 변경: 그룹장
+        || (isMember() && changed().hasOnly(['gearCategories']) && request.resource.data.gearCategories is list) // 장비 카테고리: 멤버
+        || isJoin() || isLeave() || isKick();
+      allow delete: if isOwner();                                                                   // 그룹 삭제: 그룹장
+    }
+    // 그룹 안의 데이터(체크리스트·장비): 멤버만. (그룹 문서 자체에는 적용되지 않도록 하위 컬렉션만 매칭)
+    match /groups/{gid}/{sub}/{document=**} {
+      allow read, write: if isGroupMember(gid);
+    }
+    // 초대 코드: 로그인한 사람은 코드로 한 개 읽기 가능(목록 훑어보기는 그 그룹 멤버만)
+    match /groupInvites/{code} {
+      allow get: if signedIn();
+      allow list: if isGroupMember(resource.data.gid);
+      allow create: if signedIn()
+        && code.matches('^[A-HJ-NP-Z2-9]{6,8}$')
+        && request.resource.data.createdBy == me()
+        && isGroupMember(request.resource.data.gid)
+        && request.resource.data.expiresAt is int
+        && request.resource.data.expiresAt <= request.time.toMillis() + 8 * 24 * 60 * 60 * 1000
+        && request.resource.data.keys().hasOnly(['gid', 'groupName', 'createdBy', 'expiresAt', 'createdAt']);
+      allow delete: if signedIn()
+        && (resource.data.createdBy == me() || groupDoc(resource.data.gid).data.ownerUid == me());
+    }
+
+    // ── 3. 그 밖의 경로 ───────────────────────────────────────
+    // 위에서 허용하지 않은 곳은 규칙이 하나도 맞지 않으므로 전부 거부돼요.
+    // (예전 공유 저장소 경로 campingLogs·gear·checklists·cookingChecks·app/settings도 이제 여기에 해당 → 읽기·쓰기 모두 거부)
+  }
+}

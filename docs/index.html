@@ -150,6 +150,16 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .toast.fail{border-left-color:var(--bad);}
   .toast.ok{border-left-color:var(--good);}
+  .toast.has-action.show{pointer-events:auto;display:flex;align-items:center;gap:12px;}
+  .toast-undo{background:none;border:1px solid currentColor;color:inherit;font-weight:700;font-size:12.5px;cursor:pointer;
+    padding:5px 10px;border-radius:7px;flex:none;}
+  /* ---- 새 버전 안내 (APK) ---- */
+  #update-banner{display:none;align-items:center;gap:10px;padding:9px 16px;font-size:13px;
+    background:color-mix(in srgb, var(--brand) 14%, var(--surface));border-bottom:1px solid var(--border);}
+  #update-banner.show{display:flex;}
+  #update-banner .spacer{flex:1;}
+  #update-banner svg{width:16px;height:16px;flex:none;color:var(--brand);}
+  .app-version{text-align:center;font-size:12px;color:var(--text-dim);margin:28px 0 8px;}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
   .switch input{opacity:0;width:0;height:0;}
@@ -292,6 +302,7 @@
   </aside>
 
   <div id="main-wrap">
+    <div id="update-banner"></div>
     <div id="mobile-topbar"></div>
     <div id="topbar">
       <h2 id="view-title" class="disp">Home</h2>
@@ -1060,6 +1071,8 @@ function groupsSectionHtml(){
             <button class="btn btn-sm" data-action="group-invite" data-gid="${esc(g.id)}">초대 코드</button>
             ${owner ? `
               <button class="btn btn-sm" data-action="group-rename" data-gid="${esc(g.id)}">이름 변경</button>
+              <button class="btn btn-sm" data-action="group-backup-export" data-gid="${esc(g.id)}">백업 내보내기</button>
+              <button class="btn btn-sm" data-action="group-backup-import" data-gid="${esc(g.id)}">백업 가져오기</button>
               <button class="btn btn-sm btn-danger" data-action="group-delete" data-gid="${esc(g.id)}">삭제</button>
             ` : `<button class="btn btn-sm btn-danger" data-action="group-leave" data-gid="${esc(g.id)}">나가기</button>`}
           </div>
@@ -1381,7 +1394,10 @@ function buildBackup(){
 }
 function exportBackupModal(){
   const json = JSON.stringify(buildBackup(), null, 2);
-  const fname = 'campbase-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  showExportModal('백업 내보내기', json, 'campbase-backup-' + new Date().toISOString().slice(0,10) + '.json');
+}
+// 백업 JSON 보여주기: 웹이면 파일로도 내려받고, APK는 복사용 텍스트만(파일 저장이 막혀 있음)
+function showExportModal(title, json, fname){
   let downloaded = false;
   if(!window.Capacitor){
     try{
@@ -1393,7 +1409,7 @@ function exportBackupModal(){
     }catch(e){}
   }
   openModal(`
-    <h3>백업 내보내기</h3>
+    <h3>${esc(title)}</h3>
     <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">
       ${downloaded ? `<b>${esc(fname)}</b> 파일로 저장했어요. 파일이 안 보이면 ` : ''}아래 내용을 복사해서 메모 앱이나 메신저의 나와의 대화 등에 붙여넣어 보관하세요.
     </p>
@@ -1430,6 +1446,7 @@ function importBackupModal(){
 function parseBackup(text){
   let data;
   try{ data = JSON.parse(text); }catch(e){ return {error:'백업 내용을 읽지 못했어요. 전체를 빠짐없이 붙여넣었는지 확인해주세요.'}; }
+  if(data && data.app==='campbase-group') return {error:'그룹 백업 파일이에요. Settings → 내 그룹에서 그룹장이 가져올 수 있어요.'};
   if(!data || typeof data!=='object' || data.app!=='campbase') return {error:'캠프베이스 백업 파일이 아니에요.'};
   const arr = v => Array.isArray(v) ? v.filter(x=>x && typeof x==='object') : [];
   const withIds = (list, prefix) => list.map(x=>({...x, id: String(x.id || uid(prefix))}));
@@ -1475,6 +1492,103 @@ function applyBackup(d){
   toast(state.dbAvailable ? '백업을 가져왔어요. 내 계정의 모든 기기에 반영돼요.' : '백업을 불러왔어요. (미리보기 모드라 저장되지는 않아요)', 'ok');
 }
 
+/* ---- 그룹 백업 (그룹장만): 그룹의 체크리스트·장비·장비 카테고리 ----
+ * { app:'campbase-group', version:1, exportedAt, groupName, gearCategories, checklists, gear }
+ * 가져오기는 그 그룹의 체크리스트·장비·카테고리를 백업 내용으로 교체(멤버·그룹 이름은 그대로). */
+async function readGroupData(gid){
+  const gdb = groupDb(gid), out = {};
+  for(const c of ['checklists','gear']){
+    const snap = await gdb.collection(c).get();
+    out[c] = snap.docs.map(d=>({ id: d.id, ...unfreeze(d.data()) }));
+  }
+  return out;
+}
+let _groupBackupBusy = false;
+async function exportGroupBackup(gid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g) || !state.dbAvailable || _groupBackupBusy) return;
+  _groupBackupBusy = true;
+  try{
+    const d = await readGroupData(gid);
+    const json = JSON.stringify({
+      app:'campbase-group', version:1, exportedAt: new Date().toISOString(),
+      groupName: g.name, gearCategories: g.gearCategories, checklists: d.checklists, gear: d.gear,
+    }, null, 2);
+    const safeName = g.name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 30) || 'group';
+    showExportModal(`'${g.name}' 그룹 백업 내보내기`, json, 'campbase-group-' + safeName + '-' + new Date().toISOString().slice(0,10) + '.json');
+  }catch(e){
+    console.error('[group-backup]', e);
+    toast('그룹 데이터를 불러오지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail');
+  }finally{ _groupBackupBusy = false; }
+}
+function importGroupBackupModal(gid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g)) return;
+  openModal(`
+    <h3>'${esc(g.name)}' 그룹 백업 가져오기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">
+      그룹 백업 파일을 고르거나, 복사해 둔 그룹 백업 내용을 붙여넣으세요.
+      <b style="color:var(--text);">가져오면 이 그룹의 체크리스트·장비·장비 카테고리가 백업 내용으로 모두 바뀌어요.</b> 멤버와 그룹 이름은 그대로예요.
+    </p>
+    <div class="field"><label>그룹 백업 파일</label><input type="file" id="group-backup-file" accept=".json,application/json,text/plain"></div>
+    <div class="field"><label>또는 붙여넣기</label><textarea id="group-backup-text-in" class="backup-text" placeholder='{"app":"campbase-group", ...}'></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-danger-solid" data-action="group-backup-import-go" data-gid="${esc(g.id)}">가져오기</button>
+    </div>
+  `);
+}
+function parseGroupBackup(text){
+  let data;
+  try{ data = JSON.parse(text); }catch(e){ return {error:'백업 내용을 읽지 못했어요. 전체를 빠짐없이 붙여넣었는지 확인해주세요.'}; }
+  if(data && data.app==='campbase') return {error:'개인 백업 파일이에요. 그룹 백업 파일(campbase-group)을 골라주세요.'};
+  if(!data || typeof data!=='object' || data.app!=='campbase-group') return {error:'캠프베이스 그룹 백업 파일이 아니에요.'};
+  const arr = v => Array.isArray(v) ? v.filter(x=>x && typeof x==='object' && !Array.isArray(x)) : [];
+  const withIds = (list, prefix) => list.map(x=>({...x, id: String(x.id || uid(prefix))}));
+  let cats = Array.isArray(data.gearCategories) ? data.gearCategories.filter(c=>typeof c==='string' && c.trim()) : [];
+  if(!cats.length) cats = [...DEFAULT_GEAR_CATEGORIES];
+  if(!cats.includes('기타')) cats.push('기타');
+  return { data: {
+    groupName: typeof data.groupName==='string' ? data.groupName : '',
+    gearCategories: cats,
+    checklists: withIds(arr(data.checklists), 'cl').map(cl=>({...cl, items: Array.isArray(cl.items) ? cl.items : []})),
+    gear: withIds(arr(data.gear), 'g'),
+  }};
+}
+function startImportGroupBackup(gid){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g)) return;
+  const ta = document.getElementById('group-backup-text-in');
+  const text = ta ? ta.value.trim() : '';
+  if(!text){ toast('그룹 백업 파일을 고르거나 내용을 붙여넣어 주세요.'); return; }
+  const res = parseGroupBackup(text);
+  if(res.error){ toast(res.error, 'fail'); return; }
+  const d = res.data;
+  const from = d.groupName && d.groupName!==g.name ? ` ('${d.groupName}' 그룹의 백업)` : '';
+  confirmModal(`'${g.name}' 그룹의 데이터를 백업 내용${from}(체크리스트 ${d.checklists.length}개, 장비 ${d.gear.length}개, 장비 카테고리 ${d.gearCategories.length}개)으로 바꿀까요? 지금 그룹에 있는 체크리스트·장비는 모두 이 내용으로 바뀌고, 멤버 모두에게 반영돼요.`, '바꾸기', ()=>applyGroupBackup(gid, d));
+}
+async function applyGroupBackup(gid, d){
+  const g = groupById(gid);
+  if(!g || !isGroupOwner(g) || !state.dbAvailable) return;
+  const gdb = groupDb(gid);
+  try{
+    const cur = await readGroupData(gid);
+    for(const c of ['checklists','gear']){
+      const keep = new Set(d[c].map(x=>x.id));
+      cur[c].forEach(old=>{ if(!keep.has(old.id)) safePersist(()=>gdb.collection(c).doc(old.id).delete()); });
+      d[c].forEach(x=>safePersist(()=>gdb.collection(c).doc(x.id).set(stripId(x))));
+    }
+    g.gearCategories = d.gearCategories.slice();
+    safePersist(()=>state.rootDb.doc('groups/' + gid).update({ gearCategories: g.gearCategories }));
+    if(state.space===gid){ state.groupChecklists = unfreeze(d.checklists); state.groupGear = unfreeze(d.gear); state.gearCategory = 'all'; }
+    renderView();
+    toast(`'${g.name}' 그룹 백업을 가져왔어요. 멤버 모두에게 반영돼요.`, 'ok');
+  }catch(e){
+    console.error('[group-backup]', e);
+    toast('그룹 백업을 가져오지 못했어요.' + (e && e.code ? ' (' + e.code + ')' : ''), 'fail');
+  }
+}
+
 function onSaveFail(e){
   console.error('[save]', e);
   if(e && e.code==='permission-denied'){ toast('저장 권한이 없어요. Firestore 규칙을 게시했는지, 아직 그 그룹 멤버인지 확인해주세요.', 'fail'); return; }
@@ -1502,6 +1616,8 @@ function deleteGearRemote(id){ if(!state.dbAvailable) return; const db = spaceDb
 function persistChecklist(list){ if(!state.dbAvailable) return; stampGroupItem(list); const db = spaceDb(); safePersist(()=>db.collection('checklists').doc(list.id).set(stripId(list))); }
 function deleteChecklistRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('checklists').doc(id).delete()); }
 // 장비 카테고리: 그룹이면 groups/{gid}.gearCategories, 내 공간이면 users/{uid}/settings/app
+// 되돌리기: 삭제할 때 기억해 둔 공간의 db에 문서를 그대로(스탬프 없이) 다시 저장
+function restoreDocRemote(db, kind, doc){ if(db) safePersist(()=>db.collection(kind).doc(doc.id).set(stripId(doc))); }
 function persistGearCategories(){
   const g = currentGroup();
   if(!g){ persistAppSettings(); return; }
@@ -1685,6 +1801,7 @@ function renderSettings(){
       <button class="btn" data-action="backup-export">${icon('save')} 백업 내보내기</button>
       <button class="btn" data-action="backup-import">${icon('refresh')} 백업 가져오기</button>
     </div>
+    <div class="app-version" id="app-version">${esc(appVersionText())}</div>
   `;
 }
 
@@ -2310,11 +2427,92 @@ function confirmModal(message, confirmLabel, onConfirm){
     </div>
   `);
 }
-function toast(msg, kind){
-  const t=document.getElementById('toast'); t.textContent=msg;
-  t.classList.remove('fail','ok'); if(kind) t.classList.add(kind);
+function showToast(msg, kind, withUndo, ms){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  if(withUndo){
+    const b = document.createElement('button');
+    b.className = 'toast-undo'; b.setAttribute('data-action', 'undo-delete'); b.textContent = '되돌리기';
+    t.appendChild(b);
+  }
+  t.classList.remove('fail','ok','has-action'); if(kind) t.classList.add(kind);
+  if(withUndo) t.classList.add('has-action');
   t.classList.add('show');
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'), 1800);
+  clearTimeout(t._h); t._h = setTimeout(()=>{ t.classList.remove('show'); if(withUndo) _undo = null; }, ms);
+}
+function toast(msg, kind){ _undo = null; showToast(msg, kind, false, 1800); }
+
+/* ---- 삭제 되돌리기: 지운 직후 5초 동안 "삭제했어요 · 되돌리기" 토스트. 마지막 삭제 하나만 기억한다. ---- */
+const UNDO_MS = 5000;
+let _undo = null;   // { restore: fn }
+function undoToast(msg, restore){
+  _undo = { restore };
+  showToast(msg, '', true, UNDO_MS);
+}
+function runUndo(){
+  const u = _undo; _undo = null;
+  if(!u) return;
+  u.restore();
+}
+// 삭제한 그 공간('me' 또는 gid)의 화면 데이터 배열. 지금 다른 공간을 보고 있으면 null.
+function spaceKey(){ return inGroupSpace() ? state.space : 'me'; }
+function spaceArray(space, kind){
+  if(space==='me') return state[kind];
+  if(state.space!==space) return null;
+  return kind==='checklists' ? state.groupChecklists : kind==='gear' ? state.groupGear : null;
+}
+// 문서 하나(체크리스트·장비·캠핑 기록)를 지우고 되돌리기를 붙인다.
+// 되돌리면 지우기 직전 문서를 같은 id·같은 내용(addedBy, updatedBy, ownerUid 등 포함) 그대로 다시 저장.
+function deleteDocWithUndo(kind, id, msg){
+  const space = kind==='campingLogs' ? 'me' : spaceKey();
+  const arr = spaceArray(space, kind) || [];
+  const target = arr.find(x=>x.id===id);
+  if(!target) return;
+  const snapshot = unfreeze(target);
+  const db = state.dbAvailable ? (space==='me' ? state.db : groupDb(space)) : null;
+  if(space==='me') state[kind] = state[kind].filter(x=>x.id!==id);
+  else if(kind==='checklists') state.groupChecklists = state.groupChecklists.filter(x=>x.id!==id);
+  else state.groupGear = state.groupGear.filter(x=>x.id!==id);
+  ({campingLogs: deleteCampingRemote, gear: deleteGearRemote, checklists: deleteChecklistRemote})[kind](id);
+  renderView();
+  undoToast(msg, ()=>{
+    const now = spaceArray(space, kind);
+    if(now && !now.some(x=>x.id===id)) now.push(unfreeze(snapshot));
+    restoreDocRemote(db, kind, snapshot);
+    renderView(); toast('되돌렸어요.', 'ok');
+  });
+}
+// 체크리스트 안의 항목 하나: 되돌리면 그 리스트의 원래 위치로 다시 넣는다.
+function deleteChecklistItemWithUndo(listId, itemId){
+  const space = spaceKey();
+  const list = SP.checklists.find(c=>c.id===listId);
+  const idx = list ? (list.items||[]).findIndex(i=>i.id===itemId) : -1;
+  if(idx < 0) return;
+  const item = unfreeze(list.items[idx]);
+  const db = state.dbAvailable ? spaceDb() : null;
+  list.items = list.items.filter(i=>i.id!==itemId);
+  persistChecklist(list); renderView();
+  const putBack = l=>{
+    l.items = Array.isArray(l.items) ? l.items : [];
+    if(!l.items.some(i=>i.id===itemId)) l.items.splice(Math.min(idx, l.items.length), 0, item);
+    if(space!=='me' && state.user) l.updatedBy = state.user.uid;
+    restoreDocRemote(db, 'checklists', l);
+    renderView(); toast('되돌렸어요.', 'ok');
+  };
+  undoToast(`'${item.label}' 항목을 삭제했어요.`, ()=>{
+    const arr = spaceArray(space, 'checklists');
+    if(arr){
+      const l = arr.find(c=>c.id===listId);
+      if(l) putBack(l); else toast('리스트가 없어져서 되돌리지 못했어요.', 'fail');
+      return;
+    }
+    // 그 사이 다른 공간으로 옮겨 감 → 저장소의 최신 리스트에 넣는다
+    if(!db) return;
+    db.collection('checklists').doc(listId).get().then(s=>{
+      if(!s.exists){ toast('리스트가 없어져서 되돌리지 못했어요.', 'fail'); return; }
+      putBack({ id: listId, ...unfreeze(s.data()) });
+    }).catch(onSaveFail);
+  });
 }
 
 /* ============================ GLOBAL EVENT DELEGATION ============================ */
@@ -2334,14 +2532,14 @@ function wireGlobalActions(){
 
     switch(action){
       case 'modal-close': closeModal(); break;
+      case 'undo-delete': runUndo(); break;
 
       case 'camp-new': campFormModal(); break;
       case 'camp-edit': campFormModal(id); break;
       case 'camp-del': {
         const target = state.campingLogs.find(c=>c.id===id);
-        confirmModal(`'${target?target.name:'이 기록'}'을 삭제할까요? 되돌릴 수 없어요.`, '삭제', ()=>{
-          state.campingLogs = state.campingLogs.filter(c=>c.id!==id);
-          deleteCampingRemote(id); renderView(); toast('기록을 삭제했어요.');
+        confirmModal(`'${target?target.name:'이 기록'}'을 삭제할까요? 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
+          deleteDocWithUndo('campingLogs', id, '기록을 삭제했어요.');
         });
         break;
       }
@@ -2351,9 +2549,8 @@ function wireGlobalActions(){
       case 'gear-edit': gearFormModal(id); break;
       case 'gear-del': {
         const target = SP.gear.find(g=>g.id===id);
-        confirmModal(`'${target?target.name:'이 장비'}'를 삭제할까요? 되돌릴 수 없어요.`, '삭제', ()=>{
-          SP.gear = SP.gear.filter(g=>g.id!==id);
-          deleteGearRemote(id); renderView(); toast('장비를 삭제했어요.');
+        confirmModal(`'${target?target.name:'이 장비'}'를 삭제할까요? 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
+          deleteDocWithUndo('gear', id, '장비를 삭제했어요.');
         });
         break;
       }
@@ -2419,9 +2616,8 @@ function wireGlobalActions(){
       case 'cl-new-list-save': saveNewChecklist(); break;
       case 'cl-del-list': {
         const target = SP.checklists.find(c=>c.id===id);
-        confirmModal(`'${target?target.title:'이 리스트'}' 전체를 삭제할까요? 안의 항목도 모두 사라지고 되돌릴 수 없어요.`, '삭제', ()=>{
-          SP.checklists = SP.checklists.filter(c=>c.id!==id);
-          deleteChecklistRemote(id); renderView(); toast('리스트를 삭제했어요.');
+        confirmModal(`'${target?target.title:'이 리스트'}' 전체를 삭제할까요? 안의 항목도 모두 사라져요. 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
+          deleteDocWithUndo('checklists', id, '리스트를 삭제했어요.');
         });
         break;
       }
@@ -2447,6 +2643,14 @@ function wireGlobalActions(){
       case 'group-rename': renameGroupModalOpen(a.getAttribute('data-gid')); break;
       case 'group-rename-save': renameGroup(a.getAttribute('data-gid')); break;
       case 'group-delete': deleteGroupConfirm(a.getAttribute('data-gid')); break;
+      case 'update-get': openExternal(LATEST_APK_URL); break;
+      case 'update-dismiss':
+        try{ localStorage.setItem(UPDATE_DISMISS_KEY, JSON.stringify(Number(a.getAttribute('data-latest')) || 0)); }catch(e){}
+        hideUpdateBanner();
+        break;
+      case 'group-backup-export': exportGroupBackup(a.getAttribute('data-gid')); break;
+      case 'group-backup-import': importGroupBackupModal(a.getAttribute('data-gid')); break;
+      case 'group-backup-import-go': startImportGroupBackup(a.getAttribute('data-gid')); break;
       case 'cl-send': sendChecklistModal(id); break;
       case 'cl-assign': assignModal(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
       case 'cl-assign-set': setAssignee(a.getAttribute('data-list'), a.getAttribute('data-item'), a.getAttribute('data-uid')); break;
@@ -2493,8 +2697,7 @@ function wireGlobalActions(){
       }
       case 'cl-del-item': {
         const listId = a.getAttribute('data-list'), itemId = a.getAttribute('data-item');
-        const list = SP.checklists.find(c=>c.id===listId);
-        if(list){ list.items = (list.items||[]).filter(i=>i.id!==itemId); persistChecklist(list); renderView(); }
+        deleteChecklistItemWithUndo(listId, itemId);
         break;
       }
       case 'cl-group-add': {
@@ -2532,12 +2735,13 @@ function wireGlobalActions(){
       renderView();
       return;
     }
-    if(e.target && e.target.id === 'backup-file'){
+    if(e.target && (e.target.id === 'backup-file' || e.target.id === 'group-backup-file')){
       const f = e.target.files && e.target.files[0];
+      const taId = e.target.id === 'backup-file' ? 'backup-text-in' : 'group-backup-text-in';
       if(f){
         const r = new FileReader();
         r.onload = ()=>{
-          const ta = document.getElementById('backup-text-in');
+          const ta = document.getElementById(taId);
           if(ta) ta.value = String(r.result || '');
           toast('파일을 불러왔어요. 가져오기를 눌러주세요.');
         };
@@ -2561,6 +2765,76 @@ function wireGlobalActions(){
   });
 }
 
+/* ============================ 앱 버전 / 새 버전 안내 (APK만) ============================
+ * 워크플로가 APK를 만들 때 vendor/build-info.js(저장소에는 없음)에 window.CAMPBASE_BUILD = { number: 빌드 번호 }를 넣는다.
+ * APK를 열면 하루 한 번(온라인일 때만) GitHub 공개 API로 최신 Release 태그(build-N)를 보고,
+ * 내 빌드보다 크면 위쪽에 "새 버전이 있어요 · 받기" 배너. 실패하면 조용히 넘어감. 웹은 확인하지 않음. */
+const UPDATE_REPO = 'jskzoom4/CampBase';
+const LATEST_APK_URL = 'https://github.com/' + UPDATE_REPO + '/releases/latest/download/campbase.apk';
+const LATEST_RELEASE_API = 'https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest';
+const UPDATE_CHECK_KEY = 'campbase.updateCheck';        // { at: 밀리초, latest: 최신 빌드 번호 }
+const UPDATE_DISMISS_KEY = 'campbase.updateDismissed';  // 닫은 최신 빌드 번호
+const UPDATE_CHECK_MS = 24 * 60 * 60 * 1000;
+function buildNumber(){
+  const b = window.CAMPBASE_BUILD;
+  const n = b && Number(b.number);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+function appVersionText(){
+  if(!isNativeApp()) return '웹 버전';
+  const n = buildNumber();
+  return n ? '앱 버전: 빌드 ' + n : '앱 버전: 알 수 없음';
+}
+function loadBuildInfo(){
+  return new Promise(resolve=>{
+    if(window.CAMPBASE_BUILD) return resolve();
+    const s = document.createElement('script');
+    s.src = 'vendor/build-info.js';
+    s.onload = ()=>resolve(); s.onerror = ()=>resolve();
+    document.head.appendChild(s);
+  });
+}
+function parseBuildTag(tag){ const m = /^build-(\d+)$/.exec(String(tag||'').trim()); return m ? Number(m[1]) : null; }
+function readJsonLS(key){ try{ return JSON.parse(localStorage.getItem(key) || 'null'); }catch(e){ return null; } }
+function showUpdateBanner(latest){
+  const el = document.getElementById('update-banner');
+  if(!el) return;
+  el.innerHTML = `${icon('refresh')}<span>새 버전이 있어요 <span class="num" style="color:var(--text-dim);">(빌드 ${latest})</span></span><span class="spacer"></span>
+    <button class="btn btn-sm btn-primary" data-action="update-get">받기</button>
+    <button class="icon-btn" data-action="update-dismiss" data-latest="${latest}" title="닫기" aria-label="닫기">${icon('close')}</button>`;
+  el.classList.add('show');
+}
+function hideUpdateBanner(){ const el = document.getElementById('update-banner'); if(el){ el.classList.remove('show'); el.innerHTML = ''; } }
+async function checkForUpdate(){
+  try{
+    if(!isNativeApp()) return;
+    await loadBuildInfo();
+    if(state.currentView==='settings' && document.body.classList.contains('signed-out')===false) renderView();
+    const mine = buildNumber();
+    if(!mine) return;
+    let cached = readJsonLS(UPDATE_CHECK_KEY);
+    let latest = cached && Number(cached.latest) || null;
+    const fresh = cached && Number(cached.at) && (Date.now() - Number(cached.at) < UPDATE_CHECK_MS);
+    if(!fresh && navigator.onLine !== false){
+      const ctrl = window.AbortController ? new AbortController() : null;
+      const timer = setTimeout(()=>{ if(ctrl) ctrl.abort(); }, 8000);
+      try{
+        const res = await fetch(LATEST_RELEASE_API, { headers: { Accept: 'application/vnd.github+json' }, signal: ctrl ? ctrl.signal : undefined, cache: 'no-store' });
+        if(res.ok){
+          const n = parseBuildTag((await res.json()).tag_name);
+          if(n){ latest = n; try{ localStorage.setItem(UPDATE_CHECK_KEY, JSON.stringify({ at: Date.now(), latest: n })); }catch(e){} }
+        }
+      }finally{ clearTimeout(timer); }
+    }
+    const dismissed = Number(readJsonLS(UPDATE_DISMISS_KEY)) || 0;
+    if(latest && latest > mine && latest !== dismissed) showUpdateBanner(latest);
+  }catch(e){ console.warn('[update-check]', e && e.message); }   // 확인 실패는 조용히 넘어감
+}
+function openExternal(url){
+  // APK(Capacitor)는 앱 밖 주소로 이동하면 기본 브라우저로 연다(앱 화면은 그대로).
+  window.location.href = url;
+}
+
 /* ============================ BOOT ============================ */
 function boot(){
   loadLocalHomeWidgets();
@@ -2568,6 +2842,7 @@ function boot(){
   updateStatus();
   wireGlobalActions();
   initDb();
+  checkForUpdate();
   // 웹(홈 화면 설치)용 오프라인 캐시. APK 안에서는 앱에 파일이 들어 있으므로 쓰지 않음.
   if('serviceWorker' in navigator && !window.Capacitor && location.protocol === 'https:'){
     navigator.serviceWorker.register('sw.js').catch(()=>{});
