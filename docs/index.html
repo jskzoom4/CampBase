@@ -359,7 +359,9 @@
   .send-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:9px;padding:4px 8px;background:var(--bg);}
   .send-row{display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:13.5px;border-bottom:1px solid var(--border);cursor:pointer;}
   .send-row:last-child{border-bottom:none;}
-  .send-row span:first-of-type{flex:1;}
+  /* 선택 목록 한 줄: [체크박스][사진][이름(늘어남)][태그] — 체크박스는 원래 크기(.field input의 width:100% 덮어씀) */
+  .send-row input[type="checkbox"], .field .send-row input[type="checkbox"]{width:18px;height:18px;flex:none;margin:0;padding:0;accent-color:var(--brand);}
+  .send-row .sr-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .link-btn{color:var(--brand-text);cursor:pointer;font-weight:600;}
   /* ---- 담당자·장비 주인 ---- */
   .mini-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;
@@ -1537,7 +1539,7 @@ function sendGearModal(){
     <div class="field">
       <label style="display:flex;justify-content:space-between;align-items:center;">보낼 장비 <span class="link-btn" data-action="gear-send-all">모두 선택</span></label>
       <div class="send-list">
-        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="send-gear" value="${esc(gr.id)}"> <span>${esc(gr.name)}</span> <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
+        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="send-gear" value="${esc(gr.id)}"> <span class="sr-name">${esc(gr.name)}</span> <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
       </div>
     </div>
     <div class="modal-actions">
@@ -2780,7 +2782,7 @@ function tripFormModal(id){
     </div>
     ${g ? `<div class="field"><label>참가 멤버</label>
       <div class="send-list" id="tf-members">
-        ${sortedMemberUids(g).map(u=>`<label class="send-row"><input type="checkbox" class="tf-member" value="${esc(u)}" ${picked.has(u)?'checked':''}> ${memberAvatarHtml(g,u)} <span>${esc(memberName(g,u))}${state.user&&u===state.user.uid?' (나)':''}</span></label>`).join('')}
+        ${sortedMemberUids(g).map(u=>`<label class="send-row"><input type="checkbox" class="tf-member" value="${esc(u)}" ${picked.has(u)?'checked':''}> ${memberAvatarHtml(g,u)} <span class="sr-name">${esc(memberName(g,u))}${state.user&&u===state.user.uid?' (나)':''}</span></label>`).join('')}
       </div></div>` : ''}
     ${t ? '' : `
     <div class="field">
@@ -3074,7 +3076,7 @@ function gearToChecklistModal(){
     <div class="field">
       <label style="display:flex;justify-content:space-between;align-items:center;">장비 <span class="link-btn" data-action="g2c-all">모두 선택</span></label>
       <div class="send-list">
-        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="g2c-gear" value="${esc(gr.id)}"> <span>${esc(gr.name)}</span>${grp && gr.ownerUid ? memberAvatarHtml(grp, gr.ownerUid) : ''} <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
+        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="g2c-gear" value="${esc(gr.id)}"> <span class="sr-name">${esc(gr.name)}</span>${grp && gr.ownerUid ? memberAvatarHtml(grp, gr.ownerUid) : ''} <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
       </div>
     </div>
     <div class="modal-actions">
