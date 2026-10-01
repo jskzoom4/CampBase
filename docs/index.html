@@ -141,6 +141,24 @@
   .list-row:last-child{border-bottom:none;}
   .list-row .name{font-weight:700;font-size:14px;}
   .list-row .meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  /* ---- 카테고리 관리(G-2·8·9) ---- */
+  .cat-block{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .cat-block-head{font-size:11.5px;font-weight:700;color:var(--text-dim);padding:8px 12px 2px;}
+  .cat-row{display:flex;align-items:center;gap:2px;padding:4px 4px 4px 12px;min-height:48px;border-top:1px solid var(--border);}
+  .cat-block > .cat-row:first-child, .cat-block-head + .cat-row{border-top:none;}
+  .cat-row.cat-major{background:var(--surface-2);}
+  .cat-row.cat-sub{padding-left:26px;}
+  .cat-block-head ~ .cat-row.cat-sub{padding-left:12px;}
+  .cat-text{flex:1;min-width:0;}
+  .cat-name{font-size:13.5px;font-weight:600;overflow-wrap:anywhere;}
+  .cat-major .cat-name{font-weight:700;}
+  .cat-kind{font-size:10.5px;font-weight:600;color:var(--text-dim);margin-left:2px;}
+  .cat-count{font-size:11.5px;color:var(--text-dim);margin-left:2px;}
+  .cat-desc{font-size:12px;color:var(--text-dim);margin-top:2px;line-height:1.4;overflow-wrap:anywhere;}
+  .cat-row .icon-btn:disabled{opacity:.3;cursor:default;}
+  .cat-add{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:14px;}
+  .cat-add .field{margin-bottom:0;}
+  @media (max-width:520px){ .cat-add{grid-template-columns:1fr 1fr;} .cat-add .btn{grid-column:1 / -1;justify-content:center;} }
   .gear-comment{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5;white-space:pre-line;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
   .list-row .notes{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
   .list-row .row-actions{display:flex;gap:6px;flex:none;}
@@ -566,6 +584,8 @@ const ICONS = {
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 11h1v5h1"/>',
   save:'<path d="M4 4h13l3 3v13H4z"/><path d="M8 4v6h8V4M8 21v-7h8v7"/>',
   chev:'<path d="M9 6l6 6-6 6"/>',
+  up:'<path d="M6 15l6-6 6 6"/>',
+  down:'<path d="M6 9l6 6 6-6"/>',
   drop:'<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/>',
   settings:'<path d="M4 7h9M17 7h3M4 12h3M9 12h11M4 17h13M19 17h1"/><circle cx="15" cy="7" r="2.4"/><circle cx="7" cy="12" r="2.4"/><circle cx="17" cy="17" r="2.4"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
@@ -689,7 +709,8 @@ const state = {
   gearSelecting:false, gearSelected:new Set(),   // Gear 선택 모드(3-3)   // Checklist 탭의 일정 줄: 'all' 또는 일정 id
   campingFilter:'all', gearCategory:'all', checklistFilter:'all',
   campingSort:'date_desc',
-  gearCategories:[...DEFAULT_GEAR_CATEGORIES],
+  gearCategories:[...DEFAULT_GEAR_CATEGORIES],   // 미리보기 예시용. 로그인하면 저장된 목록(없으면 null → 장비에 쓰인 카테고리)
+  gearCategoryMeta:{ majors:[], subs:[] },
 };
 
 function seedDefaults(){
@@ -918,7 +939,7 @@ function resetUserState(){
   state.gearSelecting = false; state.gearSelected = new Set(); document.body.classList.remove('gear-selecting');
   state.campingLogsLoaded = false; state.groupReviewFilter = 'all'; state.groupReviewSort = 'date_desc';
   state.weatherLocation = null;
-  state.gearCategories = [...DEFAULT_GEAR_CATEGORIES];
+  state.gearCategories = null; state.gearCategoryMeta = { majors:[], subs:[] };
   state.homeWidgets = {...DEFAULT_HOME_WIDGETS};
   loadLocalHomeWidgets();
   state.campingFilter = 'all'; state.gearCategory = 'all'; state.checklistFilter = 'all'; state.gearOwnerFilter = 'all';
@@ -965,7 +986,8 @@ function startUserData(){
     if(snap.exists){
       const d = unfreeze(snap.data()) || {};
       if(d.weatherLocation) state.weatherLocation = d.weatherLocation;
-      if(d.gearCategories && d.gearCategories.length) state.gearCategories = d.gearCategories;
+      if(Array.isArray(d.gearCategories)) state.gearCategories = d.gearCategories;
+      state.gearCategoryMeta = normCatMeta(d.gearCategoryMeta);
       if(d.homeWidgets && typeof d.homeWidgets==='object') state.homeWidgets = normalizeHomeWidgets(d.homeWidgets);
     }
     if(['home','settings','gear'].includes(state.currentView)) renderView();
@@ -1173,8 +1195,9 @@ function applyLegacyImport(plan){
   const s = plan.settings || {};
   let settingsChanged = false;
   if(Array.isArray(s.gearCategories) && s.gearCategories.length){
-    const merged = mergeGearCategories(state.gearCategories, s.gearCategories);
-    if(merged.length !== state.gearCategories.length){ state.gearCategories = merged; settingsChanged = true; }
+    const mine = myGearCats();
+    const merged = mergeGearCategories(mine, s.gearCategories);
+    if(merged.length !== mine.length || !Array.isArray(state.gearCategories)){ state.gearCategories = merged; settingsChanged = true; }
   }
   if(s.weatherLocation && !state.weatherLocation){ state.weatherLocation = s.weatherLocation; settingsChanged = true; }
   if(settingsChanged) persistAppSettings();
@@ -1229,8 +1252,11 @@ const SP = {
   set trips(v){ const g = currentGroup(); if(g) state.groupTrips[g.id] = v; else state.trips = v; },
   get templates(){ return inGroupSpace() ? state.groupTemplates : state.checklistTemplates; },
   set templates(v){ if(inGroupSpace()) state.groupTemplates = v; else state.checklistTemplates = v; },
-  get gearCategories(){ const g = currentGroup(); return g ? g.gearCategories : state.gearCategories; },
+  // 저장한 목록이 없으면(null) 지금 공간 장비에 쓰인 카테고리. 바꿀 때는 항상 새 배열을 대입할 것(push 금지)
+  get gearCategories(){ const g = currentGroup(); const list = g ? g.gearCategories : state.gearCategories; return Array.isArray(list) ? list : deriveGearCats(g ? state.groupGear : state.gear); },
   set gearCategories(v){ const g = currentGroup(); if(g) g.gearCategories = v; else state.gearCategories = v; },
+  get gearCategoryMeta(){ const g = currentGroup(); return normCatMeta(g ? g.gearCategoryMeta : state.gearCategoryMeta); },
+  set gearCategoryMeta(v){ const g = currentGroup(); if(g) g.gearCategoryMeta = v; else state.gearCategoryMeta = v; },
 };
 
 function normalizeGroup(id, d){
@@ -1240,7 +1266,8 @@ function normalizeGroup(id, d){
     name: d.name || '이름 없는 그룹',
     memberUids: Array.isArray(d.memberUids) ? d.memberUids : [],
     members: (d.members && typeof d.members==='object') ? d.members : {},
-    gearCategories: (Array.isArray(d.gearCategories) && d.gearCategories.length) ? d.gearCategories : [...DEFAULT_GEAR_CATEGORIES],
+    gearCategories: Array.isArray(d.gearCategories) ? d.gearCategories : null,
+    gearCategoryMeta: normCatMeta(d.gearCategoryMeta),
   };
 }
 function loadSavedSpace(uid){ try{ return localStorage.getItem(SPACE_KEY_PREFIX + uid) || 'me'; }catch(e){ return 'me'; } }
@@ -1433,7 +1460,7 @@ async function createGroup(){
     name, ownerUid: u.uid, memberUids: [u.uid],
     members: { [u.uid]: { name: u.name || u.email || '', photoURL: u.photoURL || '', role: 'owner' } },
     createdAt: new Date().toISOString(),
-    gearCategories: [...DEFAULT_GEAR_CATEGORIES],
+    gearCategories: [],   // G-7: 기본 카테고리 없이 시작
   };
   closeModal();
   try{
@@ -1690,8 +1717,9 @@ function sendGear(){
     safePersist(()=>gdb.collection('gear').doc(newId).set(copy));
   });
   // 그룹 카테고리에 없는 장비 카테고리는 그룹에 추가('기타' 앞에)
-  const merged = mergeGearCategories(g.gearCategories, picked.map(x=>x.category || '기타'));
-  if(merged.length !== g.gearCategories.length){
+  const base = Array.isArray(g.gearCategories) ? g.gearCategories : (state.space===g.id ? deriveGearCats(state.groupGear) : []);
+  const merged = mergeGearCategories(base, picked.map(x=>String(x.category || '').trim()).filter(Boolean));
+  if(merged.length !== base.length || !Array.isArray(g.gearCategories)){
     g.gearCategories = merged;
     safePersist(()=>state.rootDb.doc('groups/' + g.id).update({ gearCategories: merged }));
   }
@@ -1717,7 +1745,7 @@ function buildBackup(){
     campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists,
     trips: state.trips, checklistTemplates: state.checklistTemplates,
     cookingChecks: state.cookingChecks,
-    settings: { weatherLocation: state.weatherLocation, homeWidgets: state.homeWidgets, gearCategories: state.gearCategories },
+    settings: { weatherLocation: state.weatherLocation, homeWidgets: state.homeWidgets, gearCategories: myGearCats(), gearCategoryMeta: normCatMeta(state.gearCategoryMeta) },
   };
 }
 function exportBackupModal(){
@@ -1806,9 +1834,8 @@ function applyBackup(d){
   if(Array.isArray(d.checklistTemplates)) state.checklistTemplates = d.checklistTemplates;
   const s = d.settings;
   if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = normalizeHomeWidgets(s.homeWidgets); }
-  if(Array.isArray(s.gearCategories) && s.gearCategories.length){
-    state.gearCategories = s.gearCategories.includes('기타') ? s.gearCategories.slice() : [...s.gearCategories, '기타'];
-  }
+  if(Array.isArray(s.gearCategories)) state.gearCategories = s.gearCategories.filter(c=>typeof c==='string' && c.trim());
+  if(s.gearCategoryMeta) state.gearCategoryMeta = normCatMeta(s.gearCategoryMeta);
   if(s.weatherLocation) state.weatherLocation = s.weatherLocation;
   if(state.dbAvailable){
     const db = state.db;
@@ -1850,7 +1877,8 @@ async function exportGroupBackup(gid){
     const d = await readGroupData(gid);
     const json = JSON.stringify({
       app:'campbase-group', version:1, exportedAt: new Date().toISOString(),
-      groupName: g.name, gearCategories: g.gearCategories, checklists: d.checklists, gear: d.gear,
+      groupName: g.name, gearCategories: Array.isArray(g.gearCategories) ? g.gearCategories : deriveGearCats(d.gear),
+      gearCategoryMeta: normCatMeta(g.gearCategoryMeta), checklists: d.checklists, gear: d.gear,
     }, null, 2);
     const safeName = g.name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 30) || 'group';
     showExportModal(`'${g.name}' 그룹 백업 내보내기`, json, 'campbase-group-' + safeName + '-' + new Date().toISOString().slice(0,10) + '.json');
@@ -1883,14 +1911,14 @@ function parseGroupBackup(text){
   if(!data || typeof data!=='object' || data.app!=='campbase-group') return {error:'캠프베이스 그룹 백업 파일이 아니에요.'};
   const arr = v => Array.isArray(v) ? v.filter(x=>x && typeof x==='object' && !Array.isArray(x)) : [];
   const withIds = (list, prefix) => list.map(x=>({...x, id: String(x.id || uid(prefix))}));
-  let cats = Array.isArray(data.gearCategories) ? data.gearCategories.filter(c=>typeof c==='string' && c.trim()) : [];
-  if(!cats.length) cats = [...DEFAULT_GEAR_CATEGORIES];
-  if(!cats.includes('기타')) cats.push('기타');
+  const gearList = withIds(arr(data.gear), 'g');
+  const cats = Array.isArray(data.gearCategories) ? data.gearCategories.filter(c=>typeof c==='string' && c.trim()) : deriveGearCats(gearList);
   return { data: {
     groupName: typeof data.groupName==='string' ? data.groupName : '',
     gearCategories: cats,
+    gearCategoryMeta: normCatMeta(data.gearCategoryMeta),
     checklists: withIds(arr(data.checklists), 'cl').map(cl=>({...cl, items: Array.isArray(cl.items) ? cl.items : []})),
-    gear: withIds(arr(data.gear), 'g'),
+    gear: gearList,
   }};
 }
 function startImportGroupBackup(gid){
@@ -1917,7 +1945,8 @@ async function applyGroupBackup(gid, d){
       d[c].forEach(x=>safePersist(()=>gdb.collection(c).doc(x.id).set(stripId(x))));
     }
     g.gearCategories = d.gearCategories.slice();
-    safePersist(()=>state.rootDb.doc('groups/' + gid).update({ gearCategories: g.gearCategories }));
+    g.gearCategoryMeta = d.gearCategoryMeta;
+    safePersist(()=>state.rootDb.doc('groups/' + gid).update({ gearCategories: g.gearCategories, gearCategoryMeta: g.gearCategoryMeta }));
     if(state.space===gid){ state.groupChecklists = unfreeze(d.checklists); state.groupGear = unfreeze(d.gear); state.gearCategory = 'all'; }
     renderView();
     toast(`'${g.name}' 그룹 백업을 가져왔어요. 멤버 모두에게 반영돼요.`, 'ok');
@@ -1964,9 +1993,12 @@ function restoreDocRemote(db, kind, doc){ if(db) safePersist(()=>db.collection(k
 function persistGearCategories(){
   const g = currentGroup();
   if(!g){ persistAppSettings(); return; }
-  if(state.dbAvailable) safePersist(()=>state.rootDb.doc('groups/' + g.id).update({ gearCategories: g.gearCategories }));
+  const list = SP.gearCategories, meta = normCatMeta(g.gearCategoryMeta);
+  g.gearCategories = list;
+  if(state.dbAvailable) safePersist(()=>state.rootDb.doc('groups/' + g.id).update({ gearCategories: list, gearCategoryMeta: meta }));
 }
-function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc(SETTINGS_DOC).set({weatherLocation:state.weatherLocation, gearCategories:state.gearCategories, homeWidgets:state.homeWidgets})); }
+function myGearCats(){ return Array.isArray(state.gearCategories) ? state.gearCategories : deriveGearCats(state.gear); }
+function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc(SETTINGS_DOC).set({weatherLocation:state.weatherLocation, gearCategories:myGearCats(), gearCategoryMeta:normCatMeta(state.gearCategoryMeta), homeWidgets:state.homeWidgets})); }
 function persistWeatherLocation(loc){ state.weatherLocation = loc; persistAppSettings(); }
 function persistCookingCheck(id, data){ if(state.dbAvailable) safePersist(()=>state.db.collection('cookingChecks').doc(id).set(data)); }
 function toggleHomeWidget(key){
@@ -2035,9 +2067,11 @@ function renderHome(){
   const campRegions = Object.keys(campBy).sort((a,b)=> campBy[b]-campBy[a] || a.localeCompare(b,'ko'));
   const campSegs = campRegions.map((r,i)=>({label:r, value:campBy[r]||0, color:CHART_COLORS[i%CHART_COLORS.length]}));
 
+  // 장비: 맨 위 묶음(대분류 / 대분류 없는 소분류 / 미분류) 기준
+  const gearTree = gearCatTree(myGearCats(), state.gearCategoryMeta, state.gear);
   const gearBy = {};
-  state.gear.forEach(g=>{ gearBy[g.category]=(gearBy[g.category]||0)+1; });
-  const gearSegs = state.gearCategories.map((c,i)=>({label:c, value:gearBy[c]||0, color:CHART_COLORS[i%CHART_COLORS.length]}));
+  state.gear.forEach(g=>{ const k = gearTopKey(g, gearTree); gearBy[k]=(gearBy[k]||0)+1; });
+  const gearSegs = gearTree.map((n,i)=>({label:n.name, key:n.key, value:gearBy[n.key]||0, color:CHART_COLORS[i%CHART_COLORS.length]}));
 
   let done=0, notDone=0;
   state.checklists.forEach(cl=>(cl.items||[]).forEach(it=>{ if(isDecided(it)) done++; else notDone++; }));
@@ -2079,7 +2113,7 @@ function renderHome(){
 
   const cards = [];
   if(hw.camping) cards.push(statCard('캠핑 기록 · 지역', campSegs, 'camping', l=>l, 'camping', '아직 다녀온 캠핑 기록이 없어요. 눌러서 추가해보세요.'));
-  if(hw.gear) cards.push(statCard('보유 장비 · 카테고리', gearSegs, 'gear', l=>l, 'gear', '등록된 장비가 없어요. 눌러서 추가해보세요.'));
+  if(hw.gear) cards.push(statCard('보유 장비 · 카테고리', gearSegs, 'gear', l=>(gearSegs.find(x=>x.label===l)||{}).key || l, 'gear', '등록된 장비가 없어요. 눌러서 추가해보세요.'));
   if(hw.checklist) cards.push(statCard('준비물 체크 현황', checkSegs, 'checklist', l=> l==='완료' ? 'done' : 'undone', 'checklist', '체크리스트 항목이 없어요. 눌러서 만들어보세요.'));
 
   const statBlock = cards.length ? `
@@ -2646,6 +2680,17 @@ function usedGearBrands(){
   SP.gear.forEach(g=>{ const b = String(g.brand||'').trim(); if(b && b!=='기타') seen.add(b); });
   return [...seen].sort((a,b)=>a.localeCompare(b,'ko'));
 }
+// 장비 폼의 카테고리 고르기: 대분류별 묶음(대분류 자체도 고를 수 있음) + 대분류 없는 소분류 + 미분류
+function gearCategoryOptionsHtml(cur){
+  const tree = gearCatTree(SP.gearCategories, SP.gearCategoryMeta, []);
+  const opt = (v, label) => `<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(label)}</option>`;
+  const majors = tree.filter(n=>n.kind==='major'), loose = tree.filter(n=>n.kind==='sub');
+  const known = new Set(['', ...majors.map(m=>m.name), ...majors.flatMap(m=>m.subs.map(x=>x.name)), ...loose.map(x=>x.name)]);
+  return opt('', '미분류')
+    + majors.map(m=>`<optgroup label="${esc(m.name)}">${opt(m.name, m.name + ' (소분류 없이)')}${m.subs.map(x=>opt(x.name, x.name)).join('')}</optgroup>`).join('')
+    + (loose.length ? (majors.length ? `<optgroup label="대분류 없음">${loose.map(x=>opt(x.name, x.name)).join('')}</optgroup>` : loose.map(x=>opt(x.name, x.name)).join('')) : '')
+    + (cur && !known.has(cur) ? opt(cur, cur) : '');
+}
 function gearFormModal(id){
   const g = id ? SP.gear.find(x=>x.id===id) : null;
   const grp = currentGroup();
@@ -2658,7 +2703,7 @@ function gearFormModal(id){
         <datalist id="gf-brand-list">${usedGearBrands().map(b=>`<option value="${esc(b)}"></option>`).join('')}</datalist>
       </div>
       <div class="field"><label>카테고리</label>
-        <select id="gf-category">${SP.gearCategories.map(c=>`<option ${g&&g.category===c?'selected':''}>${c}</option>`).join('')}</select>
+        <select id="gf-category">${gearCategoryOptionsHtml(g ? String(g.category||'').trim() : '')}</select>
       </div>
     </div>
     <div class="field"><label for="gf-comment">메모 (Comment)</label><textarea id="gf-comment" rows="3" placeholder="예: 폴대 1개 수리함, 우중 캠핑 때 챙기기">${g?esc(g.comment||''):''}</textarea></div>
@@ -2696,66 +2741,242 @@ function saveGearForm(id){
   closeModal(); renderView(); toast('저장했어요.');
 }
 
-/* ---- gear category management ---- */
+/* ---- 장비 카테고리: 대분류·소분류(G-2·7·8·9) ----
+ * gearCategories   : 소분류 이름 순서(예전 앱도 읽는 목록). 저장한 적이 없으면(null) 장비에 쓰인 카테고리로 보여줌(기본 목록 없음)
+ * gearCategoryMeta : { majors:[{ name, desc }], subs:[{ name, major, desc }] } — 대분류 순서·설명, 소분류의 대분류·설명(모두 선택)
+ * 장비의 category = 소분류 이름 / 대분류 이름(소분류 없이 대분류에 바로) / ''(미분류). 대분류·소분류 이름은 서로 겹치지 않음
+ */
+const GEAR_UNCAT = '__none';
+function normCatMeta(m){
+  m = (m && typeof m==='object') ? m : {};
+  const str = v => typeof v==='string' ? v.trim() : '';
+  const seen = new Set();
+  const majors = (Array.isArray(m.majors) ? m.majors : []).map(x=>({ name:str(x && x.name), desc:str(x && x.desc) }))
+    .filter(x=>x.name && !seen.has(x.name) && seen.add(x.name));
+  const subSeen = new Set();
+  const subs = (Array.isArray(m.subs) ? m.subs : []).map(x=>({ name:str(x && x.name), major:str(x && x.major), desc:str(x && x.desc) }))
+    .filter(x=>x.name && !seen.has(x.name) && !subSeen.has(x.name) && subSeen.add(x.name))
+    .map(x=>({ ...x, major: seen.has(x.major) ? x.major : '' }));
+  return { majors, subs };
+}
+// 저장한 목록이 없을 때: 장비에 쓰인 카테고리(예전 기본 목록 순서 → 처음 나온 순서)
+function deriveGearCats(gear){
+  const used = [];
+  (gear || []).forEach(g=>{ const c = String(g.category || '').trim(); if(c && !used.includes(c)) used.push(c); });
+  const rank = c => { const i = DEFAULT_GEAR_CATEGORIES.indexOf(c); return i < 0 ? 999 : i; };
+  return used.map((c,i)=>[c,i]).sort((a,b)=> rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x=>x[0]);
+}
+// 화면에 그릴 카테고리 나무: [대분류(+소분류들)…, 대분류 없는 소분류…, 목록에 없는 카테고리(장비에만 있음)…, 미분류]
+function gearCatTree(cats, meta, gear){
+  meta = normCatMeta(meta);
+  const majorNames = meta.majors.map(m=>m.name);
+  const info = {}; meta.subs.forEach(x=>{ info[x.name] = x; });
+  const subsOf = {}; majorNames.forEach(m=>{ subsOf[m] = []; });
+  const loose = [];
+  (cats || []).filter(c=>c && !majorNames.includes(c)).forEach(c=>{
+    const x = info[c] || {};
+    const node = { kind:'sub', key:c, name:c, desc:x.desc || '', major:x.major || '' };
+    if(node.major) subsOf[node.major].push(node); else loose.push(node);
+  });
+  const top = [...meta.majors.map(m=>({ kind:'major', key:m.name, name:m.name, desc:m.desc, subs:subsOf[m.name] })), ...loose];
+  const known = new Set([...majorNames, ...(cats || [])]);
+  (gear || []).forEach(g=>{
+    const c = String(g.category || '').trim();
+    if(c && !known.has(c)){ known.add(c); top.push({ kind:'sub', key:c, name:c, desc:'', major:'', extra:true }); }
+  });
+  if((gear || []).some(g=>!String(g.category || '').trim())) top.push({ kind:'none', key:GEAR_UNCAT, name:'미분류', desc:'' });
+  return top;
+}
+function findCatNode(tree, key){
+  for(const n of tree){
+    if(n.key===key) return n;
+    if(n.kind==='major'){ const s = n.subs.find(x=>x.key===key); if(s) return s; }
+  }
+  return null;
+}
+// 장비가 들어가는 맨 위 묶음(대분류 이름 / 대분류 없는 소분류 이름 / 미분류)
+function gearTopKey(g, tree){
+  const c = String(g.category || '').trim();
+  if(!c) return GEAR_UNCAT;
+  const n = findCatNode(tree, c);
+  return n && n.kind==='sub' && n.major ? n.major : c;
+}
+function gearInCat(g, key, tree){
+  if(key==='all') return true;
+  const c = String(g.category || '').trim();
+  if(key===GEAR_UNCAT) return !c;
+  const n = findCatNode(tree, key);
+  if(n && n.kind==='major') return gearTopKey(g, tree)===key;
+  return c===key;
+}
+function gearCatLabel(key){ return key===GEAR_UNCAT ? '미분류' : key; }
+function allGearCatNames(){ return [...SP.gearCategories, ...normCatMeta(SP.gearCategoryMeta).majors.map(m=>m.name)]; }
+function renameGearCatInGear(oldName, newName){
+  SP.gear.forEach(g=>{ if(g.category===oldName){ g.category = newName; persistGear(g); } });
+  if(state.gearCategory===oldName) state.gearCategory = newName || 'all';
+}
+
+/* ---- 카테고리 관리 창 ---- */
 function categoryManageModal(){
+  const meta = normCatMeta(SP.gearCategoryMeta);
   openModal(`
     <h3>카테고리 관리</h3>
-    <div class="section-desc" style="margin-bottom:12px;">이름을 바꾸면 해당 카테고리로 등록된 장비도 함께 바뀌고, 삭제하면 그 장비는 '기타'로 옮겨져요.</div>
-    <div id="cat-manage-list">
-      ${SP.gearCategories.map(c=>categoryRowHtml(c)).join('')}
-    </div>
-    <div class="field-row" style="margin-top:12px;align-items:flex-end;">
-      <div class="field" style="flex:1;margin-bottom:0;"><input id="cat-new-name" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-action=gear-cat-add]').click();}"></div>
+    <div class="section-desc" style="margin-bottom:12px;">대분류 안에 소분류를 넣어 정리해요. 화살표로 순서를 바꾸고, 연필 버튼으로 이름·설명·대분류를 고쳐요.</div>
+    <div id="cat-manage-list">${catManageListHtml()}</div>
+    <div class="cat-add">
+      <div class="field"><label for="cat-new-name">새 카테고리</label><input id="cat-new-name" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-action=gear-cat-add]').click();}"></div>
+      <div class="field"><label for="cat-new-parent">넣을 곳</label>
+        <select id="cat-new-parent">${catParentOptionsHtml(meta)}</select>
+      </div>
       <button class="btn btn-primary" data-action="gear-cat-add">${icon('plus')} 추가</button>
     </div>
   `);
 }
-function categoryRowHtml(c){
-  const locked = c === '기타';
-  return `
-    <div class="list-row" style="align-items:center;">
-      <input class="cat-edit-input" data-old="${esc(c)}" value="${esc(c)}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13.5px;" ${locked?'disabled':''}>
-      <div class="row-actions">
-        ${locked ? `<span class="tag">기본값</span>` : `
-          <button class="icon-btn" data-action="gear-cat-rename" data-old="${esc(c)}" title="이름 변경" aria-label="카테고리 이름 변경">${icon('save')}</button>
-          <button class="icon-btn btn-danger" data-action="gear-cat-del" data-cat="${esc(c)}" title="삭제" aria-label="카테고리 삭제">${icon('trash')}</button>
-        `}
+function catParentOptionsHtml(meta, selected){
+  return `<option value="">소분류 · 대분류 없음</option>
+    ${meta.majors.map(m=>`<option value="m:${esc(m.name)}" ${selected==='m:'+m.name?'selected':''}>소분류 · ${esc(m.name)} 안에</option>`).join('')}
+    <option value="__major" ${selected==='__major'?'selected':''}>대분류로 만들기</option>`;
+}
+function catManageListHtml(){
+  const tree = gearCatTree(SP.gearCategories, SP.gearCategoryMeta, []);
+  if(!tree.length) return `<div class="empty" style="padding:18px 8px;">아직 카테고리가 없어요. 아래에서 추가해 보세요.</div>`;
+  const counts = {}; SP.gear.forEach(g=>{ const c = String(g.category || '').trim(); counts[c] = (counts[c] || 0) + 1; });
+  const majors = tree.filter(n=>n.kind==='major'), loose = tree.filter(n=>n.kind==='sub');
+  const row = (n, idx, len) => {
+    const n2 = n.kind==='major' ? (counts[n.name] || 0) + n.subs.reduce((s,x)=>s + (counts[x.name] || 0), 0) : (counts[n.name] || 0);
+    const what = n.kind==='major' ? '대분류' : '소분류';
+    return `
+    <div class="cat-row cat-${n.kind}">
+      <div class="cat-text">
+        <div class="cat-name">${esc(n.name)} <span class="cat-kind">${what}</span> <span class="num cat-count" title="장비 수">${n2}</span></div>
+        ${n.desc ? `<div class="cat-desc">${esc(n.desc)}</div>` : ''}
       </div>
-    </div>
-  `;
+      <button class="icon-btn" data-action="gear-cat-move" data-kind="${n.kind}" data-name="${esc(n.name)}" data-dir="-1" aria-label="'${esc(n.name)}' 위로" ${idx===0?'disabled':''}>${icon('up')}</button>
+      <button class="icon-btn" data-action="gear-cat-move" data-kind="${n.kind}" data-name="${esc(n.name)}" data-dir="1" aria-label="'${esc(n.name)}' 아래로" ${idx===len-1?'disabled':''}>${icon('down')}</button>
+      <button class="icon-btn" data-action="gear-cat-edit" data-kind="${n.kind}" data-name="${esc(n.name)}" aria-label="'${esc(n.name)}' 이름·설명 고치기">${icon('edit')}</button>
+    </div>`;
+  };
+  return majors.map((m,i)=>`<div class="cat-block">${row(m, i, majors.length)}${m.subs.map((s,j)=>row(s, j, m.subs.length)).join('')}</div>`).join('')
+    + (loose.length ? `<div class="cat-block">${majors.length ? '<div class="cat-block-head">대분류 없음</div>' : ''}${loose.map((s,j)=>row(s, j, loose.length)).join('')}</div>` : '');
 }
-function addGearCategory(name){
+// 관리 창을 다시 열지 않고 목록만 바꿈(스크롤·초점 유지)
+function refreshCatManage(focusSel){
+  const box = document.getElementById('cat-manage-list');
+  if(!box){ categoryManageModal(); return; }
+  box.innerHTML = catManageListHtml();
+  const sel = document.getElementById('cat-new-parent');
+  if(sel){ const v = sel.value; sel.innerHTML = catParentOptionsHtml(normCatMeta(SP.gearCategoryMeta), v); }
+  if(focusSel){ const el = document.querySelector(focusSel); if(el && !el.disabled) el.focus(); }
+}
+function addGearCategory(name, parent){
   if(!name){ toast('카테고리 이름을 입력해주세요.'); return; }
-  if(SP.gearCategories.includes(name)){ toast('이미 있는 카테고리예요.'); return; }
-  SP.gearCategories.push(name);
+  if(name===gearCatLabel(GEAR_UNCAT)){ toast("'미분류'는 카테고리 이름으로 쓸 수 없어요."); return; }
+  if(allGearCatNames().includes(name)){ toast('이미 있는 카테고리예요.'); return; }
+  const meta = normCatMeta(SP.gearCategoryMeta);
+  if(parent==='__major') meta.majors.push({ name, desc:'' });
+  else{
+    SP.gearCategories = [...SP.gearCategories, name];
+    if(parent && parent.startsWith('m:')) meta.subs.push({ name, major:parent.slice(2), desc:'' });
+  }
+  SP.gearCategoryMeta = meta;
   persistGearCategories();
-  categoryManageModal();
+  const inp = document.getElementById('cat-new-name'); if(inp) inp.value = '';
+  refreshCatManage('#cat-new-name');
   renderView();
-  toast('카테고리를 추가했어요.');
+  toast(parent==='__major' ? '대분류를 추가했어요.' : '카테고리를 추가했어요.');
 }
-function renameGearCategory(oldName, newName){
-  if(!newName){ toast('이름을 입력해주세요.'); return; }
-  if(newName===oldName) return;
-  if(SP.gearCategories.includes(newName)){ toast('이미 있는 이름이에요.'); return; }
-  SP.gearCategories = SP.gearCategories.map(c=>c===oldName?newName:c);
-  SP.gear.forEach(g=>{ if(g.category===oldName){ g.category=newName; persistGear(g); } });
-  if(state.gearCategory===oldName) state.gearCategory=newName;
+// 순서 바꾸기(G-2): 대분류끼리, 같은 대분류 안의 소분류끼리
+function moveGearCategory(kind, name, dir){
+  const meta = normCatMeta(SP.gearCategoryMeta);
+  if(kind==='major'){
+    const i = meta.majors.findIndex(m=>m.name===name), j = i + dir;
+    if(i < 0 || j < 0 || j >= meta.majors.length) return;
+    [meta.majors[i], meta.majors[j]] = [meta.majors[j], meta.majors[i]];
+    SP.gearCategoryMeta = meta;
+  } else {
+    const tree = gearCatTree(SP.gearCategories, meta, []);
+    const node = findCatNode(tree, name);
+    if(!node) return;
+    const sibs = node.major ? tree.find(n=>n.key===node.major).subs : tree.filter(n=>n.kind==='sub');
+    const i = sibs.findIndex(x=>x.name===name), j = i + dir;
+    if(i < 0 || j < 0 || j >= sibs.length) return;
+    const other = sibs[j].name;
+    SP.gearCategories = SP.gearCategories.map(c=> c===name ? other : c===other ? name : c);
+  }
   persistGearCategories();
-  categoryManageModal();
+  refreshCatManage(`[data-action="gear-cat-move"][data-name="${CSS.escape(name)}"][data-dir="${dir}"]`);
   renderView();
-  toast('카테고리 이름을 바꿨어요.');
 }
-function deleteGearCategory(cat){
-  if(cat==='기타'){ toast("'기타'는 삭제할 수 없어요."); return; }
-  SP.gearCategories = SP.gearCategories.filter(c=>c!==cat);
-  if(!SP.gearCategories.includes('기타')) SP.gearCategories.push('기타');
-  const moved = SP.gear.filter(g=>g.category===cat);
-  moved.forEach(g=>{ g.category='기타'; persistGear(g); });
-  if(state.gearCategory===cat) state.gearCategory='all';
+// 이름·설명·대분류 고치기(G-8·9)
+function catEditModal(kind, name){
+  const meta = normCatMeta(SP.gearCategoryMeta);
+  const isMajor = kind==='major';
+  const info = isMajor ? (meta.majors.find(m=>m.name===name) || { name, desc:'' }) : (meta.subs.find(x=>x.name===name) || { name, major:'', desc:'' });
+  openModal(`
+    <h3>${isMajor ? '대분류' : '소분류'} 고치기</h3>
+    <div class="field"><label for="ce-name">이름</label><input id="ce-name" value="${esc(name)}"></div>
+    ${isMajor ? '' : `<div class="field"><label for="ce-major">대분류</label>
+      <select id="ce-major"><option value="">대분류 없음</option>${meta.majors.map(m=>`<option value="${esc(m.name)}" ${info.major===m.name?'selected':''}>${esc(m.name)}</option>`).join('')}</select></div>`}
+    <div class="field"><label for="ce-desc">설명 (Description)</label><textarea id="ce-desc" rows="3" placeholder="${isMajor ? '예: 잠자리에 필요한 것들' : '예: 4인용 이상, 여름·겨울 겸용'}">${esc(info.desc || '')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" data-action="gear-cat-del" data-kind="${kind}" data-cat="${esc(name)}">${icon('trash')} 삭제</button>
+      <button class="btn" data-action="gear-cat-manage">취소</button>
+      <button class="btn btn-primary" data-action="gear-cat-save" data-kind="${kind}" data-old="${esc(name)}">${icon('save')} 저장</button>
+    </div>
+  `);
+}
+function saveGearCatEdit(kind, oldName){
+  const nm = (document.getElementById('ce-name').value || '').trim();
+  const desc = (document.getElementById('ce-desc').value || '').trim();
+  if(!nm){ toast('이름을 입력해주세요.'); return; }
+  if(nm===gearCatLabel(GEAR_UNCAT)){ toast("'미분류'는 카테고리 이름으로 쓸 수 없어요."); return; }
+  if(nm!==oldName && allGearCatNames().includes(nm)){ toast('이미 있는 이름이에요.'); return; }
+  const meta = normCatMeta(SP.gearCategoryMeta);
+  if(kind==='major'){
+    meta.majors = meta.majors.map(m=> m.name===oldName ? { name:nm, desc } : m);
+    meta.subs = meta.subs.map(x=> x.major===oldName ? { ...x, major:nm } : x);
+  } else {
+    const majorEl = document.getElementById('ce-major');
+    const major = majorEl ? majorEl.value : '';
+    SP.gearCategories = SP.gearCategories.map(c=> c===oldName ? nm : c);
+    meta.subs = meta.subs.filter(x=>x.name!==oldName && x.name!==nm);
+    if(major || desc) meta.subs.push({ name:nm, major, desc });
+  }
+  SP.gearCategoryMeta = meta;
+  if(nm!==oldName) renameGearCatInGear(oldName, nm);
   persistGearCategories();
   categoryManageModal();
   renderView();
-  toast(moved.length ? `카테고리를 삭제했어요. 장비 ${moved.length}개는 기타로 옮겨졌어요.` : '카테고리를 삭제했어요.');
+  toast('카테고리를 고쳤어요.');
+}
+// 삭제(G-7: 기본값 없음 — 어떤 카테고리든 지울 수 있음). 장비는 지우지 않고 옮김
+function deleteGearCategoryConfirm(kind, name){
+  const meta = normCatMeta(SP.gearCategoryMeta);
+  if(kind==='major'){
+    const subs = meta.subs.filter(x=>x.major===name && SP.gearCategories.includes(x.name)).length;
+    const direct = SP.gear.filter(g=>g.category===name).length;
+    const parts = [subs ? `소분류 ${subs}개는 '대분류 없음'으로` : '', direct ? `이 대분류에 바로 넣은 장비 ${direct}개는 미분류로` : ''].filter(Boolean);
+    confirmModal(`대분류 '${name}'을(를) 지울까요?${parts.length ? ' ' + parts.join(', ') + ' 옮겨져요.' : ''}`, '삭제', ()=>{
+      const m = normCatMeta(SP.gearCategoryMeta);
+      m.majors = m.majors.filter(x=>x.name!==name);
+      m.subs = m.subs.map(x=> x.major===name ? { ...x, major:'' } : x);
+      SP.gearCategoryMeta = m;
+      renameGearCatInGear(name, '');
+      persistGearCategories(); categoryManageModal(); renderView(); toast('대분류를 지웠어요.');
+    });
+    return;
+  }
+  const major = (meta.subs.find(x=>x.name===name) || {}).major || '';
+  const n = SP.gear.filter(g=>g.category===name).length;
+  confirmModal(`카테고리 '${name}'을(를) 지울까요?${n ? ` 장비 ${n}개는 지워지지 않고 ${major ? `대분류 '${major}'` : '미분류'}로 옮겨져요.` : ''}`, '삭제', ()=>{
+    SP.gearCategories = SP.gearCategories.filter(c=>c!==name);
+    const m = normCatMeta(SP.gearCategoryMeta);
+    m.subs = m.subs.filter(x=>x.name!==name);
+    SP.gearCategoryMeta = m;
+    renameGearCatInGear(name, major);
+    persistGearCategories(); categoryManageModal(); renderView();
+    toast(n ? `카테고리를 지웠어요. 장비 ${n}개는 ${major ? major : '미분류'}로 옮겨졌어요.` : '카테고리를 지웠어요.');
+  });
 }
 
 /* ============================ CHECKLIST ============================ */
@@ -3871,19 +4092,14 @@ function wireGlobalActions(){
       case 'gear-cat-manage': categoryManageModal(); break;
       case 'gear-cat-add': {
         const input = document.getElementById('cat-new-name');
-        addGearCategory(input.value.trim());
+        const parent = document.getElementById('cat-new-parent');
+        addGearCategory(input.value.trim(), parent ? parent.value : '');
         break;
       }
-      case 'gear-cat-rename': {
-        const oldName = a.getAttribute('data-old');
-        const row = a.closest('.list-row');
-        const input = row.querySelector('.cat-edit-input');
-        renameGearCategory(oldName, input.value.trim());
-        break;
-      }
-      case 'gear-cat-del':
-        deleteGearCategory(a.getAttribute('data-cat'));
-        break;
+      case 'gear-cat-move': moveGearCategory(a.getAttribute('data-kind'), a.getAttribute('data-name'), Number(a.getAttribute('data-dir'))); break;
+      case 'gear-cat-edit': catEditModal(a.getAttribute('data-kind'), a.getAttribute('data-name')); break;
+      case 'gear-cat-save': saveGearCatEdit(a.getAttribute('data-kind'), a.getAttribute('data-old')); break;
+      case 'gear-cat-del': deleteGearCategoryConfirm(a.getAttribute('data-kind'), a.getAttribute('data-cat')); break;
 
       case 'goto-settings':
         state.currentView = 'settings';

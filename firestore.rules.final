@@ -16,7 +16,7 @@ service cloud.firestore {
     // 구글로 로그인한 본인만 자기 공간(users/{내 uid}/...)을 읽고 쓸 수 있어요.
     //   users/{uid}                          : 계정 정보 { name, email, photoURL, updatedAt }
     //   users/{uid}/campingLogs|gear|checklists|cookingChecks|trips|checklistTemplates/{id}
-    //   users/{uid}/settings/app             : { gearCategories, weatherLocation, homeWidgets }
+    //   users/{uid}/settings/app             : { gearCategories, gearCategoryMeta?, weatherLocation, homeWidgets }
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
       match /{document=**} {
@@ -26,7 +26,8 @@ service cloud.firestore {
 
     // ── 2. 그룹 ─────────────────────────────────────────────────
     //   groups/{gid} = { name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role } },
-    //                    createdAt, gearCategories?, joinCode? }
+    //                    createdAt, gearCategories?, gearCategoryMeta?, joinCode? }
+    //   gearCategoryMeta = { majors:[{name,desc}], subs:[{name,major,desc}] } (장비 대분류·소분류·설명)
     //   groups/{gid}/checklists|gear|trips|checklistTemplates/{id} : 그룹 멤버만 읽기·쓰기
     //   groups/{gid}/sharedReviews/{uid_기록id}                     : 멤버가 공유한 후기 사본(아래 별도 규칙)
     //   groupInvites/{code} = { gid, groupName, createdBy, expiresAt(밀리초), createdAt }
@@ -86,10 +87,12 @@ service cloud.firestore {
         && request.resource.data.members.keys().hasOnly([me()])
         && request.resource.data.members[me()].role == 'owner'
         && validName(request.resource.data.name)
-        && request.resource.data.keys().hasOnly(['name', 'ownerUid', 'memberUids', 'members', 'createdAt', 'gearCategories']);
+        && request.resource.data.keys().hasOnly(['name', 'ownerUid', 'memberUids', 'members', 'createdAt', 'gearCategories', 'gearCategoryMeta']);
       allow update: if
            (isOwner() && changed().hasOnly(['name']) && validName(request.resource.data.name))       // 이름 변경: 그룹장
-        || (isMember() && changed().hasOnly(['gearCategories']) && request.resource.data.gearCategories is list) // 장비 카테고리: 멤버
+        || (isMember() && changed().hasOnly(['gearCategories', 'gearCategoryMeta'])                                // 장비 카테고리: 멤버
+            && request.resource.data.gearCategories is list
+            && (!('gearCategoryMeta' in request.resource.data) || request.resource.data.gearCategoryMeta is map))
         || isJoin() || isLeave() || isKick();
       allow delete: if isOwner();                                                                   // 그룹 삭제: 그룹장
     }
