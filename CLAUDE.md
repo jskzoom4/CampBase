@@ -118,6 +118,25 @@
   웹 로그인이 되려면 Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 `jskzoom4.github.io`가 있어야 한다.
 - 되돌리기: 문제가 된 변경을 revert하면 다시 빌드됨. 예전 APK도 Releases에 남아 있음.
 
+## 화면 규칙 (새 화면·버튼을 만들 때 지킬 것)
+- **하단 탭바(820px 이하)**: `#mobile-tabbar`(화면 아래 고정, 6개 탭 아이콘+짧은 이름, 지금 탭 `aria-current`). 안전 영역 `--safe-bottom`,
+  탭바 높이 `--tabbar-h`만큼 `#main` 아래 여백. 입력칸에 초점이 가거나 화면이 줄면(키보드) `body.kbd-open`으로 탭바를 숨긴다.
+  데스크톱은 왼쪽 사이드바(`#nav`) 그대로, 연결 상태 알약(`#db-status-top`)은 위쪽. 탭 버튼은 `data-nav`(테스트도 이걸로 찾음).
+- **⋯ 메뉴(공통 컴포넌트)**: 한 줄·카드에 버튼이 여러 개면 가장 자주 쓰는 동작 1개만 보이게 두고 나머지는 `moreMenuHtml(key, items, label)`로.
+  `items = [{ action, attrs:{'data-id':…}, icon, label, danger }]` — 항목도 **같은 data-action**으로 `wireGlobalActions()`에서 처리된다.
+  위험한 항목(`danger:true`, 삭제·나가기)은 빨간색으로 맨 아래. 바깥 클릭·Esc로 닫힘, 화살표/Home/End/Tab/Enter 지원, 한 번에 하나만 열림(`closeAllMenus`).
+  지금 메뉴에 있는 것: 리스트(이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제), 장비·캠핑 기록(삭제), 일정(수정/삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기).
+  테스트에서 메뉴 안 버튼은 `tests/ui-helpers.js`의 `menuClick(page, selector)`로 누른다(메뉴를 열고 누름).
+- **모달**: `openModal()`이 오른쪽 위 닫기(X, `data-action="modal-close"`)를 자동으로 넣는다. Esc로 닫기, 나타남/사라짐 효과(fade+scale, `prefers-reduced-motion`이면 없음).
+  열리면 첫 입력칸(없으면 첫 버튼)으로 초점, Tab은 모달 안에서만, 닫히면 연 버튼으로 초점 복귀(다시 그려졌으면 같은 data-action 버튼, 메뉴 항목이면 그 ⋯ 버튼).
+  **입력칸(input·select·textarea)이 있는 모달은 배경을 눌러도 안 닫히고**, 확인만 하는 모달은 배경을 누르면 닫힌다. 사라지는 중인 모달은 `#modal-ghost`로 옮겨 버튼·id를 지운다.
+- **누르는 영역** 최소 40×40(`.icon-btn`), 아이콘만 있는 버튼에는 `aria-label` 필수(테스트가 검사).
+- **초점 표시**: 키보드로 움직일 때만 `:focus-visible` 브랜드 초록 2px 테두리(+2px 간격). `outline:none`을 따로 쓰지 말 것.
+- **색**: 앰버(`--accent`, 글자는 `--on-accent`)는 **만들기/추가 버튼에만**(`.btn-accent`: 기록 추가·장비 추가·새 리스트·그룹 만들기·일정 만들기 칩).
+  진행률 숫자·태그·배지는 중립(`.tag` 회색), 완료는 초록(`.done-tag`, `--good-text`). 글자용 색은 `--brand-text`/`--good-text`/`--bad`, 칠하는 배경은 `--brand`/`--good`/`--bad-solid`.
+  밝은·어두운 모드 모두 글자 대비 4.5:1 이상(테스트가 계산해서 확인). 새 색을 쓰면 두 모드 다 확인.
+- 화면을 바꾸면 `node tests/screenshots.js <폴더> [docs 폴더]`로 390px·1280px × 밝은/어두운 모드 스크린샷을 찍어 확인할 수 있다(자동 테스트 아님).
+
 ## 꼭 지킬 규칙
 - **네이티브 `alert` / `confirm` / `prompt` 금지.** 확인이 필요하면 `confirmModal(message, label, onConfirm)`을 쓴다.
 - 클릭/변경 이벤트는 `data-action` 속성 + `wireGlobalActions()`의 위임 리스너 한 곳에서 처리(로그인 버튼 포함). 리스너의 `try/catch`는 유지.
@@ -139,7 +158,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 일곱 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 여덟 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -148,10 +167,11 @@ node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함�
 node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
 node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 후기 남기기(tripRef)
 node tests/gear-checklist.test.js  # 장비↔준비물: 담당자 추천(일치·불일치·주인 없음), 장비→체크리스트(개인/그룹, 중복 건너뛰기, 주인 자동 담당)
+node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 안 가림·키보드, ⋯ 메뉴(열기·바깥/Esc 닫기·키보드), 모달(X·Esc·배경·초점), 초점 표시, 앰버·대비
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8773)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8774, 스크린샷 8779)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

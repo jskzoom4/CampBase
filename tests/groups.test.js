@@ -3,6 +3,7 @@
 // 개인 공간 분리, 그룹 2개 전환, 그룹으로 보내기(복사), 만료 코드 거부, 내보내기/나가기/이름 변경/삭제.
 // 실행: node tests/groups.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -123,7 +124,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   check('참여 후 memberUids·members에 B 추가(역할 member)', g1.memberUids.includes(UB.uid) && g1.members[UB.uid].role === 'member' && g1.members[UB.uid].name === '밥' && g1.joinCode === code, g1);
   check('B의 Settings에 캠핑팸(멤버) 표시', /멤버/.test(await groupRow(B, '캠핑팸').innerText()));
   check('멤버 행에는 나가기만(이름 변경·삭제 없음)', (await groupRow(B, '캠핑팸').locator('[data-action="group-leave"]').count()) === 1 && (await groupRow(B, '캠핑팸').locator('[data-action="group-rename"], [data-action="group-delete"]').count()) === 0);
-  await groupRow(A, '캠핑팸').locator('[data-action="group-members"]').click();
+  await menuClick(A, groupRow(A, '캠핑팸').locator('[data-action="group-members"]'));
   const membersText = await A.locator('#members-list').innerText();
   check('멤버 목록 보기(앨리스·밥)', /앨리스/.test(membersText) && /밥/.test(membersText) && /그룹장/.test(membersText), membersText);
   await A.click('[data-action="modal-close"]');
@@ -320,7 +321,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   check('그룹에 없던 카테고리(해먹)는 그룹에 추가(기타 앞에)', gc.includes('해먹') && gc.indexOf('해먹') < gc.indexOf('기타') && gc.filter(c => c === '해먹').length === 1, gc);
 
   await nav(A, 'checklist');
-  await A.click('.checklist-group:has-text("A개인리스트") [data-action="cl-send"]');
+  await menuClick(A, '.checklist-group:has-text("A개인리스트") [data-action="cl-send"]');
   await A.selectOption('#send-group', gid);
   await A.click('[data-action="cl-send-go"]');
   await settle();
@@ -365,7 +366,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pickSpace(C, '캠핑팸');
   check('C 참여 후 그룹 장비 보임', (await C.locator('.list-row:has-text("공용 타프")').count()) === 1);
   await nav(A, 'settings');
-  await groupRow(A, '캠핑팸').locator('[data-action="group-members"]').click();
+  await menuClick(A, groupRow(A, '캠핑팸').locator('[data-action="group-members"]'));
   await A.click('.member-row:has-text("캐롤") [data-action="group-kick"]');
   check('내보내기 전 확인(confirmModal)', /캐롤.*내보낼까요/.test(await A.locator('#modal-root').innerText()));
   await confirmYes(A);
@@ -377,7 +378,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   // ================= 9. 이름 변경 / 나가기 =================
   await nav(A, 'settings');
-  await groupRow(A, '캠핑팸').locator('[data-action="group-rename"]').click();
+  await menuClick(A, groupRow(A, '캠핑팸').locator('[data-action="group-rename"]'));
   await A.fill('#grp-rename', '캠핑팸🔥');
   await A.click('[data-action="group-rename-save"]');
   await settle();
@@ -389,7 +390,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   check('(가짜 규칙) 멤버는 이름 변경 거부', bRename === 'permission-denied', bRename);
 
   await nav(B, 'settings');
-  await groupRow(B, '캠핑팸🔥').locator('[data-action="group-leave"]').click();
+  await menuClick(B, groupRow(B, '캠핑팸🔥').locator('[data-action="group-leave"]'));
   check('나가기 전 확인(confirmModal)', /나갈까요/.test(await B.locator('#modal-root').innerText()));
   await confirmYes(B);
   await settle(); await settle();
@@ -404,7 +405,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await nav(A, 'gear');
   await pickSpace(A, '캠핑팸🔥');
   await nav(A, 'settings');
-  await groupRow(A, '캠핑팸🔥').locator('[data-action="group-delete"]').click();
+  await menuClick(A, groupRow(A, '캠핑팸🔥').locator('[data-action="group-delete"]'));
   check('삭제 1차 확인', /삭제할까요/.test(await A.locator('#modal-root').innerText()));
   await A.click('[data-action="confirm-yes"]');
   await A.waitForSelector('[data-action="confirm-yes"]', { timeout: 2000 }).catch(() => {});

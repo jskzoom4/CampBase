@@ -4,6 +4,7 @@
 //  그룹장 "그룹에서 내리기", 나간 멤버 표시·공유 정리, 비멤버에게는 안 보임, 백업 가져오기 후 사본 맞춤, 보기 기억.
 // 실행: node tests/reviews.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -137,7 +138,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
 
   // ================= 3. 삭제 → 사본 삭제 → 되돌리기 → 사본 복구 =================
   const c1Before = JSON.parse(JSON.stringify(server[A_ + 'campingLogs/c1']));
-  await A.click('.list-row:has-text("홍천 강변") [data-action="camp-del"]');
+  await menuClick(A, '.list-row:has-text("홍천 강변") [data-action="camp-del"]');
   check('공유 중인 기록 삭제 확인 모달에 그룹 후기도 사라진다고 안내', /캠핑팸.*후기도 함께 사라져요/.test(await A.locator('#modal-root').innerText()));
   await confirmYes(A);
   await settle();
@@ -215,7 +216,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   const ck = `groups/${G1}/sharedReviews/${UC.uid}_cc`;
   check('(준비) 캐롤 후기 사본', !!server[ck]);
   await nav(C, 'settings');
-  await C.click('.group-row:has-text("캠핑팸") [data-action="group-leave"]');
+  await menuClick(C, '.group-row:has-text("캠핑팸") [data-action="group-leave"]');
   await confirmYes(C);
   await settle(); await settle();
   check('그룹을 나가도 내가 올린 사본은 그룹에 남음', !!server[ck] && !server['groups/' + G1].memberUids.includes(UC.uid));
@@ -254,7 +255,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   check('백업 가져오기 → sharedGroupIds 기준으로 사본 다시 만듦', !!server[k1] && server[k1].sourceLogId === 'c1');
   check('백업에 없는 기록의 사본은 삭제', !server[`groups/${G1}/sharedReviews/${UA.uid}_${tripLog[0].split('/').pop()}`]);
   check('그룹 백업에는 후기 사본이 들어가지 않음', await (async () => {
-    await A.click('.group-row:has-text("캠핑팸") [data-action="group-backup-export"]');
+    await menuClick(A, '.group-row:has-text("캠핑팸") [data-action="group-backup-export"]');
     await A.waitForSelector('#backup-text');
     const gb = JSON.parse(await A.inputValue('#backup-text'));
     await A.click('[data-action="modal-close"]');
@@ -276,7 +277,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
 
   // ================= 12. 그룹 삭제 시 후기 사본도 삭제 =================
   await nav(A, 'settings');
-  await A.click('.group-row:has-text("캠핑팸") [data-action="group-delete"]');
+  await menuClick(A, '.group-row:has-text("캠핑팸") [data-action="group-delete"]');
   await confirmYes(A);
   await A.waitForSelector('[data-action="confirm-yes"]', { timeout: 2000 }).catch(() => {});
   await confirmYes(A);

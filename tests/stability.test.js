@@ -5,6 +5,7 @@
 //  4) 예전 공유 경로(legacy)를 읽을 수 없어도(전환 기간 2단계) 앱이 정상 동작
 // 실행: node tests/stability.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -119,7 +120,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   // ================= 1. 되돌리기 — 개인 공간 =================
   await nav(A, 'checklist');
   await A.waitForSelector('.checklist-group:has-text("기본 준비물")');
-  await A.click('.check-row:has-text("침낭") [data-action="cl-del-item"]');
+  await menuClick(A, '.check-row:has-text("침낭") [data-action="cl-del-item"]');
   await settle();
   check('항목 삭제 → "삭제했어요 · 되돌리기" 토스트', /삭제했어요/.test(await toastText(A)) && (await A.locator('#toast.show [data-action="undo-delete"]').count()) === 1, await toastText(A));
   check('항목 삭제는 저장소에도 반영', server[A_ + 'checklists/cl1'].items.length === 2);
@@ -127,7 +128,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('되돌리기: 항목이 원래 위치(2번째)에 같은 내용으로 돌아옴', same(server[A_ + 'checklists/cl1'].items, before[A_ + 'checklists/cl1'].items), server[A_ + 'checklists/cl1'].items.map(i => i.label));
   check('되돌린 항목이 화면에도 보임', (await A.locator('.check-row:has-text("침낭")').count()) === 1);
 
-  await A.click('.checklist-group:has-text("기본 준비물") [data-action="cl-del-list"]');
+  await menuClick(A, '.checklist-group:has-text("기본 준비물") [data-action="cl-del-list"]');
   await confirmYes(A);
   await settle();
   check('리스트 삭제(확인 후) → 저장소에서 사라짐 + 되돌리기 토스트', !server[A_ + 'checklists/cl1'] && (await A.locator('#toast.show [data-action="undo-delete"]').count()) === 1);
@@ -136,7 +137,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('되돌린 리스트가 화면에 보임', (await A.locator('.checklist-group:has-text("기본 준비물")').count()) === 1);
 
   await nav(A, 'gear');
-  await A.click('.list-row:has-text("스텔스 5 텐트") [data-action="gear-del"]');
+  await menuClick(A, '.list-row:has-text("스텔스 5 텐트") [data-action="gear-del"]');
   await confirmYes(A);
   await settle();
   check('장비 삭제 → 사라짐', !server[A_ + 'gear/g1'] && (await A.locator('.list-row:has-text("스텔스 5 텐트")').count()) === 0);
@@ -144,7 +145,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('되돌리기: 장비가 같은 id·같은 내용으로 돌아옴', same(server[A_ + 'gear/g1'], before[A_ + 'gear/g1']));
 
   await nav(A, 'camping');
-  await A.click('.list-row:has-text("홍천 강변 캠핑장") [data-action="camp-del"]');
+  await menuClick(A, '.list-row:has-text("홍천 강변 캠핑장") [data-action="camp-del"]');
   check('캠핑 기록 삭제는 확인 모달 유지', /삭제할까요/.test(await A.locator('#modal-root').innerText()));
   await confirmYes(A);
   await settle();
@@ -155,9 +156,9 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   // 연달아 두 개 지우면 마지막 것만 되돌림
   await nav(A, 'checklist');
-  await A.click('.check-row:has-text("텐트") [data-action="cl-del-item"]');
+  await menuClick(A, '.check-row:has-text("텐트") [data-action="cl-del-item"]');
   await settle();
-  await A.click('.check-row:has-text("버너") [data-action="cl-del-item"]');
+  await menuClick(A, '.check-row:has-text("버너") [data-action="cl-del-item"]');
   await settle();
   await undo(A);
   check('연달아 지우면 마지막 삭제(버너)만 되돌림', server[A_ + 'checklists/cl2'].items.length === 1 && !server[A_ + 'checklists/cl1'].items.some(i => i.label === '텐트'));
@@ -166,7 +167,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   for (const pg of pages) await pg.evaluate(([p, d]) => window.__fsApply(p, d), [A_ + 'checklists/cl1', before[A_ + 'checklists/cl1']]);
 
   // 5초가 지나면 되돌리기가 사라짐
-  await A.click('.check-row:has-text("랜턴") [data-action="cl-del-item"]');
+  await menuClick(A, '.check-row:has-text("랜턴") [data-action="cl-del-item"]');
   await sleep(5400);
   check('5초가 지나면 되돌리기 버튼이 사라짐', (await A.locator('#toast.show [data-action="undo-delete"]').count()) === 0);
   check('되돌리기 시간이 지나면 삭제가 그대로 유지', !server[A_ + 'checklists/cl1'].items.some(i => i.id === 'i3'));
@@ -176,7 +177,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await pickSpace(A, '캠핑팸');
   await nav(B, 'checklist');
   await pickSpace(B, '캠핑팸');
-  await A.click('.check-row:has-text("가스") [data-action="cl-del-item"]');
+  await menuClick(A, '.check-row:has-text("가스") [data-action="cl-del-item"]');
   await settle();
   check('그룹 항목 삭제 → B 화면에서도 사라짐', (await B.locator('.check-row:has-text("가스")').count()) === 0);
   await undo(A);
@@ -186,7 +187,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('되돌린 그룹 항목이 B에게도 실시간으로 보임', (await B.locator('.check-row:has-text("가스")').count()) === 1);
 
   const glBeforeDel = JSON.parse(JSON.stringify(server[G + '/checklists/gl1']));
-  await A.click('.checklist-group:has-text("그룹 준비물") [data-action="cl-del-list"]');
+  await menuClick(A, '.checklist-group:has-text("그룹 준비물") [data-action="cl-del-list"]');
   await confirmYes(A);
   await settle();
   check('그룹 리스트 삭제', !server[G + '/checklists/gl1']);
@@ -194,7 +195,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('그룹 리스트 되돌리기: addedBy·updatedBy·항목 담당자까지 같은 내용', same(server[G + '/checklists/gl1'], glBeforeDel) && glBeforeDel.addedBy === UA.uid, server[G + '/checklists/gl1']);
 
   await nav(A, 'gear');
-  await A.click('.list-row:has-text("공용 타프") [data-action="gear-del"]');
+  await menuClick(A, '.list-row:has-text("공용 타프") [data-action="gear-del"]');
   await confirmYes(A);
   await settle();
   check('그룹 장비 삭제', !server[G + '/gear/gg1']);
@@ -205,7 +206,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('되돌린 그룹 장비가 B에게도 보임(주인 표시 포함)', (await B.locator('.list-row:has-text("공용 타프") .owner-tag:has-text("밥")').count()) === 1);
 
   // 지운 뒤 다른 공간으로 옮겨도 지운 그 공간에 되돌림
-  await A.click('.list-row:has-text("공용 타프") [data-action="gear-del"]');
+  await menuClick(A, '.list-row:has-text("공용 타프") [data-action="gear-del"]');
   await confirmYes(A);
   await settle();
   await pickSpace(A, '내 공간');
@@ -218,7 +219,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('그룹장에게만 그룹 백업 버튼', (await groupRow(A, '캠핑팸').locator('[data-action="group-backup-export"]').count()) === 1
     && (await groupRow(A, '캠핑팸').locator('[data-action="group-backup-import"]').count()) === 1
     && (await groupRow(B, '캠핑팸').locator('[data-action="group-backup-export"], [data-action="group-backup-import"]').count()) === 0);
-  await groupRow(A, '캠핑팸').locator('[data-action="group-backup-export"]').click();
+  await menuClick(A, groupRow(A, '캠핑팸').locator('[data-action="group-backup-export"]'));
   await A.waitForSelector('#backup-text', { timeout: 3000 });
   const exported = await A.locator('#backup-text').inputValue();
   let ex = null; try { ex = JSON.parse(exported); } catch (e) {}
@@ -244,7 +245,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check('(준비) 그룹 데이터가 바뀜', !!newGearKey && !server[G + '/checklists/gl1']);
 
   await nav(A, 'settings');
-  await groupRow(A, '캠핑팸').locator('[data-action="group-backup-import"]').click();
+  await menuClick(A, groupRow(A, '캠핑팸').locator('[data-action="group-backup-import"]'));
   // 잘못된 파일 거부
   await A.fill('#group-backup-text-in', '{"app":"campbase","version":1,"gear":[]}');
   await A.click('[data-action="group-backup-import-go"]');
@@ -330,7 +331,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   // 그룹 나가기는 되돌리기 대상이 아님(확인 모달만)
   await nav(B, 'settings');
-  await groupRow(B, '캠핑팸').locator('[data-action="group-leave"]').click();
+  await menuClick(B, groupRow(B, '캠핑팸').locator('[data-action="group-leave"]'));
   await confirmYes(B);
   await settle();
   check('그룹 나가기 후에는 되돌리기 버튼 없음', !server[G].memberUids.includes(UB.uid) && (await B.locator('#toast [data-action="undo-delete"]').count()) === 0);
