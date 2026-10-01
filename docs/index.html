@@ -151,7 +151,7 @@
   .gear-sec-name{font-weight:700;font-size:15px;}
   .gear-sec-desc{font-size:12px;color:var(--text-dim);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .gear-sec-body{padding:0 14px 6px;border-top:1px solid var(--border);}
-  .gear-sub-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 6px;padding:10px 4px 4px;border-bottom:1px dashed var(--border);}
+  .gear-sub-head{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;padding:10px 4px 4px;border-bottom:1px dashed var(--border);}
   .gear-sub-name{font-size:12px;font-weight:700;color:var(--text-dim);}
   .gear-sub-count{font-size:11px;color:var(--text-dim);}
   .gear-sub-desc{flex-basis:100%;font-size:11.5px;color:var(--text-dim);}
@@ -307,6 +307,17 @@
   .pick-box{width:24px;height:24px;flex:none;border-radius:7px;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;margin:8px 2px 0 6px;}
   .gear-row.picked .pick-box{background:var(--brand);border-color:var(--brand);color:#fff;}
   .pick-box svg{width:15px;height:15px;}
+  /* I-2 카테고리별 전체 선택 상자(누르는 영역 40×40) */
+  .pick-all{width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:none;background:transparent;padding:0;cursor:pointer;color:inherit;border-radius:10px;}
+  .pick-all .pick-box{margin:0;}
+  .pick-all.on .pick-box, .pick-all.mixed .pick-box{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .pick-dash{display:block;width:10px;height:2px;border-radius:2px;background:#fff;}
+  .gear-sec-top{display:flex;align-items:center;}
+  .gear-sec-top .pick-all{margin-left:6px;}
+  .gear-sec-top .gear-sec-head{flex:1;min-width:0;}
+  .gear-sub-head .pick-all{margin:-8px 0 -8px -8px;}
+  .gear-pick-all-row{display:flex;align-items:center;gap:6px;padding:2px 0 6px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;}
+  .gear-pick-all-row .pick-all{margin-left:-4px;}
   .select-bar{position:fixed;z-index:35;left:calc(50% + 108px);transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
     justify-content:center;width:max-content;max-width:calc(100% - 248px);background:var(--surface);border:1px solid var(--border);border-radius:14px;
     padding:8px 10px;box-shadow:0 10px 30px rgba(0,0,0,.18);}
@@ -2655,6 +2666,13 @@ function renderGear(){
   ] : [];
   const chip = (key, label, n, extra) => `<div class="seg-btn ${key===filter?'active':''}" data-action="gear-filter" data-cat="${esc(key)}" ${extra||''}>${esc(label)}${n!==undefined?` <span class="num" style="opacity:.65;">${n}</span>`:''}</div>`;
   const row = g => gearRowHtml(g, grp, selecting, sel);
+  // I-2 선택 모드: 카테고리(묶음·소분류·지금 목록)마다 전체 선택 상자. 모두 골라져 있으면 누를 때 모두 해제
+  const pickAll = (key, label, items) => {
+    if(!selecting || !items.length) return '';
+    const n = items.filter(g=>sel.has(g.id)).length;
+    const st = n===0 ? 'false' : (n===items.length ? 'true' : 'mixed');
+    return `<button class="pick-all ${st==='true'?'on':''} ${st==='mixed'?'mixed':''}" data-action="gear-pick-many" data-pick-key="${esc(key)}" data-ids="${esc(items.map(g=>encodeURIComponent(g.id)).join(','))}" role="checkbox" aria-checked="${st}" aria-label="'${esc(label)}' 전체 선택" title="전체 선택"><span class="pick-box" aria-hidden="true">${st==='true' ? icon('check') : (st==='mixed' ? '<i class="pick-dash"></i>' : '')}</span></button>`;
+  };
   // 한 묶음 안: 대분류에 바로 넣은 장비 → 소분류별(작은 제목 + 설명)
   const bodyOf = node => {
     const items = shown.filter(g=>gearInCat(g, node.key, tree));
@@ -2663,7 +2681,7 @@ function renderGear(){
     return direct.map(row).join('') + node.subs.map(x=>{
       const its = items.filter(g=>String(g.category||'').trim()===x.key);
       if(!its.length) return '';
-      return `<div class="gear-sub-head"><span class="gear-sub-name">${esc(x.name)}</span> <span class="num gear-sub-count">${its.length}</span>${x.desc ? `<span class="gear-sub-desc">${esc(x.desc)}</span>` : ''}</div>${its.map(row).join('')}`;
+      return `<div class="gear-sub-head">${pickAll('sub:' + x.key, x.name, its)}<span class="gear-sub-name">${esc(x.name)}</span> <span class="num gear-sub-count">${its.length}</span>${x.desc ? `<span class="gear-sub-desc">${esc(x.desc)}</span>` : ''}</div>${its.map(row).join('')}`;
     }).join('');
   };
   const emptyMsg = `<div class="card"><div class="empty">${!SP.gear.length ? '등록된 장비가 없어요.' : '이 조건에 맞는 장비가 없어요.'}</div></div>`;
@@ -2675,18 +2693,21 @@ function renderGear(){
       const closed = gearSecClosed(n.key);
       const bid = 'gsec-' + (n.key===GEAR_UNCAT ? 'none' : encodeURIComponent(n.key).replace(/%/g,'_'));
       return `<section class="card gear-sec ${closed?'closed':''}">
+        <div class="gear-sec-top">${pickAll('sec:' + n.key, n.name, shown.filter(g=>gearInCat(g, n.key, tree)))}
         <button class="gear-sec-head" data-action="gear-sec-toggle" data-key="${esc(n.key)}" aria-expanded="${!closed}" aria-controls="${bid}">
           ${icon('chev', 'gear-sec-chev')}
           <span class="gear-sec-title"><span class="gear-sec-name">${esc(n.name)}</span>${n.desc ? `<span class="gear-sec-desc">${esc(n.desc)}</span>` : ''}</span>
           <span class="tag num">${count}</span>
-        </button>
+        </button></div>
         <div class="gear-sec-body" id="${bid}" ${closed?'hidden':''}>${bodyOf(n)}</div>
       </section>`;
     }).join('') : emptyMsg;
   } else {
     const body = bodyOf(filterNode);
+    const its = shown.filter(g=>gearInCat(g, filterNode.key, tree));
+    const allRow = selecting && its.length ? `<div class="gear-pick-all-row">${pickAll('list:' + filterNode.key, filterNode.name, its)}<span>'${esc(filterNode.name)}' 전체 선택</span> <span class="num gear-sub-count">${its.length}</span></div>` : '';
     listHtml = (filterNode.desc ? `<div class="gear-cat-desc">${esc(filterNode.desc)}</div>` : '')
-      + (body ? `<div class="card">${body}</div>` : emptyMsg);
+      + (body ? `<div class="card">${allRow}${body}</div>` : emptyMsg);
   }
   return `
     ${spaceChipsHtml()}
@@ -2695,7 +2716,7 @@ function renderGear(){
       <div class="gear-head-actions">
         ${SP.gear.length ? `<button class="btn ${selecting?'active-toggle':''}" data-action="gear-select" aria-pressed="${selecting}">${icon('check')} ${selecting ? '선택 끝' : '선택'}</button>` : ''}
         <button class="btn btn-accent" data-action="gear-new">${icon('plus')} 장비 추가</button>
-        ${moreMenuHtml('gear-head', [{ action:'gear-cat-manage', attrs:{}, icon:'edit', label:'카테고리 관리' }], '장비 메뉴')}
+        <button class="btn" data-action="gear-cat-manage">${icon('settings')} 카테고리 관리</button>
       </div>
     </div>
     <div class="seg-group gear-cat-row">
@@ -2729,9 +2750,7 @@ function gearRowHtml(g, grp, selecting, sel){
           </div>
           ${selecting ? '' : `<div class="row-actions">
             <button class="icon-btn" data-action="gear-edit" data-id="${g.id}" title="수정" aria-label="'${esc(g.name)}' 수정">${icon('edit')}</button>
-            ${moreMenuHtml('gear:' + g.id, [
-              { action:'gear-del', attrs:{'data-id':g.id}, icon:'trash', label:'장비 삭제', danger:true },
-            ], `'${g.name}' 장비 메뉴`)}
+            <button class="icon-btn gear-del-btn" data-action="gear-del" data-id="${g.id}" title="삭제" aria-label="'${esc(g.name)}' 삭제">${icon('close')}</button>
           </div>`}
         </div>`;
 }
@@ -2759,6 +2778,14 @@ function setGearSelecting(on){
   state.gearSelecting = !!on;
   state.gearSelected = new Set();
   document.body.classList.toggle('gear-selecting', !!on && state.currentView==='gear');
+}
+function toggleGearPickMany(ids, key){
+  if(!state.gearSelecting || !ids.length) return;
+  const all = ids.every(id=>state.gearSelected.has(id));
+  ids.forEach(id=>{ if(all) state.gearSelected.delete(id); else state.gearSelected.add(id); });
+  renderView();
+  const btn = document.querySelector(`[data-action="gear-pick-many"][data-pick-key="${CSS.escape(key)}"]`);
+  if(btn) btn.focus({ preventScroll: true });
 }
 function toggleGearPick(id){
   if(!state.gearSelecting) return;
@@ -4443,6 +4470,7 @@ function wireGlobalActions(){
       case 'gear-select': setGearSelecting(!state.gearSelecting); renderView(); break;
       case 'gear-select-cancel': setGearSelecting(false); renderView(); break;
       case 'gear-pick': toggleGearPick(id); break;
+      case 'gear-pick-many': toggleGearPickMany(String(a.getAttribute('data-ids')||'').split(',').filter(Boolean).map(decodeURIComponent), a.getAttribute('data-pick-key')); break;
       case 'g2c-all': document.querySelectorAll('.g2c-gear').forEach(el=>{ el.checked = true; }); break;
       case 'g2c-go': addGearToChecklist(); break;
       case 'cl-gear-import': gearPickModal(id); break;
