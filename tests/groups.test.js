@@ -184,7 +184,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pickSpace(A, '캠핑팸');
   await nav(A, 'home');
   const aHomeCl = await A.evaluate(() => Array.from(document.querySelectorAll('.legend-row[data-tab="checklist"]')).map(r => r.innerText.replace(/\s+/g, ' ').trim()));
-  check('Home 대시보드는 개인 데이터만(개인 베개 미완료 1, 그룹 버너 완료는 집계 안 됨)', JSON.stringify(aHomeCl) === JSON.stringify(['완료 0', '미완료 1']), aHomeCl);
+  check('Home 대시보드는 개인 데이터만(개인 베개 미완료 1, 그룹 버너 완료는 집계 안 됨 — 0개 항목은 범례에서 숨김)', JSON.stringify(aHomeCl) === JSON.stringify(['미완료 1']), aHomeCl);
   await A.locator('[data-action="home-cat-nav"][data-tab="checklist"]').first().click();
   await sleep(150);
   check('Home에서 체크리스트로 이동하면 내 공간으로', (await A.locator('.space-chip.active:has-text("내 공간")').count()) === 1 && (await A.locator('.checklist-group:has-text("A개인리스트")').count()) === 1);

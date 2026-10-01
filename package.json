@@ -4,7 +4,7 @@
   "private": true,
   "description": "캠프베이스 - 구글 로그인으로 내 캠핑 준비물·장비·후기 기록 (안드로이드 APK 빌드용)",
   "scripts": {
-    "test": "node tests/shared-app.test.js && node tests/smoke.test.js && node tests/groups.test.js && node tests/stability.test.js && node tests/trips.test.js && node tests/gear-checklist.test.js && node tests/reviews.test.js && node tests/ui.test.js",
+    "test": "node tests/shared-app.test.js && node tests/smoke.test.js && node tests/groups.test.js && node tests/stability.test.js && node tests/trips.test.js && node tests/gear-checklist.test.js && node tests/reviews.test.js && node tests/ui-f.test.js && node tests/ui.test.js",
     "test:emulator": "firebase emulators:exec --only firestore,auth --project demo-campbase \"node tests/firestore-rules.test.js && node tests/emulator-e2e.test.js\""
   },
   "dependencies": {
