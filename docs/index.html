@@ -141,6 +141,7 @@
   .list-row:last-child{border-bottom:none;}
   .list-row .name{font-weight:700;font-size:14px;}
   .list-row .meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .gear-comment{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5;white-space:pre-line;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
   .list-row .notes{font-size:12.5px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
   .list-row .row-actions{display:flex;gap:6px;flex:none;}
   .icon-btn{background:none;border:none;padding:4px;cursor:pointer;color:var(--text-dim);border-radius:6px;}
@@ -697,9 +698,9 @@ function seedDefaults(){
     {id:'c2', name:'가평 숲속 야영장', date:'2025-05-02', region:'가평', siteType:'흙', siteSize:'6x6m', rating:5, checkinTime:'13:00', checkoutTime:'12:00', toiletCondition:'보통', storeCondition:'없음', notes:'경사가 약간 있어서 그라운드시트가 필요했어요.'},
   ];
   state.gear = [
-    {id:'g1', name:'스텔스 5 텐트', brand:'Snow Peak', category:'텐트', price:520000, weight:8.2, date:'2024-04-12'},
-    {id:'g2', name:'체어 원', brand:'Helinox', category:'체어/테이블', price:139000, weight:0.9, date:'2024-05-20'},
-    {id:'g3', name:'부스터 플러스1', brand:'Kovea', category:'조리용품', price:78000, weight:0.4, date:'2023-09-02'},
+    {id:'g1', name:'스텔스 5 텐트', brand:'Snow Peak', category:'텐트', comment:'4인 가족용. 우중 캠핑 때 그라운드시트 같이 챙기기'},
+    {id:'g2', name:'체어 원', brand:'Helinox', category:'체어/테이블'},
+    {id:'g3', name:'부스터 플러스1', brand:'Kovea', category:'조리용품', comment:'가스 카트리지 2개'},
   ];
   state.checklists = [
     {id:'cl1', title:'기본 캠핑 준비물', items:[
@@ -2605,7 +2606,8 @@ function renderGear(){
           ${selecting ? `<span class="pick-box" aria-hidden="true">${sel.has(g.id) ? icon('check') : ''}</span>` : ''}
           <div style="flex:1;min-width:0;">
             <div class="name">${esc(g.name)}${grp && g.ownerUid ? ` <span class="owner-tag">${memberAvatarHtml(grp, g.ownerUid)}${esc(memberName(grp, g.ownerUid))}</span>` : ''}</div>
-            <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}${grp && g.addedBy ? ' · ' + esc(memberName(grp, g.addedBy)) + ' 추가' : ''}</div>
+            <div class="meta">${[g.brand ? esc(g.brand) : '', esc(g.category||''), grp && g.addedBy ? esc(memberName(grp, g.addedBy)) + ' 추가' : ''].filter(Boolean).join(' · ')}</div>
+            ${g.comment ? `<div class="gear-comment">${esc(g.comment)}</div>` : ''}
           </div>
           ${selecting ? '' : `<div class="row-actions">
             <button class="icon-btn" data-action="gear-edit" data-id="${g.id}" title="수정" aria-label="'${esc(g.name)}' 수정">${icon('edit')}</button>
@@ -2659,11 +2661,7 @@ function gearFormModal(id){
         <select id="gf-category">${SP.gearCategories.map(c=>`<option ${g&&g.category===c?'selected':''}>${c}</option>`).join('')}</select>
       </div>
     </div>
-    <div class="field-row">
-      <div class="field"><label>가격(원)</label><input type="number" id="gf-price" value="${g?(g.price||''):''}"></div>
-      <div class="field"><label>무게(kg)</label><input type="number" step="0.1" id="gf-weight" value="${g?(g.weight||''):''}"></div>
-    </div>
-    <div class="field"><label>구매일</label><input type="date" id="gf-date" value="${g?(g.date||''):''}"></div>
+    <div class="field"><label for="gf-comment">메모 (Comment)</label><textarea id="gf-comment" rows="3" placeholder="예: 폴대 1개 수리함, 우중 캠핑 때 챙기기">${g?esc(g.comment||''):''}</textarea></div>
     ${grp ? `<div class="field"><label>주인 (누구 장비인지)</label>
       <select id="gf-owner">
         <option value="">공용 · 주인 없음</option>
@@ -2687,10 +2685,9 @@ function saveGearForm(id){
     name,
     brand: document.getElementById('gf-brand').value.trim(),
     category: document.getElementById('gf-category').value,
-    price: Number(document.getElementById('gf-price').value)||0,
-    weight: Number(document.getElementById('gf-weight').value)||0,
-    date: document.getElementById('gf-date').value || '',
+    comment: document.getElementById('gf-comment').value.trim(),
   };
+  if(!item.comment) delete item.comment;
   const ownerEl = document.getElementById('gf-owner');
   if(inGroupSpace() && ownerEl){ if(ownerEl.value) item.ownerUid = ownerEl.value; else delete item.ownerUid; }
   if(id){ SP.gear = SP.gear.map(g=>g.id===id?item:g); }
