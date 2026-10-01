@@ -141,6 +141,23 @@
   .list-row:last-child{border-bottom:none;}
   .list-row .name{font-weight:700;font-size:14px;}
   .list-row .meta{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  /* ---- Gear 카테고리 묶음(G-4) ---- */
+  .gear-sec{padding:0;margin-bottom:10px;overflow:hidden;}
+  .gear-sec-head{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:10px 14px;border:none;background:transparent;color:var(--text);cursor:pointer;text-align:left;font:inherit;}
+  .gear-sec-head:hover{background:var(--surface-2);}
+  .gear-sec-chev{width:16px;height:16px;flex:none;color:var(--text-dim);transform:rotate(90deg);transition:transform .15s ease;}
+  .gear-sec.closed .gear-sec-chev{transform:none;}
+  .gear-sec-title{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .gear-sec-name{font-weight:700;font-size:15px;}
+  .gear-sec-desc{font-size:12px;color:var(--text-dim);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .gear-sec-body{padding:0 14px 6px;border-top:1px solid var(--border);}
+  .gear-sub-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 6px;padding:10px 4px 4px;border-bottom:1px dashed var(--border);}
+  .gear-sub-name{font-size:12px;font-weight:700;color:var(--text-dim);}
+  .gear-sub-count{font-size:11px;color:var(--text-dim);}
+  .gear-sub-desc{flex-basis:100%;font-size:11.5px;color:var(--text-dim);}
+  .gear-cat-desc{font-size:12.5px;color:var(--text-dim);margin:-4px 2px 10px;}
+  .gear-subcat-row{margin:-6px 0 14px;}
+  @media (prefers-reduced-motion: reduce){ .gear-sec-chev{transition:none;} }
   /* ---- 카테고리 관리(G-2·8·9) ---- */
   .cat-block{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
   .cat-block-head{font-size:11.5px;font-weight:700;color:var(--text-dim);padding:8px 12px 2px;}
@@ -2595,20 +2612,24 @@ function saveCampForm(id){
 
 /* ============================ GEAR ============================ */
 function renderGear(){
-  const filter = state.gearCategory || 'all';
-  const gearCats = ['all', ...SP.gearCategories];
-  const gearCatLabels = {all:'전체'};
-  const byCat = {};
-  SP.gear.forEach(g=>{ byCat[g.category]=(byCat[g.category]||0)+1; });
   const grp = currentGroup();
+  const tree = gearCatTree(SP.gearCategories, SP.gearCategoryMeta, SP.gear);
+  let filter = state.gearCategory || 'all';
+  if(filter!=='all' && !findCatNode(tree, filter)) filter = 'all';
+  const filterNode = filter==='all' ? null : findCatNode(tree, filter);
+  // 칩: 맨 위 묶음(대분류 / 대분류 없는 소분류 / 미분류). 대분류를 고르면 아래 줄에 그 소분류
+  const activeTop = !filterNode ? 'all' : (filterNode.kind==='sub' && filterNode.major ? filterNode.major : filter);
+  const countIn = key => SP.gear.filter(g=>gearInCat(g, key, tree)).length;
   // 그룹 공간: 주인(누구 장비인지)으로 거르기. 'all' | 'none'(공용) | uid
   const ownerFilter = grp ? (state.gearOwnerFilter || 'all') : 'all';
   const byOwner = {};
   if(grp) SP.gear.forEach(g=>{ const k = g.ownerUid || 'none'; byOwner[k] = (byOwner[k]||0) + 1; });
-  const filtered = SP.gear.filter(g=> (filter==='all' || g.category===filter)
-    && (ownerFilter==='all' || (ownerFilter==='none' ? !g.ownerUid : g.ownerUid===ownerFilter)));
+  const ownerOk = g => ownerFilter==='all' || (ownerFilter==='none' ? !g.ownerUid : g.ownerUid===ownerFilter);
+  const shown = SP.gear.filter(ownerOk);
   // 3-3: 개수가 0인 카테고리 칩은 숨김(선택 중인 칩은 예외), 주인 필터 줄은 주인 있는 장비가 있을 때만
-  const shownCats = gearCats.filter(c=> c==='all' || c===filter || (byCat[c]||0) > 0);
+  const topChips = tree.filter(n=> n.key===activeTop || countIn(n.key) > 0);
+  const activeMajor = activeTop!=='all' ? findCatNode(tree, activeTop) : null;
+  const subChips = activeMajor && activeMajor.kind==='major' ? activeMajor.subs.filter(x=> x.key===filter || countIn(x.key) > 0) : [];
   const showOwnerRow = !!grp && (SP.gear.some(g=>g.ownerUid) || ownerFilter!=='all');
   const selecting = state.gearSelecting;
   const sel = state.gearSelected;
@@ -2618,6 +2639,41 @@ function renderGear(){
     ...Object.keys(byOwner).filter(k=>k!=='none' && !grp.memberUids.includes(k)).map(u=>({key:u, label:memberName(grp,u), n:byOwner[u]})),
     {key:'none', label:'공용(주인 없음)', n:byOwner.none||0},
   ] : [];
+  const chip = (key, label, n, extra) => `<div class="seg-btn ${key===filter?'active':''}" data-action="gear-filter" data-cat="${esc(key)}" ${extra||''}>${esc(label)}${n!==undefined?` <span class="num" style="opacity:.65;">${n}</span>`:''}</div>`;
+  const row = g => gearRowHtml(g, grp, selecting, sel);
+  // 한 묶음 안: 대분류에 바로 넣은 장비 → 소분류별(작은 제목 + 설명)
+  const bodyOf = node => {
+    const items = shown.filter(g=>gearInCat(g, node.key, tree));
+    if(node.kind!=='major') return items.map(row).join('');
+    const direct = items.filter(g=>String(g.category||'').trim()===node.key);
+    return direct.map(row).join('') + node.subs.map(x=>{
+      const its = items.filter(g=>String(g.category||'').trim()===x.key);
+      if(!its.length) return '';
+      return `<div class="gear-sub-head"><span class="gear-sub-name">${esc(x.name)}</span> <span class="num gear-sub-count">${its.length}</span>${x.desc ? `<span class="gear-sub-desc">${esc(x.desc)}</span>` : ''}</div>${its.map(row).join('')}`;
+    }).join('');
+  };
+  const emptyMsg = `<div class="card"><div class="empty">${!SP.gear.length ? '등록된 장비가 없어요.' : '이 조건에 맞는 장비가 없어요.'}</div></div>`;
+  let listHtml;
+  if(!filterNode){
+    // 4: 전체 = 카테고리별 묶음(접고 펴기)
+    const secs = tree.map(n=>({ n, count: shown.filter(g=>gearInCat(g, n.key, tree)).length })).filter(x=>x.count > 0);
+    listHtml = secs.length ? secs.map(({n, count})=>{
+      const closed = gearSecClosed(n.key);
+      const bid = 'gsec-' + (n.key===GEAR_UNCAT ? 'none' : encodeURIComponent(n.key).replace(/%/g,'_'));
+      return `<section class="card gear-sec ${closed?'closed':''}">
+        <button class="gear-sec-head" data-action="gear-sec-toggle" data-key="${esc(n.key)}" aria-expanded="${!closed}" aria-controls="${bid}">
+          ${icon('chev', 'gear-sec-chev')}
+          <span class="gear-sec-title"><span class="gear-sec-name">${esc(n.name)}</span>${n.desc ? `<span class="gear-sec-desc">${esc(n.desc)}</span>` : ''}</span>
+          <span class="tag num">${count}</span>
+        </button>
+        <div class="gear-sec-body" id="${bid}" ${closed?'hidden':''}>${bodyOf(n)}</div>
+      </section>`;
+    }).join('') : emptyMsg;
+  } else {
+    const body = bodyOf(filterNode);
+    listHtml = (filterNode.desc ? `<div class="gear-cat-desc">${esc(filterNode.desc)}</div>` : '')
+      + (body ? `<div class="card">${body}</div>` : emptyMsg);
+  }
   return `
     ${spaceChipsHtml()}
     <div class="section-head">
@@ -2629,29 +2685,15 @@ function renderGear(){
       </div>
     </div>
     <div class="seg-group gear-cat-row">
-      ${shownCats.map(c=>`<div class="seg-btn ${c===filter?'active':''}" data-action="gear-filter" data-cat="${esc(c)}">${esc(gearCatLabels[c]||c)}${c!=='all'?` <span class="num" style="opacity:.65;">${byCat[c]||0}</span>`:''}</div>`).join('')}
+      ${chip('all', '전체')}${topChips.map(n=>chip(n.key, n.name, countIn(n.key))).join('')}
     </div>
+    ${activeMajor && activeMajor.kind==='major' && activeMajor.subs.length ? `<div class="seg-group seg-sm gear-subcat-row" aria-label="'${esc(activeMajor.name)}' 소분류">
+      ${chip(activeMajor.key, activeMajor.name + ' 전체')}${subChips.map(x=>chip(x.key, x.name, countIn(x.key))).join('')}
+    </div>` : ''}
     ${showOwnerRow ? `<div class="seg-group owner-filter" style="margin:-6px 0 16px;">
       ${ownerChips.map(c=>`<div class="seg-btn ${c.key===ownerFilter?'active':''}" data-action="gear-owner-filter" data-owner="${esc(c.key)}">${c.avatar?memberAvatarHtml(grp,c.key):''}${esc(c.label)}${c.n!==undefined?` <span class="num" style="opacity:.65;">${c.n}</span>`:''}</div>`).join('')}
     </div>` : ''}
-    <div class="card">
-      ${filtered.length ? filtered.map(g=>`
-        <div class="list-row gear-row ${selecting && sel.has(g.id) ? 'picked' : ''}" ${selecting ? `data-action="gear-pick" data-id="${esc(g.id)}" role="checkbox" aria-checked="${sel.has(g.id)}" tabindex="0"` : ''}>
-          ${selecting ? `<span class="pick-box" aria-hidden="true">${sel.has(g.id) ? icon('check') : ''}</span>` : ''}
-          <div style="flex:1;min-width:0;">
-            <div class="name">${esc(g.name)}${grp && g.ownerUid ? ` <span class="owner-tag">${memberAvatarHtml(grp, g.ownerUid)}${esc(memberName(grp, g.ownerUid))}</span>` : ''}</div>
-            <div class="meta">${[g.brand ? esc(g.brand) : '', esc(g.category||''), grp && g.addedBy ? esc(memberName(grp, g.addedBy)) + ' 추가' : ''].filter(Boolean).join(' · ')}</div>
-            ${g.comment ? `<div class="gear-comment">${esc(g.comment)}</div>` : ''}
-          </div>
-          ${selecting ? '' : `<div class="row-actions">
-            <button class="icon-btn" data-action="gear-edit" data-id="${g.id}" title="수정" aria-label="'${esc(g.name)}' 수정">${icon('edit')}</button>
-            ${moreMenuHtml('gear:' + g.id, [
-              { action:'gear-del', attrs:{'data-id':g.id}, icon:'trash', label:'장비 삭제', danger:true },
-            ], `'${g.name}' 장비 메뉴`)}
-          </div>`}
-        </div>
-      `).join('') : `<div class="empty">${filter==='all' && ownerFilter==='all' ? '등록된 장비가 없어요.' : '이 조건에 맞는 장비가 없어요.'}</div>`}
-    </div>
+    ${listHtml}
     ${selecting ? `
     <div class="select-bar" role="toolbar" aria-label="선택한 장비로 할 일">
       <span class="select-count" aria-live="polite"><b class="num">${sel.size}</b>개 선택</span>
@@ -2660,6 +2702,43 @@ function renderGear(){
       <button class="btn btn-sm btn-ghost" data-action="gear-select-cancel">취소</button>
     </div>` : ''}
   `;
+}
+function gearRowHtml(g, grp, selecting, sel){
+  const meta = [g.brand ? esc(g.brand) : '', grp && g.addedBy ? esc(memberName(grp, g.addedBy)) + ' 추가' : ''].filter(Boolean).join(' · ');
+  return `
+        <div class="list-row gear-row ${selecting && sel.has(g.id) ? 'picked' : ''}" data-id="${esc(g.id)}" ${selecting ? `data-action="gear-pick" role="checkbox" aria-checked="${sel.has(g.id)}" tabindex="0"` : ''}>
+          ${selecting ? `<span class="pick-box" aria-hidden="true">${sel.has(g.id) ? icon('check') : ''}</span>` : ''}
+          <div style="flex:1;min-width:0;">
+            <div class="name">${esc(g.name)}${grp && g.ownerUid ? ` <span class="owner-tag">${memberAvatarHtml(grp, g.ownerUid)}${esc(memberName(grp, g.ownerUid))}</span>` : ''}</div>
+            ${meta ? `<div class="meta">${meta}</div>` : ''}
+            ${g.comment ? `<div class="gear-comment">${esc(g.comment)}</div>` : ''}
+          </div>
+          ${selecting ? '' : `<div class="row-actions">
+            <button class="icon-btn" data-action="gear-edit" data-id="${g.id}" title="수정" aria-label="'${esc(g.name)}' 수정">${icon('edit')}</button>
+            ${moreMenuHtml('gear:' + g.id, [
+              { action:'gear-del', attrs:{'data-id':g.id}, icon:'trash', label:'장비 삭제', danger:true },
+            ], `'${g.name}' 장비 메뉴`)}
+          </div>`}
+        </div>`;
+}
+// 4: 전체 보기의 카테고리 묶음 접기/펴기(기기에 기억, 공간별). 기본은 펼침
+const GEAR_CLOSED_KEY = 'campbase.gearClosed';
+function gearClosedSet(){ try{ const v = JSON.parse(localStorage.getItem(GEAR_CLOSED_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(e){ return new Set(); } }
+function gearSecClosed(key){ return gearClosedSet().has(state.space + '|' + key); }
+function toggleGearSec(key){
+  const set = gearClosedSet(), k = state.space + '|' + key;
+  if(set.has(k)) set.delete(k); else set.add(k);
+  try{ localStorage.setItem(GEAR_CLOSED_KEY, JSON.stringify([...set])); }catch(e){}
+  renderView();
+  const btn = document.querySelector(`[data-action="gear-sec-toggle"][data-key="${CSS.escape(key)}"]`);
+  if(btn) btn.focus({ preventScroll: true });
+}
+// 6: 카테고리를 고른 상태에서 "장비 추가" → 그 카테고리가 기본값
+function defaultGearCategory(){
+  const f = state.gearCategory || 'all';
+  if(f==='all' || f===GEAR_UNCAT) return '';
+  const tree = gearCatTree(SP.gearCategories, SP.gearCategoryMeta, SP.gear);
+  return findCatNode(tree, f) ? f : '';
 }
 // 3-3 장비 선택 모드: "선택" → 줄을 눌러 고르고, 아래 액션 바(선택 개수·그룹으로 보내기·체크리스트에 추가·취소)
 function setGearSelecting(on){
@@ -2703,7 +2782,7 @@ function gearFormModal(id){
         <datalist id="gf-brand-list">${usedGearBrands().map(b=>`<option value="${esc(b)}"></option>`).join('')}</datalist>
       </div>
       <div class="field"><label>카테고리</label>
-        <select id="gf-category">${gearCategoryOptionsHtml(g ? String(g.category||'').trim() : '')}</select>
+        <select id="gf-category">${gearCategoryOptionsHtml(g ? String(g.category||'').trim() : defaultGearCategory())}</select>
       </div>
     </div>
     <div class="field"><label for="gf-comment">메모 (Comment)</label><textarea id="gf-comment" rows="3" placeholder="예: 폴대 1개 수리함, 우중 캠핑 때 챙기기">${g?esc(g.comment||''):''}</textarea></div>
@@ -4138,6 +4217,7 @@ function wireGlobalActions(){
         state.gearCategory = a.getAttribute('data-cat');
         renderView();
         break;
+      case 'gear-sec-toggle': toggleGearSec(a.getAttribute('data-key')); break;
 
       case 'cl-filter':
         state.checklistFilter = a.getAttribute('data-filter');
