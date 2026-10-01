@@ -1,6 +1,6 @@
 // 화면 스크린샷(디자인 확인용, 자동 테스트 아님): 390px·1280px × 밝은/어두운 모드로 주요 화면 5개.
 // 실행: node tests/screenshots.js <출력폴더> [docs 폴더(기본: docs)]
-//   Home / Checklist(그룹 공간 + 일정 선택) / Gear / Camping(그룹 후기) / 모달(일정 만들기)
+//   Home / Camping(내 기록·그룹 후기) / Gear(선택 모드가 있으면 선택 모드) / Checklist(전체·그룹 일정 패널·스크롤 상태) / Cooking / 모달(그룹 일정 만들기)
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -38,7 +38,10 @@ function seed() {
     { id: 'a1', label: '스텔스 5 텐트', status: 'packed', group: '텐트', assigneeUid: 'uidBob' },
     { id: 'a2', label: '렉타 타프', status: 'pending', group: '타프', assigneeUid: 'uidAlice' },
     { id: 'a3', label: '버너', status: 'pending', group: '조리', assigneeUid: 'uidCarol' },
-    { id: 'a4', label: '아이스박스', status: 'skip', group: '조리' } ] };
+    { id: 'a4', label: '아이스박스', status: 'skip', group: '조리' },
+    { id: 'a5', label: '랜턴', status: 'pending', group: '조명' }, { id: 'a6', label: '랜턴 배터리', status: 'pending', group: '조명' },
+    { id: 'a7', label: '침낭', status: 'packed', group: '침구' }, { id: 'a8', label: '매트', status: 'pending', group: '침구' },
+    { id: 'a9', label: '코펠', status: 'pending', group: '조리', assigneeUid: 'uidAlice' } ] };
   s[G + '/gear/gg1'] = { name: '렉타 타프', brand: 'DOD', category: '타프', ownerUid: 'uidBob', addedBy: 'uidBob' };
   const rv = (uid, id, o) => ({ authorUid: uid, sourceLogId: id, updatedAt: 'x', siteType: '데크', ...o });
   s[G + '/sharedReviews/uidAlice_c1'] = rv('uidAlice', 'c1', { name: '홍천 강변 캠핑장', date: '2026-08-16', region: '홍천', rating: 4, toiletCondition: '좋음', storeCondition: '적당함', notes: '계곡 옆' });
@@ -50,6 +53,7 @@ function seed() {
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   for (const [w, h, vp] of [[390, 844, 'm390'], [1280, 860, 'd1280']]) {
@@ -68,14 +72,20 @@ function seed() {
       await p.waitForFunction(() => /자동 저장 켜짐/.test(document.getElementById('db-status').textContent));
       const nav = async tab => { await p.locator(`[data-nav="${tab}"]:visible`).first().click(); await sleep(400); };
       const shot = async name => { await sleep(250); await p.screenshot({ path: path.join(OUT, `${vp}-${scheme}-${name}.png`) }); };
+      const tryClick = async sel => { const l = p.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click(); await sleep(250); return true; } return false; };
       await nav('home'); await shot('1-home');
-      await nav('checklist');
-      await p.locator('.space-chip:has-text("캠핑팸")').click(); await sleep(400);
-      await p.locator('.trip-chip:has-text("10월 팸 캠핑")').click(); await sleep(300);
-      await shot('2-checklist-group-trip');
-      await nav('gear'); await p.locator('.space-chip:has-text("내 공간")').click(); await sleep(300); await shot('3-gear');
-      await nav('camping'); await p.locator('.camp-view-chip:has-text("캠핑팸")').click(); await sleep(400); await shot('4-camping-group-reviews');
-      await nav('checklist'); await p.locator('[data-action="trip-new"]').click(); await sleep(300); await shot('5-modal-trip');
+      await nav('camping'); await tryClick('.camp-view-chip:has-text("내 기록")'); await shot('2-camping-mine');
+      await tryClick('.camp-view-chip:has-text("캠핑팸")'); await sleep(200); await shot('3-camping-group-reviews');
+      await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');
+      if (await tryClick('[data-action="gear-select"]')) { await tryClick('[data-action="gear-pick"]'); await p.locator('[data-action="gear-pick"]').nth(1).click().catch(() => {}); await sleep(200); }
+      await shot('4-gear');
+      await nav('checklist'); await tryClick('.space-chip:has-text("내 공간")'); await tryClick('[data-action="trip-pick"][data-trip="all"]'); await shot('5-checklist-all');
+      await tryClick('.space-chip:has-text("캠핑팸")'); await sleep(200);
+      await tryClick('.trip-chip:has-text("10월 팸 캠핑")'); await shot('6-checklist-trip-panel');
+      await p.evaluate(() => { const m = document.getElementById('main'); m.scrollTop = 420; }); await sleep(300); await shot('7-checklist-trip-scrolled');
+      await p.evaluate(() => { document.getElementById('main').scrollTop = 0; });
+      await nav('cooking'); await shot('8-cooking');
+      await nav('checklist'); await tryClick('[data-action="trip-new"]'); await sleep(200); await shot('9-modal-trip-group');
       await ctx.close();
     }
   }

@@ -3,7 +3,7 @@
 // 개인 공간 분리, 그룹 2개 전환, 그룹으로 보내기(복사), 만료 코드 거부, 내보내기/나가기/이름 변경/삭제.
 // 실행: node tests/groups.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
-const { menuClick } = require('./ui-helpers');
+const { menuClick, gearAction } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -26,6 +26,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', '8769', '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   const server = {};
@@ -183,7 +184,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pickSpace(A, '캠핑팸');
   await nav(A, 'home');
   const aHomeCl = await A.evaluate(() => Array.from(document.querySelectorAll('.legend-row[data-tab="checklist"]')).map(r => r.innerText.replace(/\s+/g, ' ').trim()));
-  check('Home 대시보드는 개인 데이터만(개인 베개 미완료 1, 그룹 버너 완료는 집계 안 됨)', JSON.stringify(aHomeCl) === JSON.stringify(['완료 0', '미완료 1']), aHomeCl);
+  check('Home 대시보드는 개인 데이터만(개인 베개 미완료 1, 그룹 버너 완료는 집계 안 됨 — 0개 항목은 범례에서 숨김)', JSON.stringify(aHomeCl) === JSON.stringify(['미완료 1']), aHomeCl);
   await A.locator('[data-action="home-cat-nav"][data-tab="checklist"]').first().click();
   await sleep(150);
   check('Home에서 체크리스트로 이동하면 내 공간으로', (await A.locator('.space-chip.active:has-text("내 공간")').count()) === 1 && (await A.locator('.checklist-group:has-text("A개인리스트")').count()) === 1);
@@ -192,7 +193,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await nav(A, 'gear');
   await pickSpace(A, '캠핑팸');
   check('그룹 장비 화면 제목', /캠핑팸 장비/.test(await A.locator('#main h1').first().innerText()));
-  await A.click('[data-action="gear-cat-manage"]');
+  await menuClick(A, '[data-action="gear-cat-manage"]');
   await A.fill('#cat-new-name', '그룹카테고리');
   await A.click('[data-action="gear-cat-add"]');
   await A.click('[data-action="modal-close"]');
@@ -298,7 +299,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // ================= 6. 그룹으로 보내기(복사) =================
   await pickSpace(A, '내 공간');
   // 개인 카테고리 '해먹' + 장비 2개
-  await A.click('[data-action="gear-cat-manage"]');
+  await menuClick(A, '[data-action="gear-cat-manage"]');
   await A.fill('#cat-new-name', '해먹');
   await A.click('[data-action="gear-cat-add"]');
   await A.click('[data-action="modal-close"]');
@@ -309,7 +310,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await A.click('[data-action="gear-save"]');
   }
   await settle();
-  await A.click('[data-action="gear-send"]');
+  await gearAction(A, 'gear-send');
   await A.selectOption('#send-group', gid);
   await A.click('[data-action="gear-send-all"]');
   await A.click('[data-action="gear-send-go"]');

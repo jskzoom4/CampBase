@@ -3,6 +3,7 @@
 //  2) Gear → "체크리스트에 추가" — 개인/그룹, 일정별로 묶인 리스트 선택, 소분류=장비 카테고리, 중복 건너뛰기, 주인 자동 담당
 // 실행: node tests/gear-checklist.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
+const { gearAction } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -26,6 +27,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
 
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   const server = {};
@@ -111,7 +113,8 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   // ================= 2. 장비 → 체크리스트 (개인) =================
   await nav(A, 'gear');
   await pickSpace(A, '내 공간');
-  await A.click('[data-action="gear-to-checklist"]');
+  check('Gear 위쪽은 평소 "선택"·"장비 추가"만(그룹으로 보내기·체크리스트에 추가는 선택 모드의 액션 바)', (await A.locator('[data-action="gear-select"]').isVisible()) && (await A.locator('[data-action="gear-to-checklist"]').count()) === 0 && (await A.locator('[data-action="gear-send"]').count()) === 0);
+  await gearAction(A, 'gear-to-checklist');
   await A.waitForSelector('#g2c-list', { timeout: 3000 });
   const groupsLabels = await A.locator('#g2c-list optgroup').evaluateAll(els => els.map(e => e.label + ':' + Array.from(e.querySelectorAll('option')).map(o => o.textContent).join('/')));
   check('리스트는 일정별로 묶어서 보여줌(일정 → 일정 없음)', groupsLabels.length === 2 && /^홍천 캠핑/.test(groupsLabels[0]) && /홍천 준비물/.test(groupsLabels[0]) && /^일정 없음:기본 준비물/.test(groupsLabels[1]), groupsLabels);
@@ -124,20 +127,21 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   check('개인: 같은 이름(공백 무시 " 버 너 ")은 건너뜀, 기존 항목은 그대로', pItems.filter(i => /버\s*너/.test(i.label)).length === 1 && pItems[0].id === 'x1' && pItems[0].status === 'packed');
   check('개인: "2개 추가, 1개는 이미 있음" 토스트', /2개 추가, 1개는 이미 있음/.test(await toastText(A)), await toastText(A));
   check('개인 공간 항목에는 담당자·addedBy 없음', pItems.every(i => !i.assigneeUid && !i.addedBy));
-  await A.click('[data-action="gear-to-checklist"]');
+  await gearAction(A, 'gear-to-checklist', ['pg3']);
   await A.selectOption('#g2c-list', 'tcl');
-  await A.check('.g2c-gear[value="pg3"]');
+  check('선택 모드에서 고른 장비가 창에 미리 체크됨', await A.isChecked('.g2c-gear[value="pg3"]') && (await A.locator('.g2c-gear:checked').count()) === 1);
   await A.click('[data-action="g2c-go"]');
   await settle();
   check('일정에 연결된 리스트에도 추가', server[A_ + 'checklists/tcl'].items.length === 1 && server[A_ + 'checklists/tcl'].items[0].label === '버너' && server[A_ + 'checklists/tcl'].tripId === 't1');
-  await A.click('[data-action="gear-to-checklist"]');
+  await gearAction(A, 'gear-to-checklist');
+  await A.uncheck('.g2c-gear:checked');
   await A.click('[data-action="g2c-go"]');
   check('장비를 안 고르면 안내', /장비를 골라주세요/.test(await toastText(A)));
   await A.click('[data-action="modal-close"]');
 
   // ================= 3. 장비 → 체크리스트 (그룹, 주인 자동 담당) =================
   await pickSpace(A, '캠핑팸');
-  await A.click('[data-action="gear-to-checklist"]');
+  await gearAction(A, 'gear-to-checklist');
   await A.waitForSelector('#g2c-list', { timeout: 3000 });
   check('그룹 공간에서는 그룹 리스트만', (await A.locator('#g2c-list option').allInnerTexts()).sort().join(',') === '그룹 준비물,짐 싸기');
   await A.selectOption('#g2c-list', 'gcl2');
@@ -154,7 +158,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await pickSpace(B, '캠핑팸');
   await B.waitForSelector('.checklist-group:has-text("짐 싸기") .check-row:has-text("스텔스 5 텐트")', { timeout: 3000 }).catch(() => {});
   check('B에게도 실시간으로 보이고 담당자 칩이 밥', (await B.locator('.checklist-group:has-text("짐 싸기") .check-row:has-text("스텔스 5 텐트") .assignee-chip.set:has-text("밥")').count()) === 1);
-  await A.click('[data-action="gear-to-checklist"]');
+  await gearAction(A, 'gear-to-checklist');
   await A.selectOption('#g2c-list', 'gcl2');
   await A.click('[data-action="g2c-all"]');
   await A.click('[data-action="g2c-go"]');

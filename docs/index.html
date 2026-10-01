@@ -71,7 +71,7 @@
   #topbar{display:flex;align-items:center;gap:14px;padding:16px 26px;border-bottom:1px solid var(--border);
     background:var(--bg);position:sticky;top:0;z-index:5;}
   #topbar h2{margin:0;font-size:21px;}
-  #main{flex:1;overflow-y:auto;padding:22px 26px 60px;}
+  #main{--main-pt:22px;flex:1;overflow-y:auto;padding:var(--main-pt) 26px 60px;}
   .section-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
   .section-head h1{font-size:20px;margin:0 0 4px;}
   .section-desc{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.5;}
@@ -104,16 +104,25 @@
   .legend-dot{width:8px;height:8px;border-radius:50%;flex:none;}
   .legend-row .lv{flex:1;text-align:left;}
   .stat-card .big-num{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;}
+  .stat-bars{display:none;flex-direction:column;gap:0;width:100%;}
+  .bar-row{display:grid;grid-template-columns:minmax(64px, 30%) 1fr 28px;align-items:center;gap:8px;min-height:24px;padding:1px 4px;margin:0 -4px;font-size:12.5px;}
+  .bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+  .bar-track{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
+  .bar-fill{display:block;height:100%;border-radius:99px;}
+  .bar-num{text-align:right;color:var(--text-dim);}
   .home-cat-link{cursor:pointer;border-radius:6px;transition:background .12s ease;}
   .legend-row.home-cat-link{padding:3px 4px;margin:0 -4px;}
   .home-cat-link:hover{background:var(--surface-2);color:var(--brand-text);}
   .chev-mini{width:12px!important;height:12px!important;opacity:.6;}
 
   /* ---- forms/modal ---- */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(20,24,20,.5);display:flex;align-items:center;justify-content:center;
+  /* 모달 = [본문(안쪽만 스크롤)] + [고정 버튼 바(.modal-foot)]. 높이는 키보드를 뺀 실제 보이는 화면(--vvh) 기준 */
+  .modal-backdrop{position:fixed;left:0;right:0;top:var(--vvt, 0px);height:var(--vvh, 100dvh);background:rgba(20,24,20,.5);display:flex;align-items:center;justify-content:center;
     padding:20px;z-index:50;}
-  .modal{background:var(--surface);border-radius:16px;padding:22px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal{background:var(--surface);border-radius:16px;padding:0;width:100%;max-width:440px;max-height:min(88vh, calc(var(--vvh, 100dvh) - 40px));
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:22px;overscroll-behavior:contain;}
+  .modal-foot{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:12px 22px 14px;border-top:1px solid var(--border);background:var(--surface);}
   .modal h3{margin:0 0 14px;font-size:17px;}
   .field{margin-bottom:12px;}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:5px;}
@@ -160,23 +169,47 @@
   #update-banner svg{width:16px;height:16px;flex:none;color:var(--brand-text);}
   /* ---- 캠핑 일정 ---- */
   .trip-bar{margin-bottom:12px;}
-  .trip-chips .seg-btn{display:inline-flex;align-items:center;gap:5px;}
+  .trip-chips .seg-btn{display:inline-flex;align-items:center;gap:5px;height:36px;padding:0 12px;box-sizing:border-box;line-height:1;}
   .trip-chips svg{width:14px;height:14px;}
   .trip-new-chip{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600;}
-  .trip-card{margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
-  .trip-head{display:flex;align-items:flex-start;gap:10px;}
-  .trip-title{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:6px;}
-  .trip-title svg{width:17px;height:17px;color:var(--brand-text);flex:none;}
-  .trip-card .meta{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+  /* ---- 일정 패널(일정 카드 + 준비물) ---- */
+  .trip-panel{padding:0;margin-bottom:16px;}
+  .trip-panel-head{position:sticky;top:calc(-1 * var(--main-pt));z-index:6;display:flex;align-items:center;gap:8px;padding:8px 10px 2px 16px;
+    background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;transition:padding .15s ease, box-shadow .15s ease;}
+  .trip-panel-head.stuck{padding:6px 10px 6px 16px;border-radius:0;border-bottom:1px solid var(--border);box-shadow:0 6px 14px rgba(0,0,0,.10);}
+  .tp-title{flex:1;min-width:0;display:flex;align-items:center;gap:7px;font-weight:700;font-size:15.5px;}
+  .tp-title svg{width:17px;height:17px;color:var(--brand-text);flex:none;}
+  .tp-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tp-mini{display:none;flex:none;font-size:12.5px;font-weight:600;color:var(--text-dim);white-space:nowrap;}
+  .trip-panel-head.stuck .tp-mini{display:inline;}
+  .trip-panel-head.stuck .trip-phase, .trip-panel-head.stuck .trip-reviewed{display:none;}
+  .tp-meta-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;font-size:12.5px;color:var(--text-dim);}
+  .tp-where{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .avatar-stack{display:inline-flex;flex:none;padding-left:6px;}
+  .avatar-stack .mini-avatar{margin-left:-6px;box-shadow:0 0 0 2px var(--surface);}
+  .trip-panel .trip-progress{padding:8px 16px 0;}
+  .trip-panel .trip-bar-track{height:5px;}
+  .tp-tools{display:flex;align-items:center;gap:8px;padding:6px 16px 8px;}
+  .tp-tools .seg-group{flex:1;min-width:0;flex-wrap:nowrap;overflow-x:auto;}
+  .tp-add-list{flex:none;}
+  .seg-sm .seg-btn{padding:5px 10px;font-size:12px;}
+  .panel-list{padding:8px 12px 10px 16px;border-top:1px solid var(--border);}
+  .panel-list > h3{margin-bottom:4px;}
+  .panel-list.checklist-group{margin-bottom:0;}
+  .tp-empty{border-top:1px solid var(--border);padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:13px;color:var(--text-dim);text-align:center;}
+  .tp-empty-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+  .section-desc.one-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cl-filter-row{margin-bottom:16px;}
+  @media (prefers-reduced-motion: reduce){ .trip-panel-head{transition:none;} }
+  .trip-card{margin-bottom:16px;}
   .trip-phase{flex:none;}
   .trip-phase.ongoing{background:color-mix(in srgb, var(--brand) 18%, transparent);color:var(--brand-text);}
-  .trip-members{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
-  .trip-members .meta{margin:0 0 0 4px;}
+
   .trip-progress{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-dim);flex-wrap:wrap;}
   .trip-bar-track{flex:1;min-width:120px;height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
   .trip-bar-track span{display:block;height:100%;background:var(--good);border-radius:99px;}
   .trip-progress b{color:var(--text);}
-  .trip-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
   .trip-reviewed svg{width:12px;height:12px;vertical-align:-1px;}
   .trip-tag{display:inline-flex;align-items:center;gap:3px;font-family:"Work Sans",sans-serif;font-size:11px;vertical-align:middle;}
   .trip-tag svg{width:11px;height:11px;}
@@ -208,14 +241,70 @@
   .review-card{cursor:pointer;display:flex;flex-direction:column;gap:10px;}
   .review-card:hover{border-color:var(--brand);}
   .review-card .name{font-weight:700;font-size:14.5px;}
-  .review-card .meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
-  .review-card-head{display:flex;gap:10px;align-items:flex-start;}
+  .review-card .meta{font-size:12px;color:var(--text-dim);}
   .review-avg{flex:none;font-size:14px;font-weight:700;}
   .review-star{color:var(--text-dim);}
   .review-summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .review-authors{margin-left:auto;display:inline-flex;gap:2px;}
   .review-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
   .review-actions:empty{display:none;}
+  /* ---- Gear 위쪽 정리 + 선택 모드 액션 바(3-3) ---- */
+  .gear-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .btn.active-toggle{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .gear-cat-row{margin-bottom:16px;}
+  .gear-row[data-action="gear-pick"]{cursor:pointer;border-radius:10px;}
+  .gear-row[data-action="gear-pick"]:hover{background:var(--surface-2);}
+  .gear-row.picked{background:color-mix(in srgb, var(--brand) 9%, transparent);}
+  .pick-box{width:24px;height:24px;flex:none;border-radius:7px;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;margin:8px 2px 0 6px;}
+  .gear-row.picked .pick-box{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .pick-box svg{width:15px;height:15px;}
+  .select-bar{position:fixed;z-index:35;left:calc(50% + 108px);transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    justify-content:center;width:max-content;max-width:calc(100% - 248px);background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:8px 10px;box-shadow:0 10px 30px rgba(0,0,0,.18);}
+  .select-count{font-size:13px;font-weight:600;padding:0 6px;}
+  .select-bar .btn[disabled]{opacity:.5;cursor:default;}
+  body.gear-selecting #main{padding-bottom:120px;}
+  @media (max-width:820px){
+    .select-bar{left:12px;right:12px;transform:none;max-width:none;width:auto;bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 10px);}
+    body.gear-selecting #main{padding-bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 120px);}
+  }
+  /* ---- Cooking 접기/펼치기(3-4) ---- */
+  .recipe-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start;}
+  .recipe-card{padding:0;}
+  .recipe-head{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:12px 12px 12px 16px;border:none;background:none;
+    text-align:left;cursor:pointer;border-radius:var(--radius);color:var(--text);}
+  .recipe-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .recipe-main .name{font-weight:700;font-size:14px;}
+  .recipe-meta{font-size:12px;color:var(--text-dim);}
+  .recipe-chev{width:16px;height:16px;flex:none;color:var(--text-dim);transition:transform .15s ease;}
+  .recipe-card.open .recipe-chev{transform:rotate(90deg);}
+  .recipe-body{padding:0 16px 14px;border-top:1px solid var(--border);}
+  .ing-row{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:6px 2px;border:none;border-bottom:1px solid var(--border);
+    background:none;text-align:left;cursor:pointer;font-size:13.5px;color:var(--text);}
+  .ing-row:last-child{border-bottom:none;}
+  .ing-row .label{flex:1;}
+  .ing-row .label.done{text-decoration:line-through;color:var(--text-dim);}
+  .ing-row .cl-status-btn{pointer-events:none;}
+  .ing-row .cl-status-btn{margin:-4px;}
+  @media (prefers-reduced-motion: reduce){ .recipe-chev{transition:none;} }
+  /* ---- 별점 입력(3-6) ---- */
+  .star-input{display:flex;align-items:center;gap:0;flex-wrap:wrap;}
+  .star-btn{width:40px;height:40px;border:none;background:none;padding:0;font-size:26px;line-height:1;cursor:pointer;color:var(--text-dim);border-radius:8px;}
+  .star-btn.on{color:var(--text);}
+  .star-text{font-size:12.5px;color:var(--text-dim);margin-left:6px;}
+  /* ---- 캠핑 기록·그룹 후기 줄 정렬(3-7) ---- */
+  .camp-row{align-items:center;}
+  .camp-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .camp-line1{display:flex;align-items:baseline;gap:10px;}
+  .camp-line1 .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:14px;}
+  .stars{flex:none;font-size:13px;letter-spacing:1px;color:var(--text);}
+  .stars-off{color:var(--text-dim);}
+  .camp-row .meta, .review-card .meta{margin-top:0;font-size:12px;color:var(--text-dim);}
+  .camp-line3{font-size:12.5px;color:var(--text-dim);line-height:1.8;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .camp-line3 .tag{vertical-align:1px;}
+  .review-card{gap:4px;}
+  /* ---- 본문 최대 폭(3-9) ---- */
+  .view:not(.view-home){max-width:780px;margin:0 auto;}
   .app-version{text-align:center;font-size:12px;color:var(--text-dim);margin:28px 0 8px;}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
@@ -229,23 +318,27 @@
   .checklist-group h3{font-family:"Fraunces",serif;font-size:16.5px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
   .cl-subgroup{margin-bottom:10px;padding-left:14px;border-left:2px solid var(--border);}
   .cl-subgroup:last-child{margin-bottom:0;}
-  .cl-subgroup-head{display:flex;align-items:center;gap:2px;padding:5px 2px 6px;border-bottom:1px dashed var(--border);margin-bottom:2px;}
+  .cl-subgroup-head{display:flex;align-items:center;gap:2px;padding:0 2px;border-bottom:1px dashed var(--border);margin-bottom:2px;}
   .cl-subgroup-head .spacer{flex:1;}
   .cl-subgroup-name{font-size:11.5px;font-weight:700;color:var(--text-dim);letter-spacing:.3px;text-transform:uppercase;}
-  .check-row{display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid var(--border);}
+  .check-row{display:flex;align-items:center;gap:10px;min-height:48px;padding:4px 2px;border-bottom:1px solid var(--border);}
   .check-row:last-child{border-bottom:none;}
   .check-row .label{flex:1;font-size:13.5px;}
   .checklist-group h3 .btn{font-family:"Work Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-weight:600;}
   .checklist-group h3 .tag, .cl-subgroup-head .tag{font-family:"Work Sans","Apple SD Gothic Neo",sans-serif;}
   .check-row .label.done{text-decoration:line-through;color:var(--text-dim);}
   .check-row .label.skip{color:var(--text-dim);font-style:italic;}
-  .cl-status-group{display:flex;gap:4px;flex:none;}
-  .cl-status-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:var(--bg);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);padding:0;}
-  .cl-status-btn svg{width:14px;height:14px;}
-  .cl-status-btn:hover{background:var(--surface-2);}
-  .cl-status-btn.packed.active{background:var(--good);border-color:var(--good);color:#fff;}
-  .cl-status-btn.skip.active{background:var(--text-dim);border-color:var(--text-dim);color:var(--bg);}
+  /* 가져감/안 가져감(3-1): 버튼 자체가 40×40(누르는 영역), 보이는 칸은 안쪽 32px(::before). 바깥 여백 -4px로 배치는 32px처럼 */
+  .cl-status-group{display:flex;gap:0;flex:none;}
+  .cl-status-btn{position:relative;width:40px;height:40px;margin:-4px 0;border:none;background:transparent;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);padding:0;flex:none;}
+  .cl-status-btn::before{content:"";position:absolute;inset:4px;border-radius:8px;border:1px solid var(--border);background:var(--bg);}
+  .cl-status-btn svg{position:relative;width:17px;height:17px;}
+  .cl-status-btn:hover::before{background:var(--surface-2);}
+  .cl-status-btn.packed.active::before{background:var(--good);border-color:var(--good);}
+  .cl-status-btn.packed.active{color:#fff;}
+  .cl-status-btn.skip.active::before{background:var(--text-dim);border-color:var(--text-dim);}
+  .cl-status-btn.skip.active{color:var(--bg);}
   .tag.done-tag{background:color-mix(in srgb, var(--good) 20%, transparent);color:var(--good-text);}
   .tag.skip-tag{margin-left:6px;}
 
@@ -271,18 +364,35 @@
     .mnav-item.active svg{background:color-mix(in srgb, var(--brand) 16%, transparent);}
     /* 키보드가 올라오면 탭바를 숨겨 입력칸을 가리지 않게 */
     body.kbd-open #mobile-tabbar{display:none;}
-    #topbar{padding:12px 16px;}
-    #main{padding:16px 14px calc(var(--tabbar-h) + var(--safe-bottom) + 32px);}
+    #topbar{padding:6px 16px;}
+    .space-bar{margin-bottom:8px;}
+    .trip-bar{margin-bottom:8px;}
+    .trip-panel .trip-progress{padding-top:4px;}
+    .panel-list{padding-top:4px;}
+    #main{--main-pt:14px;padding:var(--main-pt) 14px calc(var(--tabbar-h) + var(--safe-bottom) + 32px);}
     body.kbd-open #main{padding-bottom:32px;}
     .toast{bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 18px);}
-    .stat-grid{grid-template-columns:1fr;}
+    .stat-grid{grid-template-columns:1fr;gap:10px;}
+    /* 휴대폰: 원형 대신 작은 가로 막대(카드 높이 절반 이하) */
+    .stat-card:not(.placeholder-card-sm){display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 10px;text-align:left;padding:10px 14px;}
+    .stat-card:not(.placeholder-card-sm) h3{justify-content:flex-start;}
+    .stat-card .stat-pie, .stat-card .legend{display:none;}
+    .stat-card .big-num{font-size:18px;}
+    .stat-card .stat-bars{display:flex;grid-column:1 / -1;}
     .field-row{flex-direction:column;}
-    .modal-backdrop{align-items:flex-end;padding:12px 12px calc(12px + var(--safe-bottom));}
+    /* 휴대폰: 아래에서 올라오는 시트(최대 높이 90%, 안쪽만 스크롤), 버튼 바는 아래 고정 */
+    .modal-backdrop{align-items:flex-end;padding:0;}
+    .modal{max-width:none;border-radius:18px 18px 0 0;max-height:calc(var(--vvh, 100dvh) * .9);}
+    .modal-body{padding:20px 18px;}
+    .modal-foot{padding:10px 18px calc(12px + var(--safe-bottom));}
+    body.kbd-open .modal-foot{padding-bottom:10px;}
+    .modal-foot .btn{flex:1;justify-content:center;min-height:44px;}
+
   }
   /* ---- 버튼 누르는 영역(최소 40×40) ---- */
   .icon-btn{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:8px;}
-  .cl-status-btn, .assignee-chip{position:relative;}
-  .cl-status-btn::after, .assignee-chip::after{content:"";position:absolute;inset:-7px -3px;}
+  .assignee-chip{position:relative;}
+  .assignee-chip::after{content:"";position:absolute;inset:-7px -3px;}
   /* ---- 키보드 초점 표시: 키보드로 움직일 때만 브랜드 초록 2px ---- */
   :focus-visible{outline:2px solid var(--brand-text);outline-offset:2px;}
   :focus:not(:focus-visible){outline:none;}
@@ -310,9 +420,15 @@
   .modal-backdrop.closing{animation:cb-fade-out .15s ease both;pointer-events:none;}
   .modal-backdrop.closing .modal{animation:cb-pop-out .15s ease both;}
   @keyframes cb-fade-in{from{opacity:0;}to{opacity:1;}}
+  @keyframes cb-sheet-in{from{opacity:.6;transform:translateY(40px);}to{opacity:1;transform:none;}}
+  @keyframes cb-sheet-out{from{opacity:1;transform:none;}to{opacity:0;transform:translateY(40px);}}
   @keyframes cb-fade-out{from{opacity:1;}to{opacity:0;}}
   @keyframes cb-pop-in{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
   @keyframes cb-pop-out{from{opacity:1;transform:none;}to{opacity:0;transform:scale(.96);}}
+  @media (max-width:820px){
+    .modal-backdrop .modal{animation:cb-sheet-in .2s ease both;}
+    .modal-backdrop.closing .modal{animation:cb-sheet-out .15s ease both;}
+  }
   @media (prefers-reduced-motion: reduce){
     .modal-backdrop, .modal-backdrop .modal, .modal-backdrop.closing, .modal-backdrop.closing .modal{animation:none;}
     .toast, .mnav-item svg{transition:none;}
@@ -354,12 +470,19 @@
   .space-note{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--text-dim);
     background:color-mix(in srgb, var(--brand) 10%, transparent);border:1px solid color-mix(in srgb, var(--brand) 30%, transparent);border-radius:9px;padding:7px 10px;}
   .space-note svg{width:15px;height:15px;flex:none;color:var(--brand-text);}
+  .space-note span{flex:1;min-width:0;}
+  .space-note-ok{flex:none;}
+  .space-members{display:inline-flex;align-items:center;gap:4px;align-self:center;font-size:12px;font-weight:600;color:var(--text-dim);
+    background:var(--surface-2);border-radius:999px;padding:4px 10px;}
+  .space-members svg{width:13px;height:13px;}
   .invite-code{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;letter-spacing:6px;text-align:center;
     padding:14px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);user-select:all;}
   .send-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:9px;padding:4px 8px;background:var(--bg);}
-  .send-row{display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:13.5px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .send-row, .field .send-row{display:flex;align-items:center;gap:8px;padding:7px 2px;margin:0;font-size:13.5px;font-weight:400;color:var(--text);border-bottom:1px solid var(--border);cursor:pointer;}
   .send-row:last-child{border-bottom:none;}
-  .send-row span:first-of-type{flex:1;}
+  /* 선택 목록 한 줄: [체크박스][사진][이름(늘어남)][태그] — 체크박스는 원래 크기(.field input의 width:100% 덮어씀) */
+  .send-row input[type="checkbox"], .field .send-row input[type="checkbox"]{width:18px;height:18px;flex:none;margin:0;padding:0;accent-color:var(--brand);}
+  .send-row .sr-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .link-btn{color:var(--brand-text);cursor:pointer;font-weight:600;}
   /* ---- 담당자·장비 주인 ---- */
   .mini-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;
@@ -565,7 +688,8 @@ const state = {
   cookingChecks:{}, cookingCategory:'all',
   homeWidgets:{nextTrip:true, camping:true, gear:true, checklist:true},
   trips:[], checklistTemplates:[],   // 내 공간의 캠핑 일정·체크리스트 템플릿
-  tripFilter:'all', showPastTrips:false,   // Checklist 탭의 일정 줄: 'all' 또는 일정 id
+  tripFilter:'all', showPastTrips:false,
+  gearSelecting:false, gearSelected:new Set(),   // Gear 선택 모드(3-3)   // Checklist 탭의 일정 줄: 'all' 또는 일정 id
   campingFilter:'all', gearCategory:'all', checklistFilter:'all',
   campingSort:'date_desc',
   gearCategories:[...DEFAULT_GEAR_CATEGORIES],
@@ -794,6 +918,7 @@ function onAuthUser(user){
 function resetUserState(){
   state.campingLogs = []; state.gear = []; state.checklists = []; state.cookingChecks = {};
   state.trips = []; state.checklistTemplates = []; state.tripFilter = 'all'; state.showPastTrips = false;
+  state.gearSelecting = false; state.gearSelected = new Set(); document.body.classList.remove('gear-selecting');
   state.campingLogsLoaded = false; state.groupReviewFilter = 'all'; state.groupReviewSort = 'date_desc';
   state.weatherLocation = null;
   state.gearCategories = [...DEFAULT_GEAR_CATEGORIES];
@@ -1229,7 +1354,7 @@ function selectSpace(space, keepPending){
   state.space = space;
   saveSpace();
   if(space!=='me') startSpaceData(space);
-  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; state.tripFilter = 'all'; state.showPastTrips = false; }   // 공간마다 카테고리·멤버·일정이 다름
+  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; state.tripFilter = 'all'; state.showPastTrips = false; setGearSelecting(false); }   // 공간마다 카테고리·멤버·일정이 다름
   if(['checklist','gear','settings'].includes(state.currentView)) renderView();
 }
 function spaceChipsHtml(){
@@ -1240,9 +1365,19 @@ function spaceChipsHtml(){
     <div class="space-bar">
       <div class="seg-group space-chips">
         ${chips.map(c=>`<div class="seg-btn space-chip ${c.id===state.space?'active':''}" data-action="space-pick" data-space="${esc(c.id)}">${c.id==='me'?icon('home'):icon('users')} ${esc(c.label)}</div>`).join('')}
+        ${g && spaceNoteSeen(g.id) ? `<span class="space-members" title="${esc(g.name)} 그룹 공간 — 여기서 바꾸면 멤버 모두에게 보여요">${icon('users')} 멤버 ${g.memberUids.length}명</span>` : ''}
       </div>
-      ${g ? `<div class="space-note">${icon('users')}<span><b>${esc(g.name)}</b> 그룹 공간 · 멤버 ${g.memberUids.length}명 — 여기서 바꾸면 멤버 모두에게 보여요.</span></div>` : ''}
+      ${g && !spaceNoteSeen(g.id) ? `<div class="space-note">${icon('users')}<span><b>${esc(g.name)}</b> 그룹 공간 · 멤버 ${g.memberUids.length}명 — 여기서 바꾸면 멤버 모두에게 보여요.</span><button class="btn btn-sm space-note-ok" data-action="space-note-ok" data-gid="${esc(g.id)}">알겠어요</button></div>` : ''}
     </div>`;
+}
+// 그룹 공간 안내(3-2): 그룹마다 처음 한 번만 크게, "알겠어요"를 누르면 이후엔 칩 옆 작은 "멤버 n명"만(기기에 기억)
+const SPACE_NOTE_KEY_PREFIX = 'campbase.spaceNoteSeen.';
+function spaceNoteSeenList(){ if(!state.user) return []; try{ const v = JSON.parse(localStorage.getItem(SPACE_NOTE_KEY_PREFIX + state.user.uid) || '[]'); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
+function spaceNoteSeen(gid){ return spaceNoteSeenList().includes(gid); }
+function markSpaceNoteSeen(gid){
+  if(!state.user) return;
+  const list = spaceNoteSeenList(); if(!list.includes(gid)) list.push(gid);
+  try{ localStorage.setItem(SPACE_NOTE_KEY_PREFIX + state.user.uid, JSON.stringify(list)); }catch(e){}
 }
 
 /* ---- 그룹 관리 (Settings → 내 그룹) ---- */
@@ -1331,7 +1466,6 @@ async function createInvite(gid){
         <div class="invite-code" id="invite-code">${code}</div>
         <p style="margin:8px 0 0;color:var(--text-dim);font-size:12px;text-align:center;">${fmtDate(expiresAt)}까지 쓸 수 있어요 (${INVITE_DAYS}일)</p>
         <div class="modal-actions">
-          <button class="btn" data-action="modal-close">닫기</button>
           <button class="btn btn-primary" data-action="invite-copy" data-code="${code}">${icon('save')} 코드 복사</button>
         </div>`);
       return;
@@ -1417,7 +1551,7 @@ function groupMembersModal(gid){
         </div>`;
       }).join('')}
     </div>
-    <div class="modal-actions"><button class="btn" data-action="modal-close">닫기</button></div>`);
+  `);
 }
 async function removeMember(gid, memberUid, okMsg){
   try{
@@ -1537,7 +1671,7 @@ function sendGearModal(){
     <div class="field">
       <label style="display:flex;justify-content:space-between;align-items:center;">보낼 장비 <span class="link-btn" data-action="gear-send-all">모두 선택</span></label>
       <div class="send-list">
-        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="send-gear" value="${esc(gr.id)}"> <span>${esc(gr.name)}</span> <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
+        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="send-gear" value="${esc(gr.id)}" ${state.gearSelected.has(gr.id)?'checked':''}> <span class="sr-name">${esc(gr.name)}</span> <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
       </div>
     </div>
     <div class="modal-actions">
@@ -1564,7 +1698,8 @@ function sendGear(){
     g.gearCategories = merged;
     safePersist(()=>state.rootDb.doc('groups/' + g.id).update({ gearCategories: merged }));
   }
-  closeModal();
+  setGearSelecting(false);
+  closeModal(); renderView();
   toast(`장비 ${picked.length}개를 '${g.name}' 그룹으로 복사했어요.`, 'ok');
 }
 
@@ -1611,7 +1746,6 @@ function showExportModal(title, json, fname){
     </p>
     <textarea id="backup-text" class="backup-text" readonly>${esc(json)}</textarea>
     <div class="modal-actions">
-      <button class="btn" data-action="modal-close">닫기</button>
       <button class="btn btn-primary" data-action="backup-copy">${icon('save')} 복사</button>
     </div>
   `);
@@ -1864,7 +1998,10 @@ function renderView(){
     home: renderHome, camping: renderCamping, gear: renderGear,
     checklist: renderChecklist, cooking: renderCooking, settings: renderSettings,
   };
-  document.getElementById('main').innerHTML = bootBanner() + (renderers[state.currentView] || renderHome)();
+  // 3-9: Home 대시보드만 넓게, 나머지 탭 본문은 최대 폭 약 780px로 가운데(.view)
+  const view = renderers[state.currentView] ? state.currentView : 'home';
+  document.getElementById('main').innerHTML = `<div class="view view-${view}">${bootBanner()}${renderers[view]()}</div>`;
+  updateStickyHeads();
 }
 
 /* ============================ PIE CHART ============================ */
@@ -1922,13 +2059,23 @@ function renderHome(){
           <p style="margin:0;font-size:12px;color:var(--text-dim);">${emptyMsg}</p>
         </div>`;
     }
+    // 0개 항목은 범례·막대에서 숨김(3-8). 데스크톱은 원형 + 범례, 휴대폰은 작은 가로 막대(.stat-bars)
+    const shown = segs.filter(s=>s.value > 0);
+    const max = Math.max(...shown.map(s=>s.value), 1);
     return `
       <div class="card stat-card">
         <h3 class="home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">${title} ${icon('chev', 'chev-mini')}</h3>
-        ${pieChartSvg(segs, 108)}
+        <div class="stat-pie">${pieChartSvg(segs, 108)}</div>
         <div class="big-num home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">${total}</div>
         <div class="legend">
-          ${segs.map(s=>`<div class="legend-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}"><span class="legend-dot" style="background:${s.color}"></span><span class="lv">${esc(s.label)}</span><span class="num">${s.value}</span></div>`).join('')}
+          ${shown.map(s=>`<div class="legend-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}"><span class="legend-dot" style="background:${s.color}"></span><span class="lv">${esc(s.label)}</span><span class="num">${s.value}</span></div>`).join('')}
+        </div>
+        <div class="stat-bars">
+          ${shown.map(s=>`<div class="bar-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}">
+            <span class="bar-label">${esc(s.label)}</span>
+            <span class="bar-track"><span class="bar-fill" style="width:${Math.max(4, Math.round(s.value / max * 100))}%;background:${s.color}"></span></span>
+            <span class="num bar-num">${s.value}</span>
+          </div>`).join('')}
         </div>
       </div>`;
   }
@@ -2034,21 +2181,14 @@ function renderMyCamping(){
     </div>
     <div class="card">
       ${logs.length ? logs.map(c=>`
-        <div class="list-row">
-          <div style="flex:1;">
-            <div class="name">${esc(c.name)}${sharedGroupNames(c).map(n=>` <span class="tag share-tag">${icon('users')}${esc(n)} 공유</span>`).join('')}</div>
-            <div class="meta">
-              ${c.date?esc(c.date):''}${c.region?' · '+esc(c.region):''} ·
-              <span class="tag">${esc(c.siteType||'기타')}</span>
-              ${c.siteSize?' · '+esc(c.siteSize):''}
-              ${c.rating?' · '+'★'.repeat(Math.max(0,Math.min(5,c.rating))):''}
+        <div class="list-row camp-row">
+          <div class="camp-main">
+            <div class="camp-line1"><span class="name">${esc(c.name)}</span>${starsHtml(c.rating)}</div>
+            <div class="meta">${[c.date, c.region].filter(Boolean).map(esc).join(' · ') || '날짜·지역 없음'}</div>
+            <div class="camp-line3">
+              <span class="tag">${esc(c.siteType||'기타')}</span>${c.siteSize ? ` <span class="tag">${esc(c.siteSize)}</span>` : ''}${sharedGroupNames(c).map(n=>` <span class="tag share-tag">${icon('users')}${esc(n)} 공유</span>`).join('')}
+              ${campSummary(c) ? ` <span class="camp-summary">${esc(campSummary(c))}</span>` : ''}
             </div>
-            ${(c.checkinTime||c.checkoutTime||c.toiletCondition||c.storeCondition) ? `<div class="meta">${[
-              (c.checkinTime||c.checkoutTime) ? ('입/퇴실 '+esc(c.checkinTime||'?')+'~'+esc(c.checkoutTime||'?')) : '',
-              c.toiletCondition ? ('화장실 '+esc(c.toiletCondition)) : '',
-              c.storeCondition ? ('매점 '+esc(c.storeCondition)) : '',
-            ].filter(Boolean).join(' · ')}</div>` : ''}
-            ${c.notes?`<div class="notes">${esc(c.notes)}</div>`:''}
           </div>
           <div class="row-actions">
             <button class="icon-btn" data-action="camp-edit" data-id="${c.id}" title="수정" aria-label="'${esc(c.name)}' 기록 수정">${icon('edit')}</button>
@@ -2155,6 +2295,12 @@ function modeOf(values){
   values.filter(Boolean).forEach(v=>{ n[v] = (n[v]||0) + 1; if(n[v] > bn){ best = v; bn = n[v]; } });
   return best;
 }
+// 묶을 때만 normName으로 정규화하고, 보여줄 이름은 그 묶음에서 가장 많이 쓰인 원래 이름(같으면 최근 것). rs는 최근 순.
+function displayNameOf(rs){
+  const count = {}, firstAt = {};
+  rs.forEach((r, i)=>{ const n = String(r.name || '').trim(); if(!n) return; count[n] = (count[n] || 0) + 1; if(!(n in firstAt)) firstAt[n] = i; });
+  return Object.keys(count).sort((a,b)=> count[b] - count[a] || firstAt[a] - firstAt[b])[0] || '';
+}
 function groupReviewCards(reviews){
   const by = {};
   reviews.forEach(r=>{ const k = normName(r.name) || '-'; (by[k] = by[k] || []).push(r); });
@@ -2162,7 +2308,7 @@ function groupReviewCards(reviews){
     rs = [...rs].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
     const rated = rs.filter(r=>Number(r.rating) > 0);
     return {
-      key, name: rs[0].name || '이름 없음', region: (rs.find(r=>r.region && String(r.region).trim()) || {}).region || '',
+      key, name: displayNameOf(rs) || '이름 없음', region: (rs.find(r=>r.region && String(r.region).trim()) || {}).region || '',
       reviews: rs, count: rs.length,
       avg: rated.length ? rated.reduce((s,r)=>s + Number(r.rating), 0) / rated.length : 0,
       latest: (rs.find(r=>r.date) || {}).date || '',
@@ -2201,14 +2347,10 @@ function renderGroupReviews(g){
     </div>
     ${shown.length ? `<div class="grid review-grid">${shown.map(c=>`
       <div class="card review-card" data-action="review-open" data-key="${esc(c.key)}">
-        <div class="review-card-head">
-          <div style="flex:1;min-width:0;">
-            <div class="name">${esc(c.name)}</div>
-            <div class="meta">${c.region ? esc(c.region) + ' · ' : ''}후기 ${c.count}개${c.latest ? ' · 최근 방문 ' + esc(c.latest) : ''}</div>
-          </div>
-          <div class="review-avg"><span class="review-star">★</span> <span class="num">${fmtAvg(c.avg)}</span></div>
-        </div>
+        <div class="camp-line1"><span class="name">${esc(c.name)}</span><span class="review-avg" aria-label="평균 평점 ${fmtAvg(c.avg)}"><span class="review-star">★</span> <span class="num">${fmtAvg(c.avg)}</span></span></div>
+        <div class="meta">${[c.region ? esc(c.region) : '', c.latest ? '최근 방문 ' + esc(c.latest) : ''].filter(Boolean).join(' · ')}</div>
         <div class="review-summary">
+          <span class="tag">후기 ${c.count}개</span>
           ${c.toilet ? `<span class="tag">화장실 ${esc(c.toilet)}</span>` : ''}
           ${c.store ? `<span class="tag">매점 ${esc(c.store)}</span>` : ''}
           <span class="review-authors">${c.authors.map(u=>`<span title="${esc(memberName(g,u))}">${memberAvatarHtml(g,u)}</span>`).join('')}</span>
@@ -2248,7 +2390,7 @@ function reviewDetailModal(key){
           </div>
         </div>`).join('')}
     </div>
-    <div class="modal-actions"><button class="btn" data-action="modal-close">닫기</button></div>`);
+  `);
 }
 function refreshReviewModal(){ if(_reviewModalKey && document.getElementById('review-detail')) reviewDetailModal(_reviewModalKey); }
 function editMyReviewSource(logId){
@@ -2269,6 +2411,41 @@ function removeReviewConfirm(rid){
     if(state.dbAvailable){ const db = groupDb(g.id); safePersist(()=>db.collection('sharedReviews').doc(rid).delete()); }
     renderView(); toast('그룹에서 후기를 내렸어요.');
   });
+}
+// 3-7 캠핑 기록·그룹 후기 줄: 1줄 이름 + 오른쪽 별점, 2줄 날짜 · 지역, 3줄 태그와 후기 요약
+function starsHtml(r){
+  r = Math.max(0, Math.min(5, Math.round(Number(r) || 0)));
+  if(!r) return '';
+  return `<span class="stars" role="img" aria-label="평점 ${r}/5">${'★'.repeat(r)}<span class="stars-off">${'☆'.repeat(5 - r)}</span></span>`;
+}
+function campSummary(c){
+  if(c.notes) return c.notes;
+  return [ (c.checkinTime||c.checkoutTime) ? ('입/퇴실 ' + (c.checkinTime||'?') + '~' + (c.checkoutTime||'?')) : '',
+    c.toiletCondition ? ('화장실 ' + c.toiletCondition) : '', c.storeCondition ? ('매점 ' + c.storeCondition) : '' ].filter(Boolean).join(' · ');
+}
+// 3-6 별점 입력: 별 5개를 눌러 선택(같은 별을 다시 누르면 0), 키보드는 radiogroup(←→↑↓·Home·End). 값은 숨은 #cf-rating에.
+function starInputHtml(v){
+  v = Math.max(0, Math.min(5, Math.round(Number(v) || 0)));
+  return `<input type="hidden" id="cf-rating" value="${v}">
+    <div class="star-input" id="cf-stars" role="radiogroup" aria-labelledby="cf-rating-label">
+      ${[1,2,3,4,5].map(n=>`<button type="button" role="radio" class="star-btn ${n<=v?'on':''}" aria-checked="${n===v}" aria-label="${n}점" data-action="cf-star" data-val="${n}" tabindex="${(v ? n===v : n===1) ? 0 : -1}">${n<=v ? '★' : '☆'}</button>`).join('')}
+      <span class="star-text" aria-hidden="true">${v ? v + '점' : '평점 없음'}</span>
+    </div>`;
+}
+function setStarValue(v, focus){
+  const box = document.getElementById('cf-stars'), input = document.getElementById('cf-rating');
+  if(!box || !input) return;
+  v = Math.max(0, Math.min(5, v));
+  input.value = String(v);
+  box.querySelectorAll('.star-btn').forEach(b=>{
+    const n = Number(b.getAttribute('data-val'));
+    b.classList.toggle('on', n <= v);
+    b.textContent = n <= v ? '★' : '☆';
+    b.setAttribute('aria-checked', String(n === v));
+    b.tabIndex = (v ? n === v : n === 1) ? 0 : -1;
+  });
+  box.querySelector('.star-text').textContent = v ? v + '점' : '평점 없음';
+  if(focus){ const t = box.querySelector(`.star-btn[data-val="${v || 1}"]`); if(t) t.focus(); }
 }
 // prefill: 일정에서 "후기 남기기"로 열 때 { name, region, date, tripRef:{space, tripId} }
 let _campTripRef = null;
@@ -2298,7 +2475,7 @@ function campFormModal(id, prefill){
     </div>
     <div class="field-row">
       <div class="field"><label>사이트 크기</label><input id="cf-size" value="${c?esc(c.siteSize||''):''}" placeholder="예: 5x5m"></div>
-      <div class="field"><label>평점(0~5)</label><input type="number" min="0" max="5" id="cf-rating" value="${c&&c.rating?c.rating:''}"></div>
+      <div class="field"><label id="cf-rating-label">평점</label>${starInputHtml(c && c.rating ? Number(c.rating) : 0)}</div>
     </div>
     <div class="form-subhead">이용 후기 상세</div>
     <div class="field-row">
@@ -2399,6 +2576,11 @@ function renderGear(){
   if(grp) SP.gear.forEach(g=>{ const k = g.ownerUid || 'none'; byOwner[k] = (byOwner[k]||0) + 1; });
   const filtered = SP.gear.filter(g=> (filter==='all' || g.category===filter)
     && (ownerFilter==='all' || (ownerFilter==='none' ? !g.ownerUid : g.ownerUid===ownerFilter)));
+  // 3-3: 개수가 0인 카테고리 칩은 숨김(선택 중인 칩은 예외), 주인 필터 줄은 주인 있는 장비가 있을 때만
+  const shownCats = gearCats.filter(c=> c==='all' || c===filter || (byCat[c]||0) > 0);
+  const showOwnerRow = !!grp && (SP.gear.some(g=>g.ownerUid) || ownerFilter!=='all');
+  const selecting = state.gearSelecting;
+  const sel = state.gearSelected;
   const ownerChips = grp ? [
     {key:'all', label:'모든 주인'},
     ...sortedMemberUids(grp).map(u=>({key:u, label:memberName(grp,u), n:byOwner[u]||0, avatar:true})),
@@ -2409,38 +2591,56 @@ function renderGear(){
     ${spaceChipsHtml()}
     <div class="section-head">
       <div><h1>${grp ? esc(grp.name) + ' 장비' : '내 장비'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 고치는 장비 목록이에요.' : '보유 장비를 카테고리별로 등록하고 한눈에 확인하세요.'}</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${!grp && state.groups.length ? `<button class="btn" data-action="gear-send">${icon('send')} 그룹으로 보내기</button>` : ''}
-        <button class="btn" data-action="gear-to-checklist">${icon('checklist')} 체크리스트에 추가</button>
+      <div class="gear-head-actions">
+        ${SP.gear.length ? `<button class="btn ${selecting?'active-toggle':''}" data-action="gear-select" aria-pressed="${selecting}">${icon('check')} ${selecting ? '선택 끝' : '선택'}</button>` : ''}
         <button class="btn btn-accent" data-action="gear-new">${icon('plus')} 장비 추가</button>
+        ${moreMenuHtml('gear-head', [{ action:'gear-cat-manage', attrs:{}, icon:'edit', label:'카테고리 관리' }], '장비 메뉴')}
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-      <div class="seg-group" style="flex:1;">
-        ${gearCats.map(c=>`<div class="seg-btn ${c===filter?'active':''}" data-action="gear-filter" data-cat="${c}">${esc(gearCatLabels[c]||c)}${c!=='all'?` <span class="num" style="opacity:.65;">${byCat[c]||0}</span>`:''}</div>`).join('')}
-      </div>
-      <button class="btn btn-sm btn-ghost" data-action="gear-cat-manage">${icon('edit')} 카테고리 관리</button>
+    <div class="seg-group gear-cat-row">
+      ${shownCats.map(c=>`<div class="seg-btn ${c===filter?'active':''}" data-action="gear-filter" data-cat="${esc(c)}">${esc(gearCatLabels[c]||c)}${c!=='all'?` <span class="num" style="opacity:.65;">${byCat[c]||0}</span>`:''}</div>`).join('')}
     </div>
-    ${grp ? `<div class="seg-group owner-filter" style="margin:-6px 0 16px;">
+    ${showOwnerRow ? `<div class="seg-group owner-filter" style="margin:-6px 0 16px;">
       ${ownerChips.map(c=>`<div class="seg-btn ${c.key===ownerFilter?'active':''}" data-action="gear-owner-filter" data-owner="${esc(c.key)}">${c.avatar?memberAvatarHtml(grp,c.key):''}${esc(c.label)}${c.n!==undefined?` <span class="num" style="opacity:.65;">${c.n}</span>`:''}</div>`).join('')}
     </div>` : ''}
     <div class="card">
       ${filtered.length ? filtered.map(g=>`
-        <div class="list-row">
-          <div style="flex:1;">
+        <div class="list-row gear-row ${selecting && sel.has(g.id) ? 'picked' : ''}" ${selecting ? `data-action="gear-pick" data-id="${esc(g.id)}" role="checkbox" aria-checked="${sel.has(g.id)}" tabindex="0"` : ''}>
+          ${selecting ? `<span class="pick-box" aria-hidden="true">${sel.has(g.id) ? icon('check') : ''}</span>` : ''}
+          <div style="flex:1;min-width:0;">
             <div class="name">${esc(g.name)}${grp && g.ownerUid ? ` <span class="owner-tag">${memberAvatarHtml(grp, g.ownerUid)}${esc(memberName(grp, g.ownerUid))}</span>` : ''}</div>
             <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}${grp && g.addedBy ? ' · ' + esc(memberName(grp, g.addedBy)) + ' 추가' : ''}</div>
           </div>
-          <div class="row-actions">
+          ${selecting ? '' : `<div class="row-actions">
             <button class="icon-btn" data-action="gear-edit" data-id="${g.id}" title="수정" aria-label="'${esc(g.name)}' 수정">${icon('edit')}</button>
             ${moreMenuHtml('gear:' + g.id, [
               { action:'gear-del', attrs:{'data-id':g.id}, icon:'trash', label:'장비 삭제', danger:true },
             ], `'${g.name}' 장비 메뉴`)}
-          </div>
+          </div>`}
         </div>
       `).join('') : `<div class="empty">${filter==='all' && ownerFilter==='all' ? '등록된 장비가 없어요.' : '이 조건에 맞는 장비가 없어요.'}</div>`}
     </div>
+    ${selecting ? `
+    <div class="select-bar" role="toolbar" aria-label="선택한 장비로 할 일">
+      <span class="select-count" aria-live="polite"><b class="num">${sel.size}</b>개 선택</span>
+      ${!grp && state.groups.length ? `<button class="btn btn-sm" data-action="gear-send" ${sel.size ? '' : 'disabled'}>${icon('send')} 그룹으로 보내기</button>` : ''}
+      <button class="btn btn-sm btn-primary" data-action="gear-to-checklist" ${sel.size ? '' : 'disabled'}>${icon('checklist')} 체크리스트에 추가</button>
+      <button class="btn btn-sm btn-ghost" data-action="gear-select-cancel">취소</button>
+    </div>` : ''}
   `;
+}
+// 3-3 장비 선택 모드: "선택" → 줄을 눌러 고르고, 아래 액션 바(선택 개수·그룹으로 보내기·체크리스트에 추가·취소)
+function setGearSelecting(on){
+  state.gearSelecting = !!on;
+  state.gearSelected = new Set();
+  document.body.classList.toggle('gear-selecting', !!on && state.currentView==='gear');
+}
+function toggleGearPick(id){
+  if(!state.gearSelecting) return;
+  if(state.gearSelected.has(id)) state.gearSelected.delete(id); else state.gearSelected.add(id);
+  renderView();
+  const row = document.querySelector(`.gear-row[data-id="${CSS.escape(id)}"]`);
+  if(row) row.focus({ preventScroll: true });
 }
 function gearFormModal(id){
   const g = id ? SP.gear.find(x=>x.id===id) : null;
@@ -2508,9 +2708,6 @@ function categoryManageModal(){
       <div class="field" style="flex:1;margin-bottom:0;"><input id="cat-new-name" placeholder="새 카테고리 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-action=gear-cat-add]').click();}"></div>
       <button class="btn btn-primary" data-action="gear-cat-add">${icon('plus')} 추가</button>
     </div>
-    <div class="modal-actions">
-      <button class="btn" data-action="modal-close">닫기</button>
-    </div>
   `);
 }
 function categoryRowHtml(c){
@@ -2561,7 +2758,6 @@ function deleteGearCategory(cat){
   toast(moved.length ? `카테고리를 삭제했어요. 장비 ${moved.length}개는 기타로 옮겨졌어요.` : '카테고리를 삭제했어요.');
 }
 
-
 /* ============================ CHECKLIST ============================ */
 function groupChecklistItems(items){
   const order = []; const map = {};
@@ -2585,33 +2781,45 @@ function renderChecklist(){
     {key:'undone', label:'미완료'},
     ...(grp ? [{key:'mine', label:'내 담당'}] : []),
   ];
+  const filterChips = cls => `<div class="seg-group ${cls||''}" role="group" aria-label="항목 거르기">
+      ${clFilters.map(f=>`<div class="seg-btn ${f.key===filter?'active':''}" data-action="cl-filter" data-filter="${f.key}">${f.label}</div>`).join('')}
+    </div>`;
   const selTrip = selectedTrip();
-  const lists = selTrip ? SP.checklists.filter(cl=>cl.tripId===selTrip.id) : SP.checklists;
   const tripTitles = {};
   SP.trips.forEach(t=>{ tripTitles[t.id] = t.title; });
+  const ctx = { grp, filter, myUid, selTrip, tripTitles };
+  const top = `${spaceChipsHtml()}${state.user || state.bootMode==='preview' ? tripBarHtml() : ''}`;
+  // 일정을 고르면: 일정 카드 + 준비물을 하나의 패널로(2-1)
+  if(selTrip){
+    const lists = SP.checklists.filter(cl=>cl.tripId===selTrip.id);
+    return top + tripPanelHtml(selTrip, spaceKey(), grp, lists, filterChips('seg-sm'), ctx);
+  }
+  const lists = SP.checklists;
   return `
-    ${spaceChipsHtml()}
-    ${state.user || state.bootMode==='preview' ? tripBarHtml() : ''}
-    ${selTrip ? tripCardHtml(selTrip, spaceKey(), SP.checklists, grp) : ''}
+    ${top}
     <div class="section-head">
-      <div><h1>${grp ? esc(grp.name) + ' 준비물' : '준비물 체크'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 체크하는 준비물이에요.' : '대분류(리스트) 안에 소분류를 만들어 항목을 정리하세요.'}</div></div>
+      <div style="min-width:0;flex:1;"><h1>${grp ? esc(grp.name) + ' 준비물' : '준비물 체크'}</h1><div class="section-desc one-line">${grp ? '멤버 모두가 함께 보고 체크하는 준비물이에요.' : '리스트 안에 소분류를 만들어 항목을 정리하세요.'}</div></div>
       <button class="btn btn-accent" data-action="cl-new-list">${icon('plus')} 새 리스트</button>
     </div>
-    <div class="seg-group" style="margin-bottom:16px;">
-      ${clFilters.map(f=>`<div class="seg-btn ${f.key===filter?'active':''}" data-action="cl-filter" data-filter="${f.key}">${f.label}</div>`).join('')}
-    </div>
-    ${lists.length ? lists.map(cl=>{
-      const allItems = cl.items||[];
-      const decided = allItems.filter(isDecided).length;
-      const total = allItems.length;
-      const allDone = total>0 && decided===total;
-      const visible = allItems.filter(it=> filter==='all' || (filter==='done'&&isDecided(it)) || (filter==='undone'&&!isDecided(it))
-        || (filter==='mine' && !!myUid && it.assigneeUid===myUid));
-      const groups = groupChecklistItems(visible);
-      return `
-      <div class="card checklist-group">
+    ${filterChips('cl-filter-row')}
+    ${lists.length ? lists.map(cl=>checklistListHtml(cl, ctx, false)).join('')
+      : `<div class="card empty">아직 체크리스트가 없어요. 새 리스트를 만들어보세요.</div>`}
+  `;
+}
+// 리스트 하나(헤더 + 소분류 + 항목). inPanel이면 일정 패널 안의 구역(카드 테두리 대신 구분선 — 카드 안에 카드 금지)
+function checklistListHtml(cl, ctx, inPanel){
+  const { grp, filter, myUid, selTrip, tripTitles } = ctx;
+  const allItems = cl.items||[];
+  const decided = allItems.filter(isDecided).length;
+  const total = allItems.length;
+  const allDone = total>0 && decided===total;
+  const visible = allItems.filter(it=> filter==='all' || (filter==='done'&&isDecided(it)) || (filter==='undone'&&!isDecided(it))
+    || (filter==='mine' && !!myUid && it.assigneeUid===myUid));
+  const groups = groupChecklistItems(visible);
+  return `
+      <div class="${inPanel ? 'panel-list' : 'card'} checklist-group">
         <h3>
-          <span style="flex:1;">${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
+          <span style="flex:1;min-width:0;">${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
           ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
           <button class="btn btn-sm cl-add-btn" data-action="cl-add-item" data-id="${cl.id}">${icon('plus')} 항목 추가</button>
           ${moreMenuHtml('cl:' + cl.id, [
@@ -2653,8 +2861,6 @@ function renderChecklist(){
           </div>`;
         }).join('') : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`}
       </div>`;
-    }).join('') : `<div class="card empty">${selTrip ? '이 일정에 연결된 리스트가 없어요. 새 리스트를 만들면 이 일정에 연결돼요.' : '아직 체크리스트가 없어요. 새 리스트를 만들어보세요.'}</div>`}
-  `;
 }
 /* ============================ 캠핑 일정 ============================
  * 개인 users/{uid}/trips/{id}, 그룹 groups/{gid}/trips/{id}
@@ -2720,40 +2926,84 @@ function tripBarHtml(){
       </div>
     </div>`;
 }
-function tripCardHtml(trip, space, lists, g){
+// 일정 패널(2-1): 일정 카드와 그 일정의 준비물을 한 패널로. 머리(1줄)는 스크롤하면 한 줄 요약으로 위에 붙음(2-2, .stuck).
+//   1줄: 달력 + 이름 · D-n(끝났으면 후기 남기기/내 후기 작성함) · ⋯(일정 수정·새 리스트·일정 삭제)
+//   2줄: 날짜 · 캠핑장 · 지역 + 참가 멤버 사진 묶음   3줄: 진행 막대 + 준비 n/m · 내 담당 k   4줄: 필터 + "+ 리스트"
+function tripPanelHtml(trip, space, g, lists, filtersHtml, ctx){
   const ph = tripPhase(trip);
-  const pr = tripProgress(trip, lists, !!g);
+  const pr = tripProgress(trip, SP.checklists, !!g);
   const pct = pr.total ? Math.round(pr.decided / pr.total * 100) : 0;
-  const where = [trip.campsiteName, trip.region].filter(Boolean).map(esc).join(' · ');
+  const where = [fmtTripDates(trip), trip.campsiteName, trip.region].filter(Boolean).map(esc).join(' · ');
   const members = g ? tripMembers(trip, g) : [];
   const reviewed = hasMyReview(space, trip.id);
-  const needsReview = ph.kind==='past' && !reviewed;   // 끝났고 내 후기가 없으면 "후기 남기기"가 가장 자주 쓰는 동작
+  const needsReview = ph.kind==='past' && !reviewed;
+  const right = needsReview
+    ? `<button class="btn btn-sm btn-primary" data-action="trip-review" data-space="${esc(space)}" data-trip="${esc(trip.id)}">${icon('pen')} 후기 남기기</button>`
+    : (ph.kind==='past' ? `<span class="tag done-tag trip-reviewed">${icon('check')} 내 후기 작성함</span>` : `<span class="tag trip-phase ${ph.kind}">${esc(ph.label)}</span>`);
   return `
-    <div class="card trip-card" data-trip-card="${esc(trip.id)}">
-      <div class="trip-head">
-        <div style="flex:1;min-width:0;">
-          <div class="trip-title">${icon('calendar')} ${esc(trip.title)}</div>
-          <div class="meta">${esc(fmtTripDates(trip))}${where ? ' · ' + where : ''}</div>
-        </div>
-        <span class="tag trip-phase ${ph.kind}">${esc(ph.label)}</span>
-      </div>
-      ${members.length ? `<div class="trip-members">${members.map(u=>`<span title="${esc(memberName(g,u))}">${memberAvatarHtml(g,u)}</span>`).join('')}<span class="meta">${members.length}명 참가</span></div>` : ''}
-      <div class="trip-progress">
-        <div class="trip-bar-track"><span style="width:${pct}%"></span></div>
-        <span class="trip-progress-text">준비 <b class="num">${pr.decided}/${pr.total}</b>${g ? ` · 내 담당 <b class="num">${pr.mine}</b>개 남음` : ''}</span>
-      </div>
-      <div class="trip-actions">
-        ${ph.kind==='past' && reviewed ? `<span class="tag done-tag trip-reviewed">${icon('check')} 내 후기 작성함</span>` : ''}
-        <span style="flex:1;"></span>
-        ${needsReview
-          ? `<button class="btn btn-sm btn-primary" data-action="trip-review" data-space="${esc(space)}" data-trip="${esc(trip.id)}">${icon('pen')} 후기 남기기</button>`
-          : `<button class="btn btn-sm" data-action="trip-edit" data-trip="${esc(trip.id)}">${icon('edit')} 수정</button>`}
+    <section class="card trip-card trip-panel" data-trip-card="${esc(trip.id)}" aria-label="${esc(trip.title)} 일정">
+      <div class="trip-panel-head">
+        <div class="tp-title">${icon('calendar')}<span class="tp-name">${esc(trip.title)}</span><span class="tp-mini"> · ${esc(ph.label)} · 준비 ${pr.decided}/${pr.total}</span></div>
+        ${right}
         ${moreMenuHtml('trip:' + trip.id, [
-          needsReview ? { action:'trip-edit', attrs:{'data-trip':trip.id}, icon:'edit', label:'일정 수정' } : null,
+          { action:'trip-edit', attrs:{'data-trip':trip.id}, icon:'edit', label:'일정 수정' },
+          { action:'cl-new-list', attrs:{}, icon:'plus', label:'새 리스트' },
           { action:'trip-del', attrs:{'data-trip':trip.id}, icon:'trash', label:'일정 삭제', danger:true },
         ], `'${trip.title}' 일정 메뉴`)}
       </div>
-    </div>`;
+      <div class="tp-meta-row">
+        <span class="tp-where">${where}</span>
+        ${members.length ? `<span class="avatar-stack trip-members" role="img" aria-label="${members.length}명 참가" title="${esc(members.map(u=>memberName(g,u)).join(', '))}">${members.slice(0, 5).map(u=>memberAvatarHtml(g,u)).join('')}${members.length > 5 ? `<span class="mini-avatar more-count">+${members.length - 5}</span>` : ''}</span>` : ''}
+      </div>
+      <div class="trip-progress">
+        <div class="trip-bar-track" role="progressbar" aria-label="준비 진행률" aria-valuemin="0" aria-valuemax="${pr.total}" aria-valuenow="${pr.decided}"><span style="width:${pct}%"></span></div>
+        <span class="trip-progress-text">준비 <b class="num">${pr.decided}/${pr.total}</b>${g ? ` · 내 담당 <b class="num">${pr.mine}</b>` : ''}</span>
+      </div>
+      <div class="tp-tools">
+        ${filtersHtml}
+        <button class="btn btn-sm tp-add-list" data-action="cl-new-list">${icon('plus')} 리스트</button>
+      </div>
+      ${lists.length ? lists.map(cl=>checklistListHtml(cl, ctx, true)).join('') : `
+        <div class="tp-empty">
+          <span>이 일정에 연결된 준비물이 없어요</span>
+          <span class="tp-empty-actions">
+            <button class="btn btn-sm" data-action="cl-new-list">${icon('plus')} 리스트</button>
+            <button class="btn btn-sm" data-action="trip-tpl-import" data-trip="${esc(trip.id)}">${icon('template')} 템플릿에서 가져오기</button>
+          </span>
+        </div>`}
+    </section>`;
+}
+// 템플릿에서 가져오기: 고른 템플릿을 복사한 새 리스트를 이 일정에 연결(항목은 모두 미정)
+function tripTemplateImportModal(tripId){
+  const t = SP.trips.find(x=>x.id===tripId);
+  if(!t) return;
+  const tpls = [...SP.templates].sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''), 'ko'));
+  if(!tpls.length){ toast('저장된 템플릿이 없어요. 리스트의 ⋯ 메뉴 → "템플릿으로 저장"으로 만들 수 있어요.'); return; }
+  openModal(`
+    <h3>템플릿에서 가져오기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">'${esc(t.title)}' 일정에 템플릿을 복사한 새 리스트를 연결해요.</p>
+    <div class="field"><label>템플릿</label><select id="tpl-import-pick">${tpls.map(x=>`<option value="${esc(x.id)}">${esc(x.title)} (${(x.items||[]).length}개)</option>`).join('')}</select></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="trip-tpl-import-go" data-trip="${esc(t.id)}">${icon('template')} 가져오기</button>
+    </div>`);
+}
+function importTemplateToTrip(tripId){
+  const sel = document.getElementById('tpl-import-pick');
+  const tpl = sel && SP.templates.find(x=>x.id===sel.value);
+  if(!tpl){ toast('템플릿을 골라주세요.'); return; }
+  const list = newListFromTemplate(tpl, tripId);
+  SP.checklists.push(list); persistChecklist(list);
+  closeModal(); renderView(); toast(`'${list.title}' 리스트를 템플릿에서 가져왔어요.`, 'ok');
+}
+// 2-2: 패널 머리가 위에 붙었는지(스크롤로 패널 윗부분이 지나감) 표시 → 한 줄 요약
+function updateStickyHeads(){
+  const main = document.getElementById('main');
+  const head = main && main.querySelector('.trip-panel-head');
+  if(!head) return;
+  const panel = head.closest('.trip-panel');
+  const mTop = main.getBoundingClientRect().top;
+  head.classList.toggle('stuck', panel.getBoundingClientRect().top < mTop - 1 && head.getBoundingClientRect().top <= mTop + 1);
 }
 
 /* ---- 일정 만들기 / 수정 ---- */
@@ -2780,7 +3030,7 @@ function tripFormModal(id){
     </div>
     ${g ? `<div class="field"><label>참가 멤버</label>
       <div class="send-list" id="tf-members">
-        ${sortedMemberUids(g).map(u=>`<label class="send-row"><input type="checkbox" class="tf-member" value="${esc(u)}" ${picked.has(u)?'checked':''}> ${memberAvatarHtml(g,u)} <span>${esc(memberName(g,u))}${state.user&&u===state.user.uid?' (나)':''}</span></label>`).join('')}
+        ${sortedMemberUids(g).map(u=>`<label class="send-row"><input type="checkbox" class="tf-member" value="${esc(u)}" ${picked.has(u)?'checked':''}> ${memberAvatarHtml(g,u)} <span class="sr-name">${esc(memberName(g,u))}${state.user&&u===state.user.uid?' (나)':''}</span></label>`).join('')}
       </div></div>` : ''}
     ${t ? '' : `
     <div class="field">
@@ -3018,10 +3268,7 @@ function assignModal(listId, itemId){
           ${it.assigneeUid===u ? icon('check','pick-check') : ''}
         </div>`).join('')}
     </div>
-    <div class="modal-actions">
-      ${it.assigneeUid ? `<button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button>` : ''}
-      <button class="btn" data-action="modal-close">닫기</button>
-    </div>`);
+    ${it.assigneeUid ? `<div class="modal-actions"><button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button></div>` : ''}`);
 }
 /* ---- 장비 ↔ 준비물 ----
  * 이름 비교: 공백·대소문자 무시, 한쪽이 다른 쪽을 포함하면 "비슷함"(추천용), 완전히 같으면 "같은 이름"(중복 건너뛰기용). */
@@ -3074,7 +3321,7 @@ function gearToChecklistModal(){
     <div class="field">
       <label style="display:flex;justify-content:space-between;align-items:center;">장비 <span class="link-btn" data-action="g2c-all">모두 선택</span></label>
       <div class="send-list">
-        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="g2c-gear" value="${esc(gr.id)}"> <span>${esc(gr.name)}</span>${grp && gr.ownerUid ? memberAvatarHtml(grp, gr.ownerUid) : ''} <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
+        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="g2c-gear" value="${esc(gr.id)}" ${state.gearSelected.has(gr.id)?'checked':''}> <span class="sr-name">${esc(gr.name)}</span>${grp && gr.ownerUid ? memberAvatarHtml(grp, gr.ownerUid) : ''} <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
       </div>
     </div>
     <div class="modal-actions">
@@ -3105,6 +3352,7 @@ function addGearToChecklist(){
     added++;
   });
   if(added) persistChecklist(list);
+  setGearSelecting(false);
   closeModal(); renderView();
   toast(`'${list.title}'에 ${added}개 추가` + (skipped ? `, ${skipped}개는 이미 있음` : '') + '.', added ? 'ok' : '');
 }
@@ -3237,34 +3485,56 @@ function renderCooking(){
     <div class="seg-group" style="margin-bottom:16px;">
       ${cats.map(c=>`<div class="seg-btn ${c===activeCat?'active':''}" data-action="cook-filter" data-cat="${c}">${esc(catLabels[c]||c)}</div>`).join('')}
     </div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));">
-      ${list.length ? list.map(r=>recipeCardHtml(r)).join('') : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
+    <div class="grid recipe-grid">
+      ${list.length ? (()=>{ const open = cookOpenSet(); return list.map(r=>recipeCardHtml(r, open.has(r.id))).join(''); })() : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
     </div>
   `;
 }
-function recipeCardHtml(r){
+// 3-4: 레시피 카드는 접힌 상태(이름·종류·난이도·시간·재료 n/m)로, 눌러서 펼침(여러 개 가능, 기기에 기억).
+//      재료는 줄 전체가 체크 버튼(40px 이상), 체크 모양은 체크리스트의 "가져감"과 같은 스타일.
+const COOK_OPEN_KEY = 'campbase.cookOpen';
+function cookOpenSet(){ try{ const v = JSON.parse(localStorage.getItem(COOK_OPEN_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(e){ return new Set(); } }
+function toggleCookOpen(rid){
+  const set = cookOpenSet();
+  if(set.has(rid)) set.delete(rid); else set.add(rid);
+  try{ localStorage.setItem(COOK_OPEN_KEY, JSON.stringify([...set])); }catch(e){}
+  renderView();
+  const b = document.querySelector(`[data-action="cook-open"][data-recipe="${CSS.escape(rid)}"]`);
+  if(b) b.focus({ preventScroll: true });
+}
+function toggleCookIngredient(rid, idx){
+  const cur = new Set((state.cookingChecks[rid] && state.cookingChecks[rid].checked) || []);
+  if(cur.has(idx)) cur.delete(idx); else cur.add(idx);
+  state.cookingChecks[rid] = { checked: [...cur] };
+  persistCookingCheck(rid, state.cookingChecks[rid]);
+  renderView();
+  const b = document.querySelector(`[data-action="cook-toggle"][data-recipe="${CSS.escape(rid)}"][data-idx="${idx}"]`);
+  if(b) b.focus({ preventScroll: true });
+}
+function recipeCardHtml(r, open){
   const checked = new Set((state.cookingChecks[r.id] && state.cookingChecks[r.id].checked) || []);
-  const doneCount = checked.size, total = r.ingredients.length;
+  const doneCount = [...checked].filter(i=>i < r.ingredients.length).length, total = r.ingredients.length;
   return `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
-        <div class="name">${esc(r.name)}</div>
-        <span class="tag">${esc(r.category)}</span>
-      </div>
-      <div class="section-desc" style="margin:4px 0 10px;">${esc(r.difficulty)} · ${esc(r.time)}</div>
-      <div style="margin-bottom:8px;">
-        ${r.ingredients.map((ing,i)=>`
-          <div class="check-row">
-            <input type="checkbox" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}" ${checked.has(i)?'checked':''}>
-            <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
-          </div>
-        `).join('')}
-      </div>
-      <div class="section-desc" style="margin-bottom:10px;line-height:1.5;">${esc(r.steps)}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+    <div class="card recipe-card ${open ? 'open' : ''}">
+      <button type="button" class="recipe-head" data-action="cook-open" data-recipe="${r.id}" aria-expanded="${open}" aria-controls="recipe-${r.id}">
+        <span class="recipe-main">
+          <span class="name">${esc(r.name)}</span>
+          <span class="recipe-meta">${esc(r.category)} · ${esc(r.difficulty)} · ${esc(r.time)}</span>
+        </span>
         <span class="tag ${total && doneCount===total ? 'done-tag' : ''}">재료 ${doneCount}/${total}</span>
+        ${icon('chev', 'recipe-chev')}
+      </button>
+      ${open ? `<div class="recipe-body" id="recipe-${r.id}">
+        <div class="ing-list">
+          ${r.ingredients.map((ing,i)=>`
+            <button type="button" class="ing-row" role="checkbox" aria-checked="${checked.has(i)}" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}">
+              <span class="cl-status-btn packed ${checked.has(i)?'active':''}" aria-hidden="true">${icon('check')}</span>
+              <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
+            </button>`).join('')}
+        </div>
+        <div class="section-desc" style="margin:10px 0;line-height:1.5;">${esc(r.steps)}</div>
         <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
-      </div>
+      </div>` : ''}
     </div>
   `;
 }
@@ -3306,11 +3576,15 @@ function openModal(html){
     <div class="modal-backdrop" id="modal-backdrop">
       <div class="modal" role="dialog" aria-modal="true">
         <button type="button" class="icon-btn modal-x" data-action="modal-close" aria-label="닫기" title="닫기">${icon('close')}</button>
-        ${html}
+        <div class="modal-body">${html}</div>
       </div>
     </div>`;
   const bd = document.getElementById('modal-backdrop');
   const modal = bd.querySelector('.modal');
+  // 맨 아래 버튼 줄(.modal-actions)은 본문 밖 고정 버튼 바로 옮김(3-5) — 스크롤하지 않아도 저장/취소가 보임
+  const body = modal.querySelector('.modal-body');
+  const acts = body.lastElementChild;
+  if(acts && acts.classList.contains('modal-actions')){ acts.classList.remove('modal-actions'); acts.classList.add('modal-foot'); modal.appendChild(acts); }
   const h = modal.querySelector('h3');
   if(h){ h.id = 'modal-title'; modal.setAttribute('aria-labelledby', 'modal-title'); }
   bd.addEventListener('click', e=>{ if(e.target===bd && !modalHasInputs(modal)) closeModal(); });
@@ -3341,7 +3615,7 @@ function closeModal(){
 function trapModalTab(e){
   const modal = document.querySelector('#modal-root .modal');
   if(!modal) return;
-  const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el=>el.offsetParent!==null || el===document.activeElement);
+  const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el=>isShown(el) || el===document.activeElement);
   if(!items.length) return;
   const first = items[0], last = items[items.length-1];
   if(!modal.contains(document.activeElement)){ e.preventDefault(); first.focus(); return; }
@@ -3366,8 +3640,32 @@ function closeAllMenus(except){
   document.querySelectorAll('.more-menu:not([hidden])').forEach(m=>{
     if(except && m===except) return;
     m.hidden = true;
+    ['position','top','right','maxHeight','overflowY'].forEach(k=>{ m.style[k] = ''; });
     const w = m.closest('.more'); if(w){ w.classList.remove('up'); const b = w.querySelector('.more-btn'); if(b) b.setAttribute('aria-expanded','false'); }
   });
+}
+// 보이는지 판단: position:fixed 요소(하단 탭바 등)는 offsetParent가 항상 null이라 쓰면 안 됨 → 실제 스타일·크기로 판단
+function isShown(el){
+  if(!el || !el.isConnected) return false;
+  const cs = getComputedStyle(el);
+  if(cs.display==='none' || cs.visibility==='hidden') return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
+}
+// ⋯ 메뉴 위치: 아래로 펼쳐서 탭바·화면 밖으로 나가면 위로, 위로도 모자라면 화면 안(탭바 위)에 고정 위치로 맞춤
+function placeMenu(wrap, menu, btn){
+  wrap.classList.remove('up');
+  const tab = document.getElementById('mobile-tabbar');
+  const bottomLimit = (isShown(tab) ? tab.getBoundingClientRect().top : window.innerHeight) - 8;
+  const topLimit = 8;
+  if(menu.getBoundingClientRect().bottom <= bottomLimit) return;
+  const b = btn.getBoundingClientRect(), mh = menu.offsetHeight;
+  if(b.top - 4 - mh >= topLimit){ wrap.classList.add('up'); return; }
+  menu.style.position = 'fixed';
+  menu.style.top = Math.max(topLimit, bottomLimit - mh) + 'px';
+  menu.style.right = Math.max(8, window.innerWidth - b.right) + 'px';
+  menu.style.maxHeight = Math.max(80, bottomLimit - topLimit) + 'px';
+  menu.style.overflowY = 'auto';
 }
 function toggleMenu(btn, focusLast){
   const wrap = btn.closest('.more'), menu = wrap && wrap.querySelector('.more-menu');
@@ -3378,10 +3676,7 @@ function toggleMenu(btn, focusLast){
   btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
   wrap.classList.remove('up');
   if(!opening) return;
-  // 화면 아래(탭바 포함)에 가리면 위로 펼침
-  const tab = document.getElementById('mobile-tabbar');
-  const bottomLimit = window.innerHeight - (tab && tab.offsetParent ? tab.offsetHeight : 0) - 8;
-  if(menu.getBoundingClientRect().bottom > bottomLimit && btn.getBoundingClientRect().top > menu.offsetHeight + 16) wrap.classList.add('up');
+  placeMenu(wrap, menu, btn);
   const items = menu.querySelectorAll('.more-item');
   const target = focusLast ? items[items.length-1] : items[0];
   if(target) target.focus({ preventScroll: true });
@@ -3534,6 +3829,7 @@ function wireGlobalActions(){
     const navEl = e.target.closest('[data-nav]');
     if(navEl && navEl.closest('#nav, #mobile-tabbar')){
       state.currentView = navEl.getAttribute('data-nav');
+      if(state.gearSelecting) setGearSelecting(false);   // 탭을 옮기면 장비 선택 모드는 끝
       renderNav(); renderView();
       return;
     }
@@ -3589,17 +3885,23 @@ function wireGlobalActions(){
         deleteGearCategory(a.getAttribute('data-cat'));
         break;
 
-
       case 'goto-settings':
         state.currentView = 'settings';
         renderNav(); renderView();
         break;
 
+      case 'cook-open': toggleCookOpen(a.getAttribute('data-recipe')); break;
+      case 'cook-toggle': toggleCookIngredient(a.getAttribute('data-recipe'), Number(a.getAttribute('data-idx'))); break;
       case 'cook-filter':
         state.cookingCategory = a.getAttribute('data-cat');
         renderView();
         break;
 
+      case 'cf-star': {
+        const cur = Number((document.getElementById('cf-rating') || {}).value || 0), n = Number(a.getAttribute('data-val'));
+        setStarValue(cur === n ? 0 : n, false);
+        break;
+      }
       case 'camp-view': selectCampView(a.getAttribute('data-view') || 'me'); break;
       case 'cf-share-toggle': {
         const gid = a.getAttribute('data-gid');
@@ -3642,6 +3944,8 @@ function wireGlobalActions(){
       case 'trip-pick': state.tripFilter = a.getAttribute('data-trip') || 'all'; renderView(); break;
       case 'trip-past-toggle': state.showPastTrips = !state.showPastTrips; renderView(); break;
       case 'trip-new': tripFormModal(); break;
+      case 'trip-tpl-import': tripTemplateImportModal(a.getAttribute('data-trip')); break;
+      case 'trip-tpl-import-go': importTemplateToTrip(a.getAttribute('data-trip')); break;
       case 'trip-edit': tripFormModal(a.getAttribute('data-trip')); break;
       case 'trip-save': saveTripForm(id); break;
       case 'trip-del': deleteTripConfirm(a.getAttribute('data-trip')); break;
@@ -3678,6 +3982,7 @@ function wireGlobalActions(){
       case 'logout': confirmModal('로그아웃할까요? 다시 로그인하면 내 기록이 그대로 보여요.', '로그아웃', ()=>signOutNow()); break;
       case 'legacy-import': startLegacyImport(); break;
       case 'space-pick': selectSpace(a.getAttribute('data-space')); break;
+      case 'space-note-ok': markSpaceNoteSeen(a.getAttribute('data-gid')); renderView(); break;
       case 'group-new': newGroupModal(); break;
       case 'group-new-save': createGroup(); break;
       case 'group-join': joinGroupModal(); break;
@@ -3708,6 +4013,9 @@ function wireGlobalActions(){
       case 'cl-send-go': sendChecklist(id); break;
       case 'gear-send': sendGearModal(); break;
       case 'gear-to-checklist': gearToChecklistModal(); break;
+      case 'gear-select': setGearSelecting(!state.gearSelecting); renderView(); break;
+      case 'gear-select-cancel': setGearSelecting(false); renderView(); break;
+      case 'gear-pick': toggleGearPick(id); break;
       case 'g2c-all': document.querySelectorAll('.g2c-gear').forEach(el=>{ el.checked = true; }); break;
       case 'g2c-go': addGearToChecklist(); break;
       case 'gear-send-all': document.querySelectorAll('.send-gear').forEach(el=>{ el.checked = true; }); break;
@@ -3775,6 +4083,16 @@ function wireGlobalActions(){
   document.addEventListener('keydown', (e)=>{
    try{
     if(menuKeydown(e)) return;
+    const star = e.target.closest && e.target.closest('.star-btn');
+    if(star && ['ArrowRight','ArrowUp','ArrowLeft','ArrowDown','Home','End'].includes(e.key)){
+      e.preventDefault();
+      const cur = Number((document.getElementById('cf-rating') || {}).value || 0);
+      const next = e.key==='Home' ? 1 : e.key==='End' ? 5 : (e.key==='ArrowRight' || e.key==='ArrowUp') ? Math.min(5, cur + 1) : Math.max(0, cur - 1);
+      setStarValue(next, true);
+      return;
+    }
+    const pick = e.target.closest && e.target.closest('[data-action="gear-pick"]');
+    if(pick && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); toggleGearPick(pick.getAttribute('data-id')); return; }
     if(e.key==='Escape'){
       const open = document.querySelector('.more-menu:not([hidden])');
       if(open){ e.preventDefault(); const b = open.closest('.more').querySelector('.more-btn'); closeAllMenus(); if(b) b.focus(); return; }
@@ -3790,24 +4108,23 @@ function wireGlobalActions(){
     const typing = !!el && (el.tagName==='TEXTAREA' || el.tagName==='SELECT' || (el.tagName==='INPUT' && !['checkbox','radio','button','file','submit'].includes(el.type)));
     const vv = window.visualViewport;
     const shrunk = !!vv && vv.height < window.innerHeight * 0.75;
+    if(vv){ document.documentElement.style.setProperty('--vvh', vv.height + 'px'); document.documentElement.style.setProperty('--vvt', vv.offsetTop + 'px'); }
+    // 모달 안 입력칸은 키보드가 올라온 뒤에도 보이게(고정 버튼 바는 본문 밖이라 가리지 않음)
+    if(typing && el.closest('.modal-body')) setTimeout(()=>{ try{ el.scrollIntoView({ block:'nearest' }); }catch(e){} }, 250);
     document.body.classList.toggle('kbd-open', typing || shrunk);
   };
+  // 화면 안에 고정 위치로 띄운 ⋯ 메뉴는 본문이 스크롤되면 닫음(버튼과 떨어지지 않게)
+  document.getElementById('main').addEventListener('scroll', ()=>{
+    if(document.querySelector('.more-menu:not([hidden])[style*="fixed"]')) closeAllMenus();
+    updateStickyHeads();
+  }, { passive: true });
   document.addEventListener('focusin', kbdCheck);
   document.addEventListener('focusout', ()=>setTimeout(kbdCheck, 50));
   if(window.visualViewport) window.visualViewport.addEventListener('resize', kbdCheck);
+  if(window.visualViewport) window.visualViewport.addEventListener('scroll', kbdCheck);
+  kbdCheck();
   document.addEventListener('change', (e)=>{
    try{
-    const cc = e.target.closest('[data-action="cook-toggle"]');
-    if(cc){
-      const rid = cc.getAttribute('data-recipe');
-      const idx = Number(cc.getAttribute('data-idx'));
-      const cur = new Set((state.cookingChecks[rid] && state.cookingChecks[rid].checked) || []);
-      if(cc.checked) cur.add(idx); else cur.delete(idx);
-      state.cookingChecks[rid] = {checked:[...cur]};
-      persistCookingCheck(rid, state.cookingChecks[rid]);
-      renderView();
-      return;
-    }
     if(e.target && (e.target.id === 'backup-file' || e.target.id === 'group-backup-file')){
       const f = e.target.files && e.target.files[0];
       const taId = e.target.id === 'backup-file' ? 'backup-text-in' : 'group-backup-text-in';

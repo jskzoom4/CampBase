@@ -32,6 +32,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
 
 (async () => {
   const srv = spawn('python3', ['-m', 'http.server', String(PORT), '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   const server = {};
@@ -135,8 +136,8 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   const d3 = md(3), d4 = md(4);
   const dateText = d3.m === d4.m ? `${d3.m}월 ${d3.d}일~${d4.d}일` : `${d3.m}월 ${d3.d}일~${d4.m}월 ${d4.d}일`;
   check('일정 카드: 이름·날짜·D-3·캠핑장·지역·준비 0/3', /홍천 캠핑/.test(card) && card.includes(dateText) && /D-3/.test(card) && /홍천 강변 캠핑장/.test(card) && /준비 0\/3/.test(card), card);
-  await A.click('.trip-card ~ .checklist-group .check-row:has-text("텐트") [data-val="packed"]');
-  await A.click('.trip-card ~ .checklist-group .check-row:has-text("침낭") [data-val="skip"]');
+  await A.click('.trip-panel .checklist-group .check-row:has-text("텐트") [data-val="packed"]');
+  await A.click('.trip-panel .checklist-group .check-row:has-text("침낭") [data-val="skip"]');
   await settle();
   check('진행률 = 연결된 리스트 항목 중 결정된 것/전체(가져감·안 가져감 모두 결정)', /준비 2\/3/.test(await A.locator('.trip-card').innerText()));
   check('개인 일정 카드에는 "내 담당" 없음', !/내 담당/.test(await A.locator('.trip-card').innerText()));
@@ -145,19 +146,19 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
 
   // 새 리스트는 선택한 일정에 연결
   await A.click('.trip-chip:has-text("홍천 캠핑")');
-  await A.click('[data-action="cl-new-list"]');
+  await A.click('.trip-panel .tp-add-list');   // 일정 패널 안의 "+ 리스트"
   await A.fill('#ncl-title', '추가 장보기');
   await A.click('[data-action="cl-new-list-save"]');
   await settle();
   check('일정을 보는 중에 만든 새 리스트는 그 일정에 연결', docsUnder(A_ + 'checklists/').some(l => l.title === '추가 장보기' && l.tripId === t1.id));
 
   // ================= 4. 수정 =================
-  await A.click('.trip-card [data-action="trip-edit"]');
+  await menuClick(A, '.trip-card [data-action="trip-edit"]');
   check('수정 창에는 체크리스트 시작 방법이 없음', (await A.locator('#tf-start-method').count()) === 0);
   await fillTrip(A, { title: '홍천 가을 캠핑' });
   const t1b = server[A_ + 'trips/' + t1.id];
   check('일정 수정: 이름 변경, 만든 사람·만든 시각 유지', t1b.title === '홍천 가을 캠핑' && t1b.createdAt === t1.createdAt && t1b.createdBy === UA.uid && t1b.startDate === ymd(3));
-  await A.click('[data-action="trip-edit"]');
+  await menuClick(A, '.trip-card [data-action="trip-edit"]');
   await fillTrip(A, { start: ymd(5), end: ymd(4) });
   check('종료일이 시작일보다 빠르면 저장 안 함', /종료일/.test(await toastText(A)) && server[A_ + 'trips/' + t1.id].startDate === ymd(3));
   await A.click('[data-action="modal-close"]');
@@ -227,18 +228,18 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await B.waitForSelector('.trip-chip:has-text("팸 캠핑")', { timeout: 3000 }).catch(() => {});
   check('그룹 B에게도 그룹 일정이 실시간으로 보임', (await B.locator('.trip-chip:has-text("팸 캠핑")').count()) === 1);
   // 담당자: A에게 타프, B에게 아이스박스
-  await A.click('.trip-card ~ .checklist-group .check-row:has-text("타프") [data-action="cl-assign"]');
+  await A.click('.trip-panel .checklist-group .check-row:has-text("타프") [data-action="cl-assign"]');
   await A.click(`[data-action="cl-assign-set"][data-uid="${UA.uid}"]`);
-  await A.click('.trip-card ~ .checklist-group .check-row:has-text("아이스박스") [data-action="cl-assign"]');
+  await A.click('.trip-panel .checklist-group .check-row:has-text("아이스박스") [data-action="cl-assign"]');
   await A.click(`[data-action="cl-assign-set"][data-uid="${UB.uid}"]`);
   await settle();
   const gcard = await A.locator('.trip-card').innerText();
-  check('그룹 일정 카드: 참가 2명 + 준비 0/2 + 내 담당 1개 남음', /2명 참가/.test(gcard) && /준비 0\/2/.test(gcard) && /내 담당 1개 남음/.test(gcard), gcard);
+  check('그룹 일정 패널: 참가 2명(사진 묶음 aria-label) + 준비 0/2 + 내 담당 1', (await A.locator('.trip-card .avatar-stack[aria-label="2명 참가"] .mini-avatar').count()) === 2 && /준비 0\/2/.test(gcard) && /내 담당 1(\D|$)/.test(gcard), gcard);
   await B.click('.trip-chip:has-text("팸 캠핑")');
   await B.click('.check-row:has-text("아이스박스") [data-val="packed"]');
   await settle();
   check('B가 체크하면 A의 진행률도 실시간 갱신(1/2)', /준비 1\/2/.test(await A.locator('.trip-card').innerText()));
-  check('B 화면: 내 담당 0개 남음', /내 담당 0개 남음/.test(await B.locator('.trip-card').innerText()));
+  check('B 화면: 내 담당 0', /내 담당 0(\D|$)/.test(await B.locator('.trip-card').innerText()));
 
   // ================= 9. Home "다음 캠핑" 카드 =================
   await nav(A, 'home');
@@ -268,11 +269,11 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   check('지난 일정은 "지난 일정 ▾"로 접힘', (await A.locator('.trip-chip:has-text("춘천 캠핑")').count()) === 0 && (await A.locator('[data-action="trip-past-toggle"]').count()) === 1);
   await A.click('[data-action="trip-past-toggle"]');
   await A.click('.trip-chip:has-text("춘천 캠핑")');
-  check('끝난 일정 카드: "끝남" + "후기 남기기"', /끝남/.test(await A.locator('.trip-card').innerText()) && (await A.locator('.trip-card [data-action="trip-review"]').count()) === 1);
+  check('끝난 일정 패널: D-n 자리에 "후기 남기기"(끝난 일정)', (await A.locator('.trip-panel-head [data-action="trip-review"]').count()) === 1 && (await A.locator('.trip-panel-head .trip-phase').count()) === 0);
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
   check('후기 폼 미리 채움: 캠핑장 이름·지역·날짜(시작일)', (await A.inputValue('#cf-name')) === '춘천 호수 캠핑장' && (await A.inputValue('#cf-region')) === '춘천' && (await A.inputValue('#cf-date')) === ymd(-4));
-  await A.fill('#cf-rating', '5');
+  await A.click('#cf-stars [data-val="5"]');
   await A.click('[data-action="camp-save"]');
   await settle();
   const review = docsUnder(A_ + 'campingLogs/').find(c => c.name === '춘천 호수 캠핑장');

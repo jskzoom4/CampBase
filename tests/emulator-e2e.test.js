@@ -51,6 +51,7 @@ const until = async (fn, t = 8000) => { const end = Date.now() + t; while (Date.
   const admin = async fn => { let out; await env.withSecurityRulesDisabled(async ctx => { out = await fn(ctx.firestore()); }); return out; };
 
   const srv = spawn('python3', ['-m', 'http.server', '8768', '-d', SITE], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(700);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
   const errors = [];

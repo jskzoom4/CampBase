@@ -38,7 +38,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   const srv1 = spawn('python3', ['-m', 'http.server', '8765', '-d', CONFIGURED], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv1.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   const srv2 = spawn('python3', ['-m', 'http.server', '8766', '-d', UNCONFIGURED], { stdio: 'ignore' });
+  process.on('exit', () => { try { srv2.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await sleep(800);
   const browser = await chromium.launch(CHROMIUM ? { executablePath: CHROMIUM } : {});
 

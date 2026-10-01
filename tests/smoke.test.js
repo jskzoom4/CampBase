@@ -52,6 +52,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   page.on('pageerror', err => issues.push('PAGEERROR: ' + err.message));
 
   const srv = require('child_process').spawn('python3', ['-m','http.server','8767','-d',SITE], {stdio:'ignore'});
+  process.on('exit', () => { try { srv.kill(); } catch (e) {} });   // 실패로 끝나도 서버를 남기지 않음(남으면 다음 실행이 예전 코드를 받음)
   await new Promise(r=>setTimeout(r,700));
   await page.goto('http://127.0.0.1:8767/');
   // 0. 로그인 화면 → Google로 시작하기
@@ -71,11 +72,11 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   // 2. Home: click each stat card title/legend (home-cat-nav) to jump to tabs
   await page.click('[data-nav="home"]');
   await page.waitForTimeout(150);
-  const homeCatLinks = await page.locator('[data-action="home-cat-nav"]').count();
+  const homeCatLinks = await page.locator('[data-action="home-cat-nav"]:visible').count();   // 화면 폭에 따라 원형/막대 중 보이는 것만
   console.log('home-cat-nav elements found:', homeCatLinks);
   for (let i = 0; i < homeCatLinks; i++) {
     try {
-      await page.locator('[data-action="home-cat-nav"]').nth(i).click();
+      await page.locator('[data-action="home-cat-nav"]:visible').nth(i).click();
       await page.waitForTimeout(120);
       log('home-cat-nav #' + i);
       await page.click('[data-nav="home"]');
@@ -145,7 +146,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   log('gear filters');
   await page.locator('[data-action="gear-filter"]').first().click(); // back to 'all'
   await page.waitForTimeout(100);
-  await page.click('[data-action="gear-cat-manage"]');
+  await menuClick(page, '[data-action="gear-cat-manage"]');
   await page.waitForTimeout(150);
   const catInput = page.locator('#cat-new-name');
   if (await catInput.count()) {
@@ -230,8 +231,11 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   log('cooking filters');
   await page.locator('[data-action="cook-filter"]').first().click();
   await page.waitForTimeout(100);
+  // 레시피는 접힌 상태 → 첫 레시피를 펼친 뒤 재료 줄을 눌러 체크(3-4)
+  await page.locator('[data-action="cook-open"]').first().click();
+  await page.waitForTimeout(120);
   const cookCb = page.locator('[data-action="cook-toggle"]').first();
-  if (await cookCb.count()) { await cookCb.click({ force: true }); await page.waitForTimeout(150); log('cooking toggle'); }
+  if (await cookCb.count()) { await cookCb.click(); await page.waitForTimeout(150); log('cooking toggle'); }
 
   // 8. Settings: 기존 공유 데이터 가져오기(빈 상태) + 백업 내보내기 + 로그아웃
   await page.click('[data-nav="settings"]');
