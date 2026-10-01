@@ -15,7 +15,7 @@ service cloud.firestore {
     // ── 1. 개인 공간 ───────────────────────────────────────────
     // 구글로 로그인한 본인만 자기 공간(users/{내 uid}/...)을 읽고 쓸 수 있어요.
     //   users/{uid}                          : 계정 정보 { name, email, photoURL, updatedAt }
-    //   users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}
+    //   users/{uid}/campingLogs|gear|checklists|cookingChecks|trips|checklistTemplates/{id}
     //   users/{uid}/settings/app             : { gearCategories, weatherLocation, homeWidgets }
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
@@ -27,7 +27,7 @@ service cloud.firestore {
     // ── 2. 그룹 ─────────────────────────────────────────────────
     //   groups/{gid} = { name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role } },
     //                    createdAt, gearCategories?, joinCode? }
-    //   groups/{gid}/checklists|gear/{id}   : 그룹 멤버만 읽기·쓰기
+    //   groups/{gid}/checklists|gear|trips|checklistTemplates/{id} : 그룹 멤버만 읽기·쓰기
     //   groupInvites/{code} = { gid, groupName, createdBy, expiresAt(밀리초), createdAt }
     // 서버 코드 없이 규칙만으로 "누가 무엇을 바꿀 수 있는지"를 정해요.
     function signedIn() { return request.auth != null; }
@@ -92,9 +92,11 @@ service cloud.firestore {
         || isJoin() || isLeave() || isKick();
       allow delete: if isOwner();                                                                   // 그룹 삭제: 그룹장
     }
-    // 그룹 안의 데이터(체크리스트·장비): 멤버만. (그룹 문서 자체에는 적용되지 않도록 하위 컬렉션만 매칭)
-    match /groups/{gid}/{sub}/{document=**} {
-      allow read, write: if isGroupMember(gid);
+    // 그룹 안의 데이터: 멤버만 읽기·쓰기. 정해진 하위 컬렉션만 허용(그 밖의 이름·더 깊은 경로는 거부)
+    //   checklists(체크리스트) · gear(장비) · trips(캠핑 일정) · checklistTemplates(체크리스트 템플릿)
+    //   (앱의 GROUP_SUBCOLLECTIONS와 같은 목록)
+    match /groups/{gid}/{sub}/{docId} {
+      allow read, write: if sub in ['checklists', 'gear', 'trips', 'checklistTemplates'] && isGroupMember(gid);
     }
     // 초대 코드: 로그인한 사람은 코드로 한 개 읽기 가능(목록 훑어보기는 그 그룹 멤버만)
     match /groupInvites/{code} {

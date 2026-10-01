@@ -212,21 +212,21 @@ const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => 
   await sleep(400);
   await nav(A, 'home');
   await nav(A2, 'home');
-  await A2.waitForFunction(() => document.querySelectorAll('.weather-widget').length === 0, null, { timeout: 3000 }).catch(() => {});
-  const aLoc = await A.locator('.weather-widget').count(), a2Loc = await A2.locator('.weather-widget').count(), bLoc = await B.locator('.weather-widget').count();
+  await A2.waitForFunction(() => document.querySelectorAll('.next-trip-card').length === 0, null, { timeout: 3000 }).catch(() => {});
+  const aLoc = await A.locator('.next-trip-card').count(), a2Loc = await A2.locator('.next-trip-card').count(), bLoc = await B.locator('.next-trip-card').count();
   check('Home 위젯 끄기는 같은 계정의 모든 기기에 적용, 다른 사람은 그대로', aLoc === 0 && a2Loc === 0 && bLoc === 1, { aLoc, a2Loc, bLoc });
   const aSet = server['users/' + UA.uid + '/settings/app'];
-  check('위젯 설정은 users/{uid}/settings/app.homeWidgets에 저장', aSet && aSet.homeWidgets && aSet.homeWidgets.location === false, aSet);
+  check('위젯 설정은 users/{uid}/settings/app.homeWidgets에 저장', aSet && aSet.homeWidgets && aSet.homeWidgets.nextTrip === false, aSet);
   check('위젯 설정을 기기(localStorage)에 따로 저장하지 않음', (await A.evaluate(() => localStorage.getItem('campbase.homeWidgets'))) === null);
   await A.reload(); await waitStatus(A, /자동 저장/);
-  check('새로고침해도 로그인 유지 + 위젯 설정 유지', !(await loginVisible(A)) && await A.locator('.weather-widget').count() === 0);
+  check('새로고침해도 로그인 유지 + 위젯 설정 유지', !(await loginVisible(A)) && await A.locator('.next-trip-card').count() === 0);
 
   // ================= 5. 백업 내보내기/가져오기 (개인 공간 기준) =================
   await nav(A, 'settings');
   await A.click('[data-action="backup-export"]');
   const exported = await A.inputValue('#backup-text');
   let exp = null; try { exp = JSON.parse(exported); } catch (e) {}
-  check('백업 내보내기: 올바른 JSON + 내 리스트만 포함', exp && exp.app === 'campbase' && exp.checklists.some(c => c.title === '공유테스트-이름변경') && exp.gear.length === 0 && exp.settings.homeWidgets.location === false);
+  check('백업 내보내기: 올바른 JSON + 내 리스트만 포함', exp && exp.app === 'campbase' && exp.checklists.some(c => c.title === '공유테스트-이름변경') && exp.gear.length === 0 && exp.settings.homeWidgets.nextTrip === false);
   await A.click('[data-action="modal-close"]');
 
   await A.click('[data-action="backup-import"]');
@@ -319,7 +319,7 @@ const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => 
   check('같은 기기에서 B로 로그인하면 B의 데이터만 보임', await A.locator('.list-row:has-text("밥의 버너")').count() === 1 && await A.locator('.list-row:has-text("테스트 텐트")').count() === 0);
   check('계정을 바꾼 뒤에도 B 공간 경로만 접근', (await foreignAccess(A, UB.uid)).length === 0, await foreignAccess(A, UB.uid));
   await nav(A, 'home');
-  check('계정을 바꾸면 위젯 설정도 그 계정 것(B: 기준 지역 위젯 켜짐)', await A.locator('.weather-widget').count() === 1);
+  check('계정을 바꾸면 위젯 설정도 그 계정 것(B: 다음 캠핑 카드 켜짐)', await A.locator('.next-trip-card').count() === 1);
 
   // ================= 9. APK(네이티브 로그인) 경로 =================
   const N = await newPhone({ mobile: true, native: UN });

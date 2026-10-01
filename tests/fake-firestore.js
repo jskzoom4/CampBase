@@ -85,6 +85,8 @@
   const LEGACY = ['campingLogs', 'gear', 'checklists', 'cookingChecks'];
   const me = () => (currentUser ? currentUser.uid : null);
   const INVITE_RE = /^[A-HJ-NP-Z2-9]{6,8}$/;
+  const GROUP_SUBS = ['checklists', 'gear', 'trips', 'checklistTemplates'];   // firestore.rules의 허용 목록
+  const groupSubOk = seg => seg.length <= 4 && GROUP_SUBS.includes(seg[2]);
   function isMemberOf(gid) { const g = store['groups/' + gid]; return !!(me() && g && (g.memberUids || []).includes(me())); }
   function canRead(ref) {
     if (window.__fakeDenied) return false;
@@ -93,7 +95,7 @@
     if (seg[0] === 'users') return !!(me() && seg[1] === me());
     if (seg[0] === 'groups') {
       if (seg.length === 1) return !!(f && f.field === 'memberUids' && f.op === 'array-contains' && f.value === me());
-      return isMemberOf(seg[1]);
+      return groupSubOk(seg) && isMemberOf(seg[1]);
     }
     if (seg[0] === 'groupInvites') {
       if (seg.length === 2) return !!me();
@@ -138,7 +140,7 @@
       if (isOwner && only(['memberUids', 'members']) && removed.length > 0 && !removed.includes(me()) && membersOk([], removed)) return true;   // 내보내기
       return false;
     }
-    if (seg[0] === 'groups') return isMemberOf(seg[1]);
+    if (seg[0] === 'groups') return groupSubOk(seg) && isMemberOf(seg[1]);
     if (seg[0] === 'groupInvites') {
       if (!before) return !!after && INVITE_RE.test(seg[1]) && after.createdBy === me() && isMemberOf(after.gid);
       if (!after) return before.createdBy === me() || (store['groups/' + before.gid] || {}).ownerUid === me();
