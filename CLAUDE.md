@@ -53,14 +53,21 @@
 
 ## 캠핑 일정 (새 탭 없음: Checklist 탭 위쪽 + Home 카드)
 - 일정: 개인 `users/{uid}/trips/{id}`, 그룹 `groups/{gid}/trips/{id}` =
-  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
+  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, description?(메모, 비우면 필드 삭제), memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
+  메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
 - 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
 - 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }] }`(체크 상태·담당자 없음).
   리스트 헤더 `cl-save-template`로 저장, 이름 변경·삭제(되돌리기)는 일정 만들기 창 안(`refreshTripModalTemplates()`).
 - Checklist 탭: `spaceChipsHtml()` 아래 `tripBarHtml()`(전체 | 일정… | 지난 일정 ▾ | + 일정 만들기). `state.tripFilter`('all' 또는 일정 id), `state.showPastTrips`. 공간을 바꾸면 둘 다 초기화.
   일정을 고르면 **일정 패널** `tripPanelHtml()` 하나(아래 "화면 규칙"): 날짜·D-n/진행 중/끝남, 캠핑장·지역, 참가 멤버, 진행률 `tripProgress()`(연결된 리스트 항목 중 결정된 것/전체, 그룹이면 내 담당 남은 개수), 필터, 연결된 리스트(`checklistListHtml(cl, ctx, true)`).
   "전체"를 고르면 예전 구조(리스트 카드들) + 한 줄 설명.
-- 일정 만들기 `tripFormModal()` → `saveTripForm()`: 체크리스트 시작 방법 = 템플릿 복사(새 리스트, 항목 모두 미정) / 기존 리스트 연결 / 빈 리스트("이름 준비물").
+- 일정 만들기 `tripFormModal()` → `saveTripForm()`: 체크리스트 시작 방법 = **장비에서 고르기**(빈 리스트 "이름 준비물"을 만들고 바로 `gearPickModal`) / 템플릿 복사(새 리스트, 항목 모두 미정) / 기존 리스트 연결 / 빈 리스트.
+  기본값: 템플릿이 있으면 템플릿, 없고 장비가 있으면 장비에서 고르기.
+- **장비에서 불러오기**(기본 흐름: 일정 만들기 → 리스트에서 Gear 장비를 골라 불러와 체크): `gearPickModal(listId, src)` → `gearPickGo()`.
+  입구 = 리스트 ⋯ 메뉴 맨 위(`cl-gear-import`), 빈 리스트의 버튼, 리스트 없는 일정 패널의 `trip-gear-import`(리스트를 만들고 엶).
+  장비는 카테고리 묶음별(`gearCatTree`), 전체 선택(`#gpk-all`)·묶음 선택(`.gpk-sec-box`)·개별(`.gpk-item`) — 체크 상태는 `gpkSync()`(change 이벤트 `data-action="gpk-toggle"`), 일부만이면 indeterminate.
+  리스트에 이미 있는 이름(`normName`)은 "이미 있음"으로 고를 수 없음. 그룹 공간에서는 [그룹 장비 | 내 장비](`gpk-src`) — 그룹 장비는 주인(지금 멤버)이, 내 장비는 내가 담당자.
+  항목 넣기는 Gear 탭 "체크리스트에 추가"와 같은 `addGearItemsToList()`.
 - 일정 삭제(`deleteTripConfirm`)는 연결된 리스트를 지우지 않고 `tripId`만 해제, 되돌리면 일정과 연결 모두 복구(`deleteDocWithUndo`의 `after`).
 - 그룹 일정은 Home 카드 때문에 **내 모든 그룹**의 trips·checklists를 늘 구독한다(`syncGroupBackground()` → `state.groupTrips[gid]`, `state.groupTripLists[gid]`). 그룹 공간의 `SP.trips`도 여기서 읽는다.
   선택한 그룹의 템플릿은 `startSpaceData()`에서 `state.groupTemplates`로.
@@ -138,7 +145,7 @@
 - **⋯ 메뉴(공통 컴포넌트)**: 한 줄·카드에 버튼이 여러 개면 가장 자주 쓰는 동작 1개만 보이게 두고 나머지는 `moreMenuHtml(key, items, label)`로.
   `items = [{ action, attrs:{'data-id':…}, icon, label, danger }]` — 항목도 **같은 data-action**으로 `wireGlobalActions()`에서 처리된다.
   위험한 항목(`danger:true`, 삭제·나가기)은 빨간색으로 맨 아래. 바깥 클릭·Esc로 닫힘, 화살표/Home/End/Tab/Enter 지원, 한 번에 하나만 열림(`closeAllMenus`).
-  지금 메뉴에 있는 것: 리스트(이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제), 장비·캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기), Gear 위쪽(카테고리 관리).
+  지금 메뉴에 있는 것: 리스트(장비에서 불러오기·이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제), 장비·캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기), Gear 위쪽(카테고리 관리).
   메뉴 위치는 `placeMenu()`: 아래로 펼쳐서 하단 탭바(위쪽 끝)를 넘으면 위로, 위도 모자라면 화면 안에 `position:fixed`로(넘치면 메뉴 안 스크롤). #main을 스크롤하면 닫힌다.
   테스트에서 메뉴 안 버튼은 `tests/ui-helpers.js`의 `menuClick(page, selector)`로 누른다(메뉴를 열고 누름). Gear 선택 모드 동작은 `gearAction(page, action, ids)`(선택 모드로 고르고 액션 바 버튼을 누름).
 - **모달**: `openModal()`이 오른쪽 위 닫기(X, `data-action="modal-close"`)를 자동으로 넣는다. Esc로 닫기, 나타남/사라짐 효과(fade+scale, `prefers-reduced-motion`이면 없음).
@@ -189,7 +196,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열한 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -202,10 +209,11 @@ node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 �
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
                                 # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+node tests/trip-gear-h.test.js  # 일정 → 장비에서 불러오기(전체·묶음 선택, 이미 있는 항목 제외, 그룹/내 장비 담당자), 일정 메모(Description)
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8776, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8777, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):
