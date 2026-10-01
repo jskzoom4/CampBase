@@ -1,7 +1,8 @@
 # 캠프베이스 (CampBase) — 작업 안내
 
 구글 계정으로 로그인해서 쓰는 캠핑 앱. 사람마다 개인 공간에 저장되고, 같은 계정으로 로그인한 기기끼리는 바로 동기화된다.
-**그룹**을 만들면 멤버끼리 Checklist·Gear를 함께 보고 고친다(초대 코드로 참여).
+**그룹**을 만들면 멤버끼리 Checklist·Gear를 함께 보고 고치고, Camping 탭에서는 멤버가 공유한 후기를 **읽기 전용**으로 본다(초대 코드로 참여).
+원칙: **그룹은 Checklist·Gear(함께 편집) + Camping 읽기 전용 후기.** 후기 작성·수정·삭제는 항상 내 개인 기록에서만.
 사용자는 비개발자에 가깝다. **한국어로, 쉬운 말로** 설명하고, 바뀐 점과 설치 방법을 짧게 알려줄 것.
 
 ## 앱의 목적 (새 기능은 이 세 가지에 도움이 되는지로 판단)
@@ -69,6 +70,21 @@
   저장하면 캠핑 기록에 선택 필드 `tripRef: { space: 'me'|gid, tripId }`. `hasMyReview()`로 "내 후기 작성함" 표시. 기록 수정(`saveCampForm`)은 기존 필드(tripRef 등)를 유지.
 - 개인 백업에 `trips`, `checklistTemplates` 포함(필드가 없는 예전 백업을 가져오면 지금 일정·템플릿은 그대로 둔다).
 
+## 그룹 후기 공유 (Camping 탭, 읽기 전용)
+- 개인 캠핑 기록의 선택 필드 `sharedGroupIds: [gid, ...]`(없으면 공유 안 함). 공유한 그룹마다 사본
+  `groups/{gid}/sharedReviews/{내uid}_{기록id}` = 후기 필드(`REVIEW_FIELDS`: name, date, region, siteType, siteSize, rating, checkinTime, checkoutTime, toiletCondition, storeCondition, notes, tripRef) + `{ authorUid, sourceLogId, updatedAt }`.
+- 동기화는 **`syncReviewCopies(prev, next)`** 하나로(켠 그룹 저장·갱신, 끈 그룹 삭제, next=null이면 모두 삭제): 기록 저장(`saveCampForm`), 삭제(+되돌리기 때 다시 만들기), 개인 백업 가져오기 후.
+  개인 기록을 바꾸는 새 코드를 만들면 이 함수도 불러야 한다.
+- 없어진 그룹(삭제·나감)의 gid는 `cleanupSharedGroupIds()`가 내 기록에서 조용히 지운다 — 그룹 목록을 **서버에서** 받은 뒤에만(`state.groupsServerLoaded`, 어댑터 `wrapQuery`의 `fromCache`).
+  그룹을 나가도 내가 올린 사본은 그룹에 남는다(작성자는 나간 뒤에도 규칙상 자기 사본 삭제 가능). 그룹 삭제 시 `sharedReviews`도 함께 삭제. 그룹 백업에는 넣지 않음.
+- 규칙(`firestore.rules`의 `sharedReviews` 블록): 읽기 = 멤버, 만들기·수정 = 멤버 + `authorUid == 나` + 문서 id `== 나_sourceLogId`(작성자 변경 불가), 삭제 = 작성자 본인 또는 그룹장.
+  `sharedReviews`는 일반 하위 컬렉션 허용 목록(`GROUP_SUBCOLLECTIONS`)에 **넣지 않는다**(넣으면 아무 멤버나 쓸 수 있게 됨).
+- 기록 폼의 "그룹에 공유" 칩(`_campShare`, `cf-share-toggle`): 기본 꺼짐, 그룹 일정에서 "후기 남기기"로 온 새 기록은 그 그룹이 켜짐. 목록에 "○○ 공유" 태그.
+- Camping 탭 위쪽 보기 전환 `[내 기록 | 그룹A 후기 | …]`: `state.campView`('me' 또는 gid, 기기별 `localStorage` `campbase.campView.<uid>`, Checklist·Gear 공간과 따로).
+  그룹 보기는 `startReviewData()`로 그 그룹의 `sharedReviews`만 구독 → `renderGroupReviews()`: 캠핑장별 카드(`groupReviewCards`, `normName`으로 묶음 — 후기 수, 평균 평점, 최근 방문일, 작성자 사진, 화장실·매점 최빈값),
+  지역 필터·정렬(최신순·평점순). 카드 → `reviewDetailModal()`(멤버별 후기, 내 것엔 "내 기록에서 수정", 그룹장에겐 남의 후기 "그룹에서 내리기"(confirmModal, 되돌리기 없음 — 그룹장은 남의 사본을 다시 만들 수 없음)). 나간 멤버는 "나간 멤버".
+- Home 통계는 개인 기록만.
+
 ## 그룹
 - `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, joinCode? }`
   - `groups/{gid}/checklists|gear|trips|checklistTemplates/{id}` — 멤버 모두 읽기·쓰기(규칙은 이 네 하위 컬렉션만 허용 = 앱의 `GROUP_SUBCOLLECTIONS`. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
@@ -78,7 +94,7 @@
 - 참여: `groups/{gid}`에 `update({ memberUids: arrayUnion(나), 'members.나': {...role:'member'}, joinCode: 코드 })` — 규칙이 `joinCode`로 초대 코드(같은 gid, 만료 전)를 `get()`해서 확인한다.
   나가기/내보내기는 `arrayRemove` + `deleteField()`. 그룹장은 나갈 수 없고 삭제만(하위 데이터(`GROUP_SUBCOLLECTIONS` 전부) → 초대 코드 → 그룹 문서 순서로 삭제).
 - **공간 전환은 Checklist·Gear 탭에만**(일정·템플릿도 Checklist 탭의 지금 공간 기준) (`spaceChipsHtml()`, `state.space` = `'me'` 또는 gid, 기기별 `localStorage` `campbase.space.<uid>`).
-  Home·Camping·Cooking·Settings·백업·legacy 가져오기는 항상 개인 공간(`state.db`, `state.checklists`, `state.gear`).
+  Home·Camping(내 기록)·Cooking·Settings·백업·legacy 가져오기는 항상 개인 공간(`state.db`, `state.checklists`, `state.gear`). Camping의 그룹 후기 보기는 위 "그룹 후기 공유"(따로 전환).
 - Checklist·Gear 코드는 `SP.checklists / SP.gear / SP.gearCategories`(지금 공간)와 `spaceDb()`로 읽고 쓴다. 이 두 탭에서 `state.checklists`/`state.gear`를 직접 쓰지 말 것.
   카테고리 저장은 `persistGearCategories()`(그룹이면 그룹 문서, 아니면 개인 설정).
 - 그룹 데이터 구독은 `selectSpace()` → `startSpaceData()`/`stopSpaceData()`. 권한이 없어지면(내보내짐·삭제) 조용히 내 공간으로 돌아온다.
@@ -123,7 +139,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 여섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 일곱 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -132,9 +148,10 @@ node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함�
 node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
 node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 후기 남기기(tripRef)
 node tests/gear-checklist.test.js  # 장비↔준비물: 담당자 추천(일치·불일치·주인 없음), 장비→체크리스트(개인/그룹, 중복 건너뛰기, 주인 자동 담당)
+node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8772)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8773)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

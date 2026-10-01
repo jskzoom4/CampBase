@@ -192,6 +192,25 @@
   .next-trip-review svg{width:15px;height:15px;color:var(--brand);flex:none;}
   .next-trip-review span{flex:1;}
   .next-trip-review:hover{border-color:var(--brand);}
+  /* ---- 그룹 후기 공유 ---- */
+  .share-tag{display:inline-flex;align-items:center;gap:3px;font-family:"Work Sans",sans-serif;font-size:11px;vertical-align:middle;margin-left:4px;}
+  .share-tag svg{width:11px;height:11px;}
+  .share-chip{display:inline-flex;align-items:center;gap:5px;}
+  .share-chip svg{width:14px;height:14px;}
+  .camp-view-chip{display:inline-flex;align-items:center;gap:5px;}
+  .camp-view-chip svg{width:14px;height:14px;}
+  .review-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));}
+  .review-card{cursor:pointer;display:flex;flex-direction:column;gap:10px;}
+  .review-card:hover{border-color:var(--brand);}
+  .review-card .name{font-weight:700;font-size:14.5px;}
+  .review-card .meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
+  .review-card-head{display:flex;gap:10px;align-items:flex-start;}
+  .review-avg{flex:none;font-size:14px;font-weight:700;}
+  .review-star{color:var(--warn);}
+  .review-summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .review-authors{margin-left:auto;display:inline-flex;gap:2px;}
+  .review-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+  .review-actions:empty{display:none;}
   .app-version{text-align:center;font-size:12px;color:var(--text-dim);margin:28px 0 8px;}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
@@ -613,7 +632,7 @@ async function connectFirebase(){
 }
 function makeFirestoreAdapter(fs, fdb, base){
   const full = p => base ? base + '/' + p : p;
-  const wrapQuery = snap => ({ empty: snap.empty, docs: snap.docs.map(d=>({ id: d.id, data: ()=>d.data() })) });
+  const wrapQuery = snap => ({ empty: snap.empty, fromCache: !!(snap.metadata && snap.metadata.fromCache), docs: snap.docs.map(d=>({ id: d.id, data: ()=>d.data() })) });
   const wrapDoc = snap => ({ exists: snap.exists(), data: ()=>snap.data() });
   function listen(ref, isDoc, cb, errCb){
     let first = true, prevJson = null;
@@ -716,6 +735,7 @@ function onAuthUser(user){
 function resetUserState(){
   state.campingLogs = []; state.gear = []; state.checklists = []; state.cookingChecks = {};
   state.trips = []; state.checklistTemplates = []; state.tripFilter = 'all'; state.showPastTrips = false;
+  state.campingLogsLoaded = false; state.groupReviewFilter = 'all'; state.groupReviewSort = 'date_desc';
   state.weatherLocation = null;
   state.gearCategories = [...DEFAULT_GEAR_CATEGORIES];
   state.homeWidgets = {...DEFAULT_HOME_WIDGETS};
@@ -740,6 +760,8 @@ function startUserData(){
 
   _unsubs.push(db.collection('campingLogs').onSnapshot(live(snap=>{
     state.campingLogs = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    state.campingLogsLoaded = true;
+    cleanupSharedGroupIds();
     if(['home','camping'].includes(state.currentView)) renderView();
   }), onErr));
   _unsubs.push(db.collection('gear').onSnapshot(live(snap=>{
@@ -1047,11 +1069,16 @@ function startGroups(){
   const gen = _dataGen, u = state.user.uid;
   const saved = loadSavedSpace(u);
   _pendingSpace = saved !== 'me' ? saved : null;
+  const savedView = loadSavedCampView(u);
+  _pendingCampView = savedView !== 'me' ? savedView : null;
   _groupsUnsub = state.rootDb.collection('groups').where('memberUids', 'array-contains', u).onSnapshot(snap=>{
     if(gen !== _dataGen) return;
     state.groups = snap.docs.map(d=>normalizeGroup(d.id, unfreeze(d.data())))
       .sort((a,b)=> String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || a.name.localeCompare(b.name, 'ko'));
     syncGroupBackground();
+    if(!snap.fromCache) state.groupsServerLoaded = true;
+    cleanupSharedGroupIds();
+    syncCampView(snap.fromCache);
     // 기기에 기억해 둔 그룹 공간으로 복귀
     if(_pendingSpace && state.groups.some(g=>g.id===_pendingSpace)){ const p = _pendingSpace; _pendingSpace = null; selectSpace(p, true); return; }
     // 보고 있던 그룹에서 나가졌거나 그룹이 삭제됨
@@ -1060,7 +1087,7 @@ function startGroups(){
       toast('그룹에 더 이상 속해 있지 않아서 내 공간으로 돌아왔어요.');
       return;
     }
-    if(['home','checklist','gear','settings'].includes(state.currentView)) renderView();
+    if(['home','camping','checklist','gear','settings'].includes(state.currentView)) renderView();
   }, e=>{ if(gen===_dataGen) reportDbError(e); });
 }
 // 내가 속한 모든 그룹의 일정·체크리스트를 항상 구독(Home "다음 캠핑" 카드, 그룹 공간의 일정 줄).
@@ -1101,6 +1128,8 @@ function stopGroups(){
   _groupsUnsub = null;
   stopSpaceData();
   stopGroupBackground();
+  stopReviewData();
+  state.campView = 'me'; _pendingCampView = null; state.groupsServerLoaded = false;
   state.groups = []; state.space = 'me'; _pendingSpace = null;
 }
 function stopSpaceData(){
@@ -1162,7 +1191,7 @@ function groupsSectionHtml(){
   const u = state.user;
   if(!u) return '';
   return `
-    <div class="section-head"><div><h1>내 그룹</h1><div class="section-desc">그룹 멤버끼리 Checklist·Gear를 함께 보고 고칠 수 있어요. 캠핑 기록·Home·요리는 항상 나만 보는 개인 공간이에요.</div></div></div>
+    <div class="section-head"><div><h1>내 그룹</h1><div class="section-desc">그룹 멤버끼리 Checklist·Gear를 함께 보고 고치고, 캠핑 후기는 내가 "그룹에 공유"를 켠 것만 Camping 탭에서 읽기 전용으로 나눠요. 내 캠핑 기록·Home·요리는 나만 보는 개인 공간이에요.</div></div></div>
     <div class="card" id="groups-card">
       ${state.groups.length ? state.groups.map(g=>{
         const owner = isGroupOwner(g);
@@ -1392,7 +1421,7 @@ async function deleteGroup(gid){
   toast('그룹을 삭제하는 중…');
   try{
     const gdb = groupDb(gid);
-    for(const c of GROUP_SUBCOLLECTIONS){
+    for(const c of [...GROUP_SUBCOLLECTIONS, 'sharedReviews']){
       const snap = await gdb.collection(c).get();
       await Promise.all(snap.docs.map(d=>gdb.collection(c).doc(d.id).delete()));
     }
@@ -1597,6 +1626,11 @@ function applyBackup(d){
       prev[c].forEach(old=>{ if(!keep.has(old.id)) safePersist(()=>db.collection(c).doc(old.id).delete()); });
       d[c].forEach(x=>safePersist(()=>db.collection(c).doc(x.id).set(stripId(x))));
     });
+    // 그룹 후기 사본도 백업의 sharedGroupIds 기준으로 다시 맞춤(없어진 기록의 사본은 삭제)
+    const prevLogs = new Map(prev.campingLogs.map(x=>[x.id, x]));
+    const nextLogIds = new Set(d.campingLogs.map(x=>x.id));
+    prev.campingLogs.forEach(o=>{ if(!nextLogIds.has(o.id)) syncReviewCopies(o, null); });
+    d.campingLogs.forEach(x=>syncReviewCopies(prevLogs.get(x.id) || null, x));
     Object.keys(prev.cookingChecks||{}).forEach(id=>{ if(!(id in d.cookingChecks)) safePersist(()=>db.collection('cookingChecks').doc(id).delete()); });
     Object.entries(d.cookingChecks).forEach(([id, v])=>safePersist(()=>db.collection('cookingChecks').doc(id).set(v)));
     persistAppSettings();
@@ -1911,6 +1945,10 @@ function renderSettings(){
 
 /* ============================ CAMPING ============================ */
 function renderCamping(){
+  const g = state.campView!=='me' ? groupById(state.campView) : null;
+  return campViewChipsHtml() + (g ? renderGroupReviews(g) : renderMyCamping());
+}
+function renderMyCamping(){
   const filter = state.campingFilter || 'all';
   const sortKey = state.campingSort || 'date_desc';
   const byRegion = {};
@@ -1938,7 +1976,7 @@ function renderCamping(){
       ${logs.length ? logs.map(c=>`
         <div class="list-row">
           <div style="flex:1;">
-            <div class="name">${esc(c.name)}</div>
+            <div class="name">${esc(c.name)}${sharedGroupNames(c).map(n=>` <span class="tag share-tag">${icon('users')}${esc(n)} 공유</span>`).join('')}</div>
             <div class="meta">
               ${c.date?esc(c.date):''}${c.region?' · '+esc(c.region):''} ·
               <span class="tag">${esc(c.siteType||'기타')}</span>
@@ -1961,12 +1999,223 @@ function renderCamping(){
     </div>
   `;
 }
+/* ============================ 그룹 후기 공유 ============================
+ * 내 개인 캠핑 기록(users/{uid}/campingLogs/{id})의 선택 필드 sharedGroupIds: [gid, ...]
+ * 공유를 켠 그룹마다 사본 groups/{gid}/sharedReviews/{내uid}_{기록id} = 후기 필드 + { authorUid, sourceLogId, updatedAt }.
+ * 작성·수정·삭제는 내 기록에서만(사본은 자동으로 따라감). Camping 탭의 그룹 쪽은 읽기 전용 후기 모음.
+ * 그룹을 나가도 내가 올린 사본은 그룹에 남고, 내 기록의 sharedGroupIds에서 그 gid만 조용히 정리. */
+const REVIEW_FIELDS = ['name','date','region','siteType','siteSize','rating','checkinTime','checkoutTime','toiletCondition','storeCondition','notes','tripRef'];
+const CAMP_VIEW_KEY_PREFIX = 'campbase.campView.';
+state.campView = 'me';             // Camping 탭 보기: 'me'(내 기록) 또는 그룹 id (Checklist·Gear의 공간 전환과 따로, 기기에 기억)
+state.groupReviews = [];           // 보고 있는 그룹의 후기 사본
+state.groupsServerLoaded = false;  // 그룹 목록을 서버에서 한 번 받았는지(캐시만 보고 공유 정리를 하지 않으려고)
+let _campShare = new Set(), _reviewUnsub = null, _reviewGen = 0, _pendingCampView = null;
+
+function memberGids(ids){ return (Array.isArray(ids) ? ids : []).filter(g=>state.groups.some(x=>x.id===g)); }
+function sharedGroupNames(log){ return memberGids(log && log.sharedGroupIds).map(g=>groupById(g).name); }
+function reviewCopyId(logId){ return state.user.uid + '_' + logId; }
+function reviewCopyData(log){
+  const out = {};
+  REVIEW_FIELDS.forEach(k=>{ if(log[k]!==undefined) out[k] = unfreeze(log[k]); });
+  return { ...out, authorUid: state.user.uid, sourceLogId: log.id, updatedAt: new Date().toISOString() };
+}
+function persistReviewCopy(gid, log){ if(!state.dbAvailable || !state.user) return; const data = reviewCopyData(log); safePersist(()=>groupDb(gid).collection('sharedReviews').doc(reviewCopyId(log.id)).set(data)); }
+function deleteReviewCopyRemote(gid, logId){ if(!state.dbAvailable || !state.user) return; safePersist(()=>groupDb(gid).collection('sharedReviews').doc(reviewCopyId(logId)).delete()); }
+// 기록이 바뀌면(prev → next, 없으면 null) 공유 중인 그룹의 사본을 맞춘다: 켠 그룹은 저장(갱신), 끈 그룹은 삭제
+function syncReviewCopies(prev, next){
+  if(!state.dbAvailable || !state.user) return;
+  const before = new Set(memberGids(prev && prev.sharedGroupIds));
+  const after = new Set(memberGids(next && next.sharedGroupIds));
+  const logId = (next || prev).id;
+  before.forEach(g=>{ if(!after.has(g)) deleteReviewCopyRemote(g, logId); });
+  after.forEach(g=>persistReviewCopy(g, next));
+}
+// 이미 없어진 그룹(삭제됨·내가 나감)의 gid는 내 기록에서 조용히 지움(그룹에 남은 사본은 그대로)
+function cleanupSharedGroupIds(){
+  if(!state.dbAvailable || !state.groupsServerLoaded || !state.campingLogsLoaded) return;
+  state.campingLogs.forEach(c=>{
+    if(!Array.isArray(c.sharedGroupIds)) return;
+    const keep = memberGids(c.sharedGroupIds);
+    if(keep.length !== c.sharedGroupIds.length){ c.sharedGroupIds = keep; persistCamping(c); }
+  });
+}
+
+/* ---- Camping 탭 보기 전환: [내 기록 | 그룹A 후기 | …] ---- */
+function loadSavedCampView(uid){ try{ return localStorage.getItem(CAMP_VIEW_KEY_PREFIX + uid) || 'me'; }catch(e){ return 'me'; } }
+function saveCampView(){ if(!state.user) return; try{ localStorage.setItem(CAMP_VIEW_KEY_PREFIX + state.user.uid, state.campView); }catch(e){} }
+function syncCampView(fromCache){
+  if(_pendingCampView && state.groups.some(g=>g.id===_pendingCampView)){ const v = _pendingCampView; _pendingCampView = null; selectCampView(v, true); return; }
+  if(!fromCache) _pendingCampView = null;
+  if(state.campView!=='me' && !state.groups.some(g=>g.id===state.campView)) selectCampView('me', true);
+}
+function selectCampView(view, quiet){
+  if(view!=='me' && !state.groups.some(g=>g.id===view)) view = 'me';
+  if(!quiet) _pendingCampView = null;
+  const changed = view !== state.campView;
+  stopReviewData();
+  state.campView = view;
+  saveCampView();
+  if(changed){ state.groupReviewFilter = 'all'; }
+  if(view!=='me') startReviewData(view);
+  if(state.currentView==='camping') renderView();
+}
+function stopReviewData(){
+  _reviewGen++;
+  if(_reviewUnsub){ try{ _reviewUnsub(); }catch(e){} }
+  _reviewUnsub = null;
+  state.groupReviews = [];
+}
+function startReviewData(gid){
+  if(!_fb) return;
+  const gen = _reviewGen;
+  _reviewUnsub = groupDb(gid).collection('sharedReviews').onSnapshot(snap=>{
+    if(gen !== _reviewGen) return;
+    state.groupReviews = snap.docs.map(d=>({ id: d.id, ...unfreeze(d.data()) }));
+    if(state.currentView==='camping') renderView();
+    refreshReviewModal();
+  }, e=>{
+    if(gen !== _reviewGen) return;
+    if(e && e.code==='permission-denied') selectCampView('me', true);
+    else reportDbError(e);
+  });
+}
+function campViewChipsHtml(){
+  if(!state.user || !state.groups.length) return '';
+  const chips = [{ id:'me', label:'내 기록' }, ...state.groups.map(g=>({ id:g.id, label: g.name + ' 후기' }))];
+  return `<div class="space-bar"><div class="seg-group camp-view-chips">
+    ${chips.map(c=>`<div class="seg-btn camp-view-chip ${c.id===state.campView?'active':''}" data-action="camp-view" data-view="${esc(c.id)}">${c.id==='me'?icon('home'):icon('users')} ${esc(c.label)}</div>`).join('')}
+  </div></div>`;
+}
+
+/* ---- 그룹 후기 모음(읽기 전용): 캠핑장별로 묶음(이름 공백·대소문자 무시) ---- */
+function modeOf(values){
+  const n = {}; let best = '', bn = 0;
+  values.filter(Boolean).forEach(v=>{ n[v] = (n[v]||0) + 1; if(n[v] > bn){ best = v; bn = n[v]; } });
+  return best;
+}
+function groupReviewCards(reviews){
+  const by = {};
+  reviews.forEach(r=>{ const k = normName(r.name) || '-'; (by[k] = by[k] || []).push(r); });
+  return Object.entries(by).map(([key, rs])=>{
+    rs = [...rs].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')));
+    const rated = rs.filter(r=>Number(r.rating) > 0);
+    return {
+      key, name: rs[0].name || '이름 없음', region: (rs.find(r=>r.region && String(r.region).trim()) || {}).region || '',
+      reviews: rs, count: rs.length,
+      avg: rated.length ? rated.reduce((s,r)=>s + Number(r.rating), 0) / rated.length : 0,
+      latest: (rs.find(r=>r.date) || {}).date || '',
+      authors: [...new Set(rs.map(r=>r.authorUid).filter(Boolean))],
+      toilet: modeOf(rs.map(r=>r.toiletCondition)), store: modeOf(rs.map(r=>r.storeCondition)),
+    };
+  });
+}
+const GROUP_REVIEW_SORTS = [ {key:'date_desc', label:'최신순'}, {key:'rating_desc', label:'평점 높은순'}, {key:'rating_asc', label:'평점 낮은순'} ];
+function groupCardComparator(key){
+  const byLatest = (a,b)=> String(b.latest).localeCompare(String(a.latest)) || a.name.localeCompare(b.name, 'ko');
+  if(key==='rating_desc') return (a,b)=> (b.avg - a.avg) || byLatest(a,b);
+  if(key==='rating_asc') return (a,b)=> (a.avg - b.avg) || byLatest(a,b);
+  return byLatest;
+}
+function fmtAvg(v){ return v ? (Math.round(v * 10) / 10).toFixed(1) : '-'; }
+function renderGroupReviews(g){
+  const cards = groupReviewCards(state.groupReviews);
+  const filter = state.groupReviewFilter || 'all';
+  const sortKey = GROUP_REVIEW_SORTS.some(o=>o.key===state.groupReviewSort) ? state.groupReviewSort : 'date_desc';
+  const byRegion = {};
+  cards.forEach(c=>{ const r = regionOf(c); byRegion[r] = (byRegion[r]||0) + 1; });
+  const regions = Object.keys(byRegion).sort((a,b)=> byRegion[b]-byRegion[a] || a.localeCompare(b,'ko'));
+  const shown = cards.filter(c=> filter==='all' || regionOf(c)===filter).sort(groupCardComparator(sortKey));
+  return `
+    <div class="section-head">
+      <div><h1>${esc(g.name)} 후기</h1><div class="section-desc">멤버들이 공유한 캠핑장 후기 모음이에요(읽기 전용). 내 후기는 내 기록에서 "그룹에 공유"를 켜면 올라가요.</div></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <div class="seg-group" style="flex:1;">
+        ${['all', ...regions].map(r=>`<div class="seg-btn ${r===filter?'active':''}" data-action="group-review-filter" data-cat="${esc(r)}">${r==='all'?'전체':esc(r)}${r!=='all'?` <span class="num" style="opacity:.65;">${byRegion[r]}</span>`:''}</div>`).join('')}
+      </div>
+      <select data-action="group-review-sort" style="padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:12.5px;flex:none;">
+        ${GROUP_REVIEW_SORTS.map(o=>`<option value="${o.key}" ${o.key===sortKey?'selected':''}>${esc(o.label)}</option>`).join('')}
+      </select>
+    </div>
+    ${shown.length ? `<div class="grid review-grid">${shown.map(c=>`
+      <div class="card review-card" data-action="review-open" data-key="${esc(c.key)}">
+        <div class="review-card-head">
+          <div style="flex:1;min-width:0;">
+            <div class="name">${esc(c.name)}</div>
+            <div class="meta">${c.region ? esc(c.region) + ' · ' : ''}후기 ${c.count}개${c.latest ? ' · 최근 방문 ' + esc(c.latest) : ''}</div>
+          </div>
+          <div class="review-avg"><span class="review-star">★</span> <span class="num">${fmtAvg(c.avg)}</span></div>
+        </div>
+        <div class="review-summary">
+          ${c.toilet ? `<span class="tag">화장실 ${esc(c.toilet)}</span>` : ''}
+          ${c.store ? `<span class="tag">매점 ${esc(c.store)}</span>` : ''}
+          <span class="review-authors">${c.authors.map(u=>`<span title="${esc(memberName(g,u))}">${memberAvatarHtml(g,u)}</span>`).join('')}</span>
+        </div>
+      </div>`).join('')}</div>`
+      : `<div class="card empty">${cards.length ? '이 지역의 후기가 없어요.' : '아직 공유된 후기가 없어요. 내 기록을 수정해서 "그룹에 공유"를 켜보세요.'}</div>`}
+  `;
+}
+let _reviewModalKey = null;
+function reviewDetailModal(key){
+  const g = groupById(state.campView);
+  const card = g && groupReviewCards(state.groupReviews).find(c=>c.key===key);
+  if(!card){ _reviewModalKey = null; return; }
+  _reviewModalKey = key;
+  const me = state.user ? state.user.uid : null;
+  const owner = isGroupOwner(g);
+  openModal(`
+    <h3>${esc(card.name)}</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:12.5px;">${card.region ? esc(card.region) + ' · ' : ''}후기 ${card.count}개 · 평균 ★ ${fmtAvg(card.avg)}</p>
+    <div id="review-detail">
+      ${card.reviews.map(r=>`
+        <div class="list-row review-row" data-rid="${esc(r.id)}">
+          ${memberAvatarHtml(g, r.authorUid)}
+          <div style="flex:1;min-width:0;">
+            <div class="name">${esc(memberName(g, r.authorUid))}${r.authorUid===me ? ' <span class="tag">나</span>' : ''} <span class="meta" style="font-weight:400;">${r.date ? esc(r.date) + ' 방문' : ''}</span></div>
+            <div class="meta">${[r.rating ? '★'.repeat(Math.max(0, Math.min(5, Number(r.rating)))) : '', r.siteType ? esc(r.siteType) : '', r.siteSize ? esc(r.siteSize) : ''].filter(Boolean).join(' · ')}</div>
+            ${(r.checkinTime||r.checkoutTime||r.toiletCondition||r.storeCondition) ? `<div class="meta">${[
+              (r.checkinTime||r.checkoutTime) ? ('입/퇴실 ' + esc(r.checkinTime||'?') + '~' + esc(r.checkoutTime||'?')) : '',
+              r.toiletCondition ? ('화장실 ' + esc(r.toiletCondition)) : '',
+              r.storeCondition ? ('매점 ' + esc(r.storeCondition)) : '',
+            ].filter(Boolean).join(' · ')}</div>` : ''}
+            ${r.notes ? `<div class="notes">${esc(r.notes)}</div>` : ''}
+            <div class="review-actions">
+              ${r.authorUid===me ? `<button class="btn btn-sm" data-action="review-edit-mine" data-log="${esc(r.sourceLogId||'')}">${icon('edit')} 내 기록에서 수정</button>` : ''}
+              ${owner && r.authorUid!==me ? `<button class="btn btn-sm btn-danger" data-action="review-remove" data-rid="${esc(r.id)}">그룹에서 내리기</button>` : ''}
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="modal-actions"><button class="btn" data-action="modal-close">닫기</button></div>`);
+}
+function refreshReviewModal(){ if(_reviewModalKey && document.getElementById('review-detail')) reviewDetailModal(_reviewModalKey); }
+function editMyReviewSource(logId){
+  closeModal(); _reviewModalKey = null;
+  const log = state.campingLogs.find(c=>c.id===logId);
+  selectCampView('me');
+  if(!log){ toast('내 기록에서 찾지 못했어요. 이미 지운 기록일 수 있어요.'); return; }
+  campFormModal(logId);
+}
+// 그룹장: 부적절한 후기를 그룹에서 내리기(작성자의 개인 기록은 그대로)
+function removeReviewConfirm(rid){
+  const g = groupById(state.campView);
+  const r = state.groupReviews.find(x=>x.id===rid);
+  if(!g || !r || !isGroupOwner(g)) return;
+  confirmModal(`${memberName(g, r.authorUid)} 님의 '${r.name || '후기'}' 후기를 '${g.name}' 그룹에서 내릴까요? 작성자의 개인 기록은 그대로 남고, 그룹에서는 되돌릴 수 없어요.`, '그룹에서 내리기', ()=>{
+    _reviewModalKey = null;
+    state.groupReviews = state.groupReviews.filter(x=>x.id!==rid);
+    if(state.dbAvailable){ const db = groupDb(g.id); safePersist(()=>db.collection('sharedReviews').doc(rid).delete()); }
+    renderView(); toast('그룹에서 후기를 내렸어요.');
+  });
+}
 // prefill: 일정에서 "후기 남기기"로 열 때 { name, region, date, tripRef:{space, tripId} }
 let _campTripRef = null;
 function campFormModal(id, prefill){
   const c = id ? state.campingLogs.find(x=>x.id===id) : null;
   const pf = (!c && prefill) || {};
   _campTripRef = (!c && pf.tripRef) || null;
+  // 그룹에 공유: 기존 기록은 지금 공유 중인 그룹, 그룹 일정에서 "후기 남기기"로 온 새 기록은 그 그룹이 기본으로 켜짐
+  _campShare = new Set(c ? memberGids(c.sharedGroupIds) : (_campTripRef && groupById(_campTripRef.space) ? [_campTripRef.space] : []));
   const initType = c ? (c.siteType||SITE_TYPES[0]) : SITE_TYPES[0];
   const initToilet = c ? (c.toiletCondition||'') : '';
   const initStore = c ? (c.storeCondition||'') : '';
@@ -2009,6 +2258,12 @@ function campFormModal(id, prefill){
       </div>
     </div>
     <div class="field"><label>내용/후기</label><textarea id="cf-notes">${c?esc(c.notes||''):''}</textarea></div>
+    ${state.user && state.groups.length ? `
+      <div class="form-subhead">그룹에 공유</div>
+      <div class="seg-group" id="cf-share">
+        ${state.groups.map(g=>`<div class="seg-btn share-chip ${_campShare.has(g.id)?'active':''}" data-action="cf-share-toggle" data-gid="${esc(g.id)}">${icon('users')} ${esc(g.name)}</div>`).join('')}
+      </div>
+      <p style="margin:7px 0 0;color:var(--text-dim);font-size:12px;line-height:1.5;">켜면 그 그룹 멤버가 Camping 탭의 그룹 후기에서 읽을 수 있어요. 고치거나 지우는 건 내 기록에서만 해요.</p>` : ''}
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="camp-save" data-id="${id||''}">${icon('save')} 저장</button>
@@ -2058,9 +2313,13 @@ function saveCampForm(id){
   const fromTrip = !id && _campTripRef;
   if(fromTrip) item.tripRef = { space: _campTripRef.space, tripId: _campTripRef.tripId };
   _campTripRef = null;
+  const share = memberGids([..._campShare]);
+  if(share.length || Array.isArray(prev.sharedGroupIds)) item.sharedGroupIds = share;
+  const prevLog = id ? (state.campingLogs.find(x=>x.id===id) || null) : null;
   if(id){ state.campingLogs = state.campingLogs.map(c=>c.id===id?item:c); }
   else{ state.campingLogs.push(item); }
   persistCamping(item);
+  syncReviewCopies(prevLog, item);   // 공유 중인 그룹 사본 갱신·추가, 끈 그룹 사본 삭제
   closeModal(); renderView(); toast(fromTrip ? '후기를 내 캠핑 기록에 저장했어요.' : '저장했어요.');
 }
 
@@ -2944,7 +3203,7 @@ function openModal(html){
     </div>`;
   document.getElementById('modal-backdrop').addEventListener('click', e=>{ if(e.target.id==='modal-backdrop') closeModal(); });
 }
-function closeModal(){ document.getElementById('modal-root').innerHTML=''; _confirmCallback = null; }
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; _confirmCallback = null; _reviewModalKey = null; }
 // confirmModal: replaces window.confirm() for destructive actions. The
 // sandboxed iframe this Artifact runs in silently blocks native confirm()/
 // alert() dialogs (no popup ever appears and it just resolves as cancelled)
@@ -3083,8 +3342,11 @@ function wireGlobalActions(){
       case 'camp-edit': campFormModal(id); break;
       case 'camp-del': {
         const target = state.campingLogs.find(c=>c.id===id);
-        confirmModal(`'${target?target.name:'이 기록'}'을 삭제할까요? 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
-          deleteDocWithUndo('campingLogs', id, '기록을 삭제했어요.');
+        const shared = target ? sharedGroupNames(target) : [];
+        confirmModal(`'${target?target.name:'이 기록'}'을 삭제할까요?${shared.length ? ` 공유한 그룹(${shared.join(', ')})의 후기도 함께 사라져요.` : ''} 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
+          const before = target ? unfreeze(target) : null;
+          if(before) syncReviewCopies(before, null);   // 공유한 그룹의 사본도 삭제
+          deleteDocWithUndo('campingLogs', id, '기록을 삭제했어요.', ()=>{ if(before) syncReviewCopies(null, before); });   // 되돌리면 사본도 다시
         });
         break;
       }
@@ -3129,6 +3391,17 @@ function wireGlobalActions(){
         renderView();
         break;
 
+      case 'camp-view': selectCampView(a.getAttribute('data-view') || 'me'); break;
+      case 'cf-share-toggle': {
+        const gid = a.getAttribute('data-gid');
+        if(_campShare.has(gid)) _campShare.delete(gid); else _campShare.add(gid);
+        a.classList.toggle('active', _campShare.has(gid));
+        break;
+      }
+      case 'group-review-filter': state.groupReviewFilter = a.getAttribute('data-cat') || 'all'; renderView(); break;
+      case 'review-open': reviewDetailModal(a.getAttribute('data-key')); break;
+      case 'review-edit-mine': editMyReviewSource(a.getAttribute('data-log')); break;
+      case 'review-remove': removeReviewConfirm(a.getAttribute('data-rid')); break;
       case 'camp-filter':
         state.campingFilter = a.getAttribute('data-cat');
         renderView();
@@ -3321,6 +3594,8 @@ function wireGlobalActions(){
     if(tw){
       toggleHomeWidget(tw.getAttribute('data-key'));
     }
+    const grs = e.target.closest('[data-action="group-review-sort"]');
+    if(grs){ state.groupReviewSort = grs.value; renderView(); }
     const cs = e.target.closest('[data-action="camp-sort"]');
     if(cs){
       state.campingSort = cs.value;

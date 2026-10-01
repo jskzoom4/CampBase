@@ -95,6 +95,7 @@
     if (seg[0] === 'users') return !!(me() && seg[1] === me());
     if (seg[0] === 'groups') {
       if (seg.length === 1) return !!(f && f.field === 'memberUids' && f.op === 'array-contains' && f.value === me());
+      if (seg[2] === 'sharedReviews' && seg.length <= 4) return isMemberOf(seg[1]);
       return groupSubOk(seg) && isMemberOf(seg[1]);
     }
     if (seg[0] === 'groupInvites') {
@@ -139,6 +140,11 @@
       if (isMember && !isOwner && only(['memberUids', 'members']) && membersOk([], [me()])) return true;   // 나가기
       if (isOwner && only(['memberUids', 'members']) && removed.length > 0 && !removed.includes(me()) && membersOk([], removed)) return true;   // 내보내기
       return false;
+    }
+    if (seg[0] === 'groups' && seg[2] === 'sharedReviews' && seg.length === 4) {   // 그룹 후기 사본
+      if (!after) return !!before && (before.authorUid === me() || (store['groups/' + seg[1]] || {}).ownerUid === me());
+      const own = after.authorUid === me() && typeof after.sourceLogId === 'string' && seg[3] === me() + '_' + after.sourceLogId;
+      return isMemberOf(seg[1]) && own && (!before || before.authorUid === me());
     }
     if (seg[0] === 'groups') return groupSubOk(seg) && isMemberOf(seg[1]);
     if (seg[0] === 'groupInvites') {
