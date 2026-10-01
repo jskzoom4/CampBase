@@ -298,6 +298,9 @@
   .assignee-chip.set{border-style:solid;color:var(--text);background:var(--surface-2);}
   .owner-tag{display:inline-flex;align-items:center;gap:4px;margin-left:6px;font-size:11.5px;font-weight:600;color:var(--text-dim);
     background:var(--surface-2);border-radius:999px;padding:2px 8px 2px 2px;vertical-align:middle;}
+  .assign-suggest{margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .suggest-pick .meta{font-size:12px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .suggest-tag{background:color-mix(in srgb, var(--brand) 16%, transparent);color:var(--brand);}
   .owner-filter .seg-btn{display:inline-flex;align-items:center;gap:5px;}
   .account-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2);
     display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);}
@@ -2087,6 +2090,7 @@ function renderGear(){
       <div><h1>${grp ? esc(grp.name) + ' 장비' : '내 장비'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 고치는 장비 목록이에요.' : '보유 장비를 카테고리별로 등록하고 한눈에 확인하세요.'}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         ${!grp && state.groups.length ? `<button class="btn" data-action="gear-send">${icon('send')} 그룹으로 보내기</button>` : ''}
+        <button class="btn" data-action="gear-to-checklist">${icon('checklist')} 체크리스트에 추가</button>
         <button class="btn btn-accent" data-action="gear-new">${icon('plus')} 장비 추가</button>
       </div>
     </div>
@@ -2672,6 +2676,7 @@ function assignModal(listId, itemId){
   openModal(`
     <h3>담당자 지정</h3>
     <p style="margin:0 0 8px;color:var(--text-dim);font-size:13px;">'<b style="color:var(--text);">${esc(it.label)}</b>'을(를) 챙길 사람을 골라주세요.</p>
+    ${assignSuggestHtml(g, listId, it)}
     <div id="assign-list">
       ${sortedMemberUids(g).map(u=>`
         <div class="list-row member-pick ${it.assigneeUid===u?'active':''}" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="${esc(u)}" style="align-items:center;cursor:pointer;">
@@ -2684,6 +2689,91 @@ function assignModal(listId, itemId){
       ${it.assigneeUid ? `<button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button>` : ''}
       <button class="btn" data-action="modal-close">닫기</button>
     </div>`);
+}
+/* ---- 장비 ↔ 준비물 ----
+ * 이름 비교: 공백·대소문자 무시, 한쪽이 다른 쪽을 포함하면 "비슷함"(추천용), 완전히 같으면 "같은 이름"(중복 건너뛰기용). */
+function normName(s){ return String(s||'').replace(/\s+/g, '').toLowerCase(); }
+function namesSimilar(a, b){ const x = normName(a), y = normName(b); return !!x && !!y && (x.includes(y) || y.includes(x)); }
+// 담당자 추천: 항목 이름과 비슷한 "그룹 장비"의 주인(지금 멤버만). 다른 멤버의 개인 장비는 규칙상 볼 수 없어서 대상 아님.
+function assigneeSuggestions(g, label){
+  const byOwner = {};
+  SP.gear.forEach(gr=>{
+    if(!gr.ownerUid || !g.memberUids.includes(gr.ownerUid) || !namesSimilar(gr.name, label)) return;
+    (byOwner[gr.ownerUid] = byOwner[gr.ownerUid] || []).push(gr.name);
+  });
+  return sortedMemberUids(g).filter(u=>byOwner[u]).map(u=>({ uid:u, gear: byOwner[u] }));
+}
+function assignSuggestHtml(g, listId, it){
+  const sug = assigneeSuggestions(g, it.label);
+  if(!sug.length) return '';
+  return `<div id="assign-suggest" class="assign-suggest">
+    ${sug.map(x=>`
+      <div class="list-row member-pick suggest-pick ${it.assigneeUid===x.uid?'active':''}" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(it.id)}" data-uid="${esc(x.uid)}" style="align-items:center;cursor:pointer;">
+        ${memberAvatarHtml(g, x.uid)}
+        <div style="flex:1;min-width:0;">
+          <div class="name"><span class="tag suggest-tag">추천</span> ${esc(memberName(g, x.uid))} 장비 있음</div>
+          <div class="meta">${x.gear.map(esc).join(', ')}</div>
+        </div>
+        ${it.assigneeUid===x.uid ? icon('check','pick-check') : ''}
+      </div>`).join('')}
+  </div>`;
+}
+// 장비 → 체크리스트: 지금 공간의 리스트(일정별로 묶음)를 골라 장비 이름을 항목으로, 카테고리를 소분류로 추가
+function checklistOptionsHtml(){
+  const trips = sortTrips(SP.trips);
+  const tripIds = new Set(trips.map(t=>t.id));
+  const opt = l=>`<option value="${esc(l.id)}">${esc(l.title)}</option>`;
+  const groups = trips.map(t=>({ label: `${t.title}${t.startDate ? ' · ' + fmtTripDates(t) : ''}`, lists: SP.checklists.filter(l=>l.tripId===t.id) })).filter(x=>x.lists.length);
+  const loose = SP.checklists.filter(l=>!l.tripId || !tripIds.has(l.tripId));
+  if(!groups.length) return loose.map(opt).join('');
+  return groups.map(x=>`<optgroup label="${esc(x.label)}">${x.lists.map(opt).join('')}</optgroup>`).join('')
+    + (loose.length ? `<optgroup label="일정 없음">${loose.map(opt).join('')}</optgroup>` : '');
+}
+function gearToChecklistModal(){
+  if(!SP.gear.length){ toast('추가할 장비가 없어요.'); return; }
+  if(!SP.checklists.length){ toast('먼저 Checklist 탭에서 리스트를 만들어주세요.'); return; }
+  const grp = currentGroup();
+  const items = [...SP.gear].sort((a,b)=> String(a.category||'').localeCompare(String(b.category||''),'ko') || String(a.name||'').localeCompare(String(b.name||''),'ko'));
+  openModal(`
+    <h3>체크리스트에 추가</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">고른 장비를 리스트의 항목으로 넣어요. 장비 카테고리가 소분류가 되고, 이미 같은 이름의 항목이 있으면 건너뛰어요.${grp ? ' 주인이 있는 장비는 그 사람이 담당자가 돼요.' : ''}</p>
+    <div class="field"><label>넣을 리스트</label><select id="g2c-list">${checklistOptionsHtml()}</select></div>
+    <div class="field">
+      <label style="display:flex;justify-content:space-between;align-items:center;">장비 <span class="link-btn" data-action="g2c-all">모두 선택</span></label>
+      <div class="send-list">
+        ${items.map(gr=>`<label class="send-row"><input type="checkbox" class="g2c-gear" value="${esc(gr.id)}"> <span>${esc(gr.name)}</span>${grp && gr.ownerUid ? memberAvatarHtml(grp, gr.ownerUid) : ''} <span class="tag">${esc(gr.category||'기타')}</span></label>`).join('')}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="g2c-go">${icon('checklist')} 추가</button>
+    </div>`);
+}
+function addGearToChecklist(){
+  const sel = document.getElementById('g2c-list');
+  const list = sel && SP.checklists.find(l=>l.id===sel.value);
+  const ids = Array.from(document.querySelectorAll('.g2c-gear:checked')).map(el=>el.value);
+  if(!list){ toast('넣을 리스트를 골라주세요.'); return; }
+  if(!ids.length){ toast('추가할 장비를 골라주세요.'); return; }
+  const grp = currentGroup(), me = state.user ? state.user.uid : null;
+  list.items = Array.isArray(list.items) ? list.items : [];
+  const have = new Set(list.items.map(it=>normName(it.label)));
+  let added = 0, skipped = 0;
+  SP.gear.filter(gr=>ids.includes(gr.id)).forEach(gr=>{
+    const key = normName(gr.name);
+    if(!key || have.has(key)){ skipped++; return; }
+    have.add(key);
+    const item = { id: uid('i'), label: gr.name, status:'pending', group: gr.category || '기타' };
+    if(grp){
+      if(me) item.addedBy = me;
+      if(gr.ownerUid && grp.memberUids.includes(gr.ownerUid)) item.assigneeUid = gr.ownerUid;
+    }
+    list.items.push(item);
+    added++;
+  });
+  if(added) persistChecklist(list);
+  closeModal(); renderView();
+  toast(`'${list.title}'에 ${added}개 추가` + (skipped ? `, ${skipped}개는 이미 있음` : '') + '.', added ? 'ok' : '');
 }
 function setAssignee(listId, itemId, assignee){
   const g = currentGroup();
@@ -3135,6 +3225,9 @@ function wireGlobalActions(){
         break;
       case 'cl-send-go': sendChecklist(id); break;
       case 'gear-send': sendGearModal(); break;
+      case 'gear-to-checklist': gearToChecklistModal(); break;
+      case 'g2c-all': document.querySelectorAll('.g2c-gear').forEach(el=>{ el.checked = true; }); break;
+      case 'g2c-go': addGearToChecklist(); break;
       case 'gear-send-all': document.querySelectorAll('.send-gear').forEach(el=>{ el.checked = true; }); break;
       case 'gear-send-go': sendGear(); break;
       case 'cl-list-rename-save': {
