@@ -196,6 +196,13 @@ async function check(name, p) {
 
   // 멤버 권한 / 그룹장 권한
   await check('멤버: 장비 카테고리 변경 허용', assertSucceeds(updateDoc(doc(bob, 'groups/fam'), { gearCategories: ['텐트', '해먹', '기타'] })));
+  const meta = { majors: [{ name: '잠자리', desc: '텐트·침낭' }], subs: [{ name: '텐트', major: '잠자리', desc: '' }] };
+  await check('멤버: 장비 대분류·설명(gearCategoryMeta) 변경 허용', assertSucceeds(updateDoc(doc(bob, 'groups/fam'), { gearCategories: ['텐트', '해먹', '기타'], gearCategoryMeta: meta })));
+  await check('멤버: gearCategoryMeta가 지도(map)가 아니면 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { gearCategoryMeta: ['잠자리'] })));
+  await check('멤버: 카테고리와 함께 이름을 바꾸면 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { gearCategoryMeta: meta, name: '밥의 그룹' })));
+  await check('비멤버: gearCategoryMeta 변경 거부', assertFails(updateDoc(doc(env.authenticatedContext('eve').firestore(), 'groups/fam'), { gearCategoryMeta: meta })));
+  await check('그룹 만들기: gearCategoryMeta 포함 허용', assertSucceeds(setDoc(doc(env.authenticatedContext('eve').firestore(), 'groups/evegrp'), {
+    name: '이브팀', ownerUid: 'eve', memberUids: ['eve'], members: { eve: member('이브', 'owner') }, createdAt: 'x', gearCategories: [], gearCategoryMeta: meta })));
   await check('멤버: 그룹 이름 변경 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { name: '밥의 그룹' })));
   await check('멤버: 다른 멤버 내보내기 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { memberUids: arrayRemove('carol'), 'members.carol': deleteField() })));
   await check('멤버: 그룹장 바꾸기 거부', assertFails(updateDoc(doc(bob, 'groups/fam'), { ownerUid: 'bob' })));

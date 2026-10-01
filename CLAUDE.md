@@ -33,7 +33,7 @@
   - `users/{uid}` — `{ name, email, photoURL, updatedAt }` (로그인할 때마다 갱신)
   - `users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}`
   - `users/{uid}/trips/{id}`, `users/{uid}/checklistTemplates/{id}` — 캠핑 일정·체크리스트 템플릿(아래 "캠핑 일정")
-  - `users/{uid}/settings/app` — `{ gearCategories, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준. `weatherLocation`은 지금 화면에서 안 씀 — 날씨 기능용으로 남겨 둠)
+  - `users/{uid}/settings/app` — `{ gearCategories, gearCategoryMeta?, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준. `weatherLocation`은 지금 화면에서 안 씀 — 날씨 기능용으로 남겨 둠)
 - 최상위 `campingLogs/gear/checklists/cookingChecks`, `app/settings`는 **예전 공유 저장소(legacy)**. 새 앱은
   Settings → "기존 공유 데이터 가져오기"에서 **읽기만** 한다(내 공간으로 복사, 같은 id는 건너뜀, 원본 유지).
   로그인 직후 `checkLegacyAvailable()`이 legacy 데이터가 남아 있는지 `limit(1)`로 확인해서, 없거나 읽을 수 없으면(규칙 삭제 후) 버튼을 숨긴다(`state.legacyAvailable`).
@@ -87,9 +87,9 @@
 - Home 통계는 개인 기록만.
 
 ## 그룹
-- `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, joinCode? }`
+- `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, gearCategoryMeta?, joinCode? }`
   - `groups/{gid}/checklists|gear|trips|checklistTemplates/{id}` — 멤버 모두 읽기·쓰기(규칙은 이 네 하위 컬렉션만 허용 = 앱의 `GROUP_SUBCOLLECTIONS`. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
-  - 그룹 장비 카테고리는 `groups/{gid}.gearCategories`(없으면 기본 목록).
+  - 그룹 장비 카테고리는 `groups/{gid}.gearCategories` + `gearCategoryMeta`(아래 "장비 카테고리"). 멤버는 이 두 필드만 바꿀 수 있다(규칙).
   - 내 그룹 목록: `state.rootDb.collection('groups').where('memberUids','array-contains', uid)` 실시간 구독 → `state.groups`.
 - `groupInvites/{code}` = `{ gid, groupName, createdBy, expiresAt(밀리초 숫자), createdAt }`. 코드는 6자리, 문자 `INVITE_CHARS`(0/O/1/I 제외), 7일 만료.
 - 참여: `groups/{gid}`에 `update({ memberUids: arrayUnion(나), 'members.나': {...role:'member'}, joinCode: 코드 })` — 규칙이 `joinCode`로 초대 코드(같은 gid, 만료 전)를 `get()`해서 확인한다.
@@ -109,6 +109,18 @@
   장비 이름 = 항목, 카테고리 = 소분류. 같은 이름(`normName` 같음) 항목은 건너뛰고 "○개 추가, ○개는 이미 있음". 그룹이면 주인(지금 멤버)을 담당자로, `addedBy` 기록.
 - 담당자·주인은 **개인 공간에서는 보이지 않는다.** 필드가 없는 기존 항목도 그대로 보인다.
 - 장비 수정(`saveGearForm`)은 기존 필드(`addedBy`, `ownerUid` 등)를 유지하고 폼 값만 덮어쓴다.
+
+## 장비(Gear)와 카테고리
+- 장비 = `{ name, brand(직접 입력), category, comment?, ownerUid?(그룹), addedBy?, updatedBy? }`. 예전 장비의 `price/weight/date`는 지우지 않고 남겨 두지만 화면·폼에서는 안 씀.
+- 카테고리는 **대분류/소분류**. `gearCategories` = 소분류 이름 순서(예전 앱도 읽는 목록), 선택 필드 `gearCategoryMeta = { majors:[{name, desc}], subs:[{name, major, desc}] }`
+  (대분류 순서·설명, 소분류의 대분류·설명). 장비의 `category`는 소분류 이름 / 대분류 이름(소분류 없이 바로) / `''`(미분류). 대분류·소분류 이름은 서로 겹치지 않게, '미분류'는 이름으로 못 씀.
+- **기본 카테고리·잠금 없음**: 새 사용자·새 그룹은 빈 목록. 저장한 적이 없으면(`null`) 장비에 쓰인 카테고리를 보여준다(`deriveGearCats`). 어떤 카테고리든 지울 수 있고, 장비는 지우지 않고 대분류(있으면) 또는 미분류로 옮긴다.
+  `SP.gearCategories`는 null이면 계산값을 돌려주므로 **push 말고 새 배열을 대입**한다. 저장은 `persistGearCategories()`(두 필드 함께).
+- 화면은 `gearCatTree(cats, meta, gear)` 하나로 그린다: [대분류(+소분류)… → 대분류 없는 소분류… → 목록에 없는 카테고리(장비에만 있음) → 미분류]. `gearTopKey`/`gearInCat`로 거른다.
+  Gear 전체 보기 = 묶음 카드(`.gear-sec`, 머리 `gear-sec-toggle`로 접기, 기기별 `localStorage` `campbase.gearClosed`), 대분류 칩을 고르면 아래 줄에 소분류 칩. 고른 카테고리가 "장비 추가"의 기본값(`defaultGearCategory`).
+  Home 장비 통계도 맨 위 묶음(대분류) 기준.
+- 카테고리 관리 창: 위/아래(`gear-cat-move`), 연필(`gear-cat-edit` → 이름·대분류·설명, 삭제 `gear-cat-del`), 추가(`#cat-new-name` + `#cat-new-parent`: 대분류 없음/대분류 안/대분류로 만들기). 목록만 바꿀 땐 `refreshCatManage()`.
+- 개인·그룹 백업에 `gearCategoryMeta` 포함(없는 예전 백업도 그대로 가져옴).
 
 ## 배포 흐름
 - 브랜치/PR에 push → GitHub Actions가 APK 빌드(5~10분) → 그 실행 화면 아래 **Artifacts**(`campbase-apk-번호`, zip)에서 받아 폰에서 테스트.
@@ -177,7 +189,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 아홉 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -190,9 +202,10 @@ node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 �
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
                                 # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8775, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8776, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

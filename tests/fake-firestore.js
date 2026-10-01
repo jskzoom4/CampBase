@@ -132,7 +132,8 @@
       const membersOk = (a, r) => same(added.sort(), a.slice().sort()) && same(removed.sort(), r.slice().sort()) && same(mAdded.sort(), a.slice().sort()) && same(mRemoved.sort(), r.slice().sort())
         && Object.keys(before.members || {}).filter(k => !r.includes(k)).every(k => same(before.members[k], after.members[k]));
       if (isOwner && only(['name']) && typeof after.name === 'string' && after.name.length > 0) return true;
-      if (isMember && only(['gearCategories'])) return true;
+      if (isMember && only(['gearCategories', 'gearCategoryMeta']) && Array.isArray(after.gearCategories)
+        && (after.gearCategoryMeta === undefined || (after.gearCategoryMeta && typeof after.gearCategoryMeta === 'object' && !Array.isArray(after.gearCategoryMeta)))) return true;
       if (!isMember && only(['memberUids', 'members', 'joinCode']) && membersOk([me()], [])) {       // 참여
         const inv = store['groupInvites/' + after.joinCode];
         return !!(inv && inv.gid === gid && inv.expiresAt > Date.now() && after.members[me()].role === 'member');

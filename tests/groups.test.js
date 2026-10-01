@@ -300,8 +300,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await pickSpace(A, '내 공간');
   // 개인 카테고리 '해먹' + 장비 2개
   await menuClick(A, '[data-action="gear-cat-manage"]');
-  await A.fill('#cat-new-name', '해먹');
-  await A.click('[data-action="gear-cat-add"]');
+  for (const c of ['해먹', '조명']) {   // 새 사용자는 기본 카테고리가 없음(G-7)
+    await A.fill('#cat-new-name', c);
+    await A.click('[data-action="gear-cat-add"]');
+  }
   await A.click('[data-action="modal-close"]');
   for (const [nm, cat] of [['A 해먹', '해먹'], ['A 랜턴', '조명']]) {
     await A.click('[data-action="gear-new"]');
@@ -319,7 +321,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   check('장비 여러 개를 그룹으로 복사(addedBy=A)', ['A 해먹', 'A 랜턴'].every(n => groupGear.some(g => g.name === n && g.addedBy === UA.uid)), groupGear.map(g => g.name));
   check('복사해도 개인 공간 장비는 그대로', Object.entries(server).filter(([k]) => k.startsWith(`users/${UA.uid}/gear/`)).length === 2);
   const gc = server['groups/' + gid].gearCategories;
-  check('그룹에 없던 카테고리(해먹)는 그룹에 추가(기타 앞에)', gc.includes('해먹') && gc.indexOf('해먹') < gc.indexOf('기타') && gc.filter(c => c === '해먹').length === 1, gc);
+  check('그룹에 없던 카테고리(해먹·조명)는 그룹에 한 번씩 추가', ['해먹', '조명'].every(c => gc.filter(x => x === c).length === 1), gc);
 
   await nav(A, 'checklist');
   await menuClick(A, '.checklist-group:has-text("A개인리스트") [data-action="cl-send"]');
