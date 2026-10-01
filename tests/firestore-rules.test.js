@@ -119,6 +119,34 @@ async function check(name, p) {
   })());
   await check('그룹 데이터: 비멤버 읽기 거부', assertFails(getDocs(collection(carol, 'groups/fam/checklists'))));
   await check('그룹 데이터: 비멤버 쓰기 거부', assertFails(setDoc(doc(carol, 'groups/fam/gear/x'), { v: 1 })));
+  for (const c of ['trips', 'checklistTemplates']) {
+    await check(`그룹 ${c}: 멤버 읽기·쓰기·삭제`, (async () => {
+      await assertSucceeds(setDoc(doc(bob, `groups/fam/${c}/t1`), { title: '팸 캠핑', createdBy: 'bob' }));
+      await assertSucceeds(getDocs(collection(alice, `groups/fam/${c}`)));
+      await assertSucceeds(deleteDoc(doc(alice, `groups/fam/${c}/t1`)));
+    })());
+    await check(`그룹 ${c}: 비멤버 읽기 거부`, (async () => {
+      await env.withSecurityRulesDisabled(ctx => setDoc(doc(ctx.firestore(), `groups/fam/${c}/keep`), { title: 'x' }));
+      await assertFails(getDocs(collection(carol, `groups/fam/${c}`)));
+      await assertFails(getDoc(doc(carol, `groups/fam/${c}/keep`)));
+    })());
+    await check(`그룹 ${c}: 비멤버 쓰기·삭제 거부`, (async () => {
+      await assertFails(setDoc(doc(carol, `groups/fam/${c}/evil`), { title: 'x' }));
+      await assertFails(deleteDoc(doc(carol, `groups/fam/${c}/keep`)));
+    })());
+    await check(`그룹 ${c}: 로그인 안 하면 거부`, assertFails(getDocs(collection(anon, `groups/fam/${c}`))));
+  }
+  await check('그룹: 허용 목록에 없는 하위 컬렉션은 멤버도 거부', (async () => {
+    await assertFails(setDoc(doc(bob, 'groups/fam/secretStuff/x'), { v: 1 }));
+    await assertFails(getDocs(collection(bob, 'groups/fam/secretStuff')));
+  })());
+  await check('그룹: 더 깊은 경로(하위의 하위)는 멤버도 거부', assertFails(setDoc(doc(bob, 'groups/fam/checklists/l1/sub/x'), { v: 1 })));
+  await check('개인 공간: users/{uid}/trips·checklistTemplates는 본인만', (async () => {
+    await assertSucceeds(setDoc(doc(alice, 'users/alice/trips/t1'), { title: '홍천' }));
+    await assertSucceeds(setDoc(doc(alice, 'users/alice/checklistTemplates/p1'), { title: '기본', items: [] }));
+    await assertFails(getDocs(collection(bob, 'users/alice/trips')));
+    await assertFails(getDocs(collection(bob, 'users/alice/checklistTemplates')));
+  })());
 
   // 만들기
   await check('그룹 만들기: 내가 그룹장이자 유일한 멤버면 허용', assertSucceeds(setDoc(doc(carol, 'groups/carolG'), {
@@ -170,6 +198,8 @@ async function check(name, p) {
   await check('그룹장: 하위 데이터·초대 코드·그룹 삭제', (async () => {
     await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/checklists/l1')));
     await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/gear/g1')));
+    await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/trips/keep')));
+    await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/checklistTemplates/keep')));
     await assertSucceeds(deleteDoc(doc(alice, 'groupInvites/GOODCD')));
     await assertSucceeds(deleteDoc(doc(alice, 'groups/fam')));
   })());

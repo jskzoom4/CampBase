@@ -31,7 +31,8 @@
 - 저장 경로(로그인한 사람의 개인 공간):
   - `users/{uid}` — `{ name, email, photoURL, updatedAt }` (로그인할 때마다 갱신)
   - `users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}`
-  - `users/{uid}/settings/app` — `{ gearCategories, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준)
+  - `users/{uid}/trips/{id}`, `users/{uid}/checklistTemplates/{id}` — 캠핑 일정·체크리스트 템플릿(아래 "캠핑 일정")
+  - `users/{uid}/settings/app` — `{ gearCategories, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준. `weatherLocation`은 지금 화면에서 안 씀 — 날씨 기능용으로 남겨 둠)
 - 최상위 `campingLogs/gear/checklists/cookingChecks`, `app/settings`는 **예전 공유 저장소(legacy)**. 새 앱은
   Settings → "기존 공유 데이터 가져오기"에서 **읽기만** 한다(내 공간으로 복사, 같은 id는 건너뜀, 원본 유지).
   로그인 직후 `checkLegacyAvailable()`이 legacy 데이터가 남아 있는지 `limit(1)`로 확인해서, 없거나 읽을 수 없으면(규칙 삭제 후) 버튼을 숨긴다(`state.legacyAvailable`).
@@ -49,15 +50,34 @@
   APK는 열 때 `checkForUpdate()`가 하루 한 번(`campbase.updateCheck`) GitHub 공개 API `releases/latest`의 `build-N`을 보고, 내 빌드보다 크면 `#update-banner`.
   받기 = `openExternal(LATEST_APK_URL)`(Capacitor가 앱 밖 주소를 기본 브라우저로 엶), 닫은 번호는 `campbase.updateDismissed`. 실패는 조용히.
 
+## 캠핑 일정 (새 탭 없음: Checklist 탭 위쪽 + Home 카드)
+- 일정: 개인 `users/{uid}/trips/{id}`, 그룹 `groups/{gid}/trips/{id}` =
+  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
+- 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
+- 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }] }`(체크 상태·담당자 없음).
+  리스트 헤더 `cl-save-template`로 저장, 이름 변경·삭제(되돌리기)는 일정 만들기 창 안(`refreshTripModalTemplates()`).
+- Checklist 탭: `spaceChipsHtml()` 아래 `tripBarHtml()`(전체 | 일정… | 지난 일정 ▾ | + 일정 만들기). `state.tripFilter`('all' 또는 일정 id), `state.showPastTrips`. 공간을 바꾸면 둘 다 초기화.
+  일정을 고르면 `tripCardHtml()`(날짜, D-n/진행 중/끝남, 캠핑장·지역, 참가 멤버, 진행률 `tripProgress()` = 연결된 리스트 항목 중 결정된 것/전체, 그룹이면 내 담당 남은 개수) + 연결된 리스트만.
+- 일정 만들기 `tripFormModal()` → `saveTripForm()`: 체크리스트 시작 방법 = 템플릿 복사(새 리스트, 항목 모두 미정) / 기존 리스트 연결 / 빈 리스트("이름 준비물").
+- 일정 삭제(`deleteTripConfirm`)는 연결된 리스트를 지우지 않고 `tripId`만 해제, 되돌리면 일정과 연결 모두 복구(`deleteDocWithUndo`의 `after`).
+- 그룹 일정은 Home 카드 때문에 **내 모든 그룹**의 trips·checklists를 늘 구독한다(`syncGroupBackground()` → `state.groupTrips[gid]`, `state.groupTripLists[gid]`). 그룹 공간의 `SP.trips`도 여기서 읽는다.
+  선택한 그룹의 템플릿은 `startSpaceData()`에서 `state.groupTemplates`로.
+- Home "다음 캠핑" 카드(`nextTripHtml()`, 위젯 키 `nextTrip` — 예전 `location` 값을 `normalizeHomeWidgets()`가 이어받음): 개인 일정 + 내가 참가하는 그룹 일정 중
+  가장 가까운 다가오는/진행 중 일정 1개. 누르면 그 공간의 Checklist 탭에서 그 일정 선택(`openTripFromHome`). 없으면 "다음 캠핑 일정을 만들어보세요".
+  끝난 지 7일 이내이고 내 후기가 없는 일정은 "'이름' 후기를 남겨보세요". Home의 다른 통계는 개인 데이터만.
+- 후기 남기기: 끝난 일정 카드의 `trip-review` → **내 개인** 캠핑 기록 폼을 캠핑장 이름·지역·시작일로 미리 채움(`campFormModal(null, prefill)`),
+  저장하면 캠핑 기록에 선택 필드 `tripRef: { space: 'me'|gid, tripId }`. `hasMyReview()`로 "내 후기 작성함" 표시. 기록 수정(`saveCampForm`)은 기존 필드(tripRef 등)를 유지.
+- 개인 백업에 `trips`, `checklistTemplates` 포함(필드가 없는 예전 백업을 가져오면 지금 일정·템플릿은 그대로 둔다).
+
 ## 그룹
 - `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, joinCode? }`
-  - `groups/{gid}/checklists/{id}`, `groups/{gid}/gear/{id}` — 멤버 모두 읽기·쓰기. 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
+  - `groups/{gid}/checklists|gear|trips|checklistTemplates/{id}` — 멤버 모두 읽기·쓰기(규칙은 이 네 하위 컬렉션만 허용 = 앱의 `GROUP_SUBCOLLECTIONS`. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
   - 그룹 장비 카테고리는 `groups/{gid}.gearCategories`(없으면 기본 목록).
   - 내 그룹 목록: `state.rootDb.collection('groups').where('memberUids','array-contains', uid)` 실시간 구독 → `state.groups`.
 - `groupInvites/{code}` = `{ gid, groupName, createdBy, expiresAt(밀리초 숫자), createdAt }`. 코드는 6자리, 문자 `INVITE_CHARS`(0/O/1/I 제외), 7일 만료.
 - 참여: `groups/{gid}`에 `update({ memberUids: arrayUnion(나), 'members.나': {...role:'member'}, joinCode: 코드 })` — 규칙이 `joinCode`로 초대 코드(같은 gid, 만료 전)를 `get()`해서 확인한다.
-  나가기/내보내기는 `arrayRemove` + `deleteField()`. 그룹장은 나갈 수 없고 삭제만(하위 데이터 → 초대 코드 → 그룹 문서 순서로 삭제).
-- **공간 전환은 Checklist·Gear 탭에만** (`spaceChipsHtml()`, `state.space` = `'me'` 또는 gid, 기기별 `localStorage` `campbase.space.<uid>`).
+  나가기/내보내기는 `arrayRemove` + `deleteField()`. 그룹장은 나갈 수 없고 삭제만(하위 데이터(`GROUP_SUBCOLLECTIONS` 전부) → 초대 코드 → 그룹 문서 순서로 삭제).
+- **공간 전환은 Checklist·Gear 탭에만**(일정·템플릿도 Checklist 탭의 지금 공간 기준) (`spaceChipsHtml()`, `state.space` = `'me'` 또는 gid, 기기별 `localStorage` `campbase.space.<uid>`).
   Home·Camping·Cooking·Settings·백업·legacy 가져오기는 항상 개인 공간(`state.db`, `state.checklists`, `state.gear`).
 - Checklist·Gear 코드는 `SP.checklists / SP.gear / SP.gearCategories`(지금 공간)와 `spaceDb()`로 읽고 쓴다. 이 두 탭에서 `state.checklists`/`state.gear`를 직접 쓰지 말 것.
   카테고리 저장은 `persistGearCategories()`(그룹이면 그룹 문서, 아니면 개인 설정).
@@ -99,15 +119,17 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 앞의 넷은 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 다섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
 node tests/smoke.test.js        # 로그인 후 모든 탭의 주요 동작 클릭 스모크 테스트 + 로그아웃
 node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·담당자·장비 주인·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
 node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
+node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 후기 남기기(tripRef)
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8771)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

@@ -98,7 +98,7 @@ const until = async (fn, t = 8000) => { const end = Date.now() + t; while (Date.
   await nav(A, 'settings');
   await A.locator('label.switch').first().click();
   const aSet = await until(() => admin(async db => { const s = await getDoc(doc(db, `users/${aUid}/settings/app`)); return s.exists() && s.data(); }));
-  check('실제 규칙: Home 위젯 설정이 users/{uid}/settings/app에 저장', aSet && aSet.homeWidgets && aSet.homeWidgets.location === false, aSet);
+  check('실제 규칙: Home 위젯 설정이 users/{uid}/settings/app에 저장', aSet && aSet.homeWidgets && aSet.homeWidgets.nextTrip === false, aSet);
 
   // 새로고침 → 로그인 유지(IndexedDB)
   await A.reload();

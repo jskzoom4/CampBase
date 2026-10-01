@@ -91,12 +91,6 @@
   .tag.accent{background:color-mix(in srgb, var(--accent) 20%, transparent);color:var(--accent);}
 
   /* ---- home ---- */
-  .weather-widget{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg, color-mix(in srgb, var(--brand) 14%, transparent), transparent);
-    border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;flex-wrap:wrap;}
-  .weather-widget .temp{font-family:"Fraunces",serif;font-size:32px;font-weight:600;}
-  .weather-widget .loc{font-weight:700;font-size:14px;}
-  .weather-widget .desc{font-size:12px;color:var(--text-dim);}
-  .weather-widget .spacer{flex:1;}
   .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:6px;}
   .stat-card{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
   .stat-card h3{margin:0;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:3px;}
@@ -159,6 +153,45 @@
   #update-banner.show{display:flex;}
   #update-banner .spacer{flex:1;}
   #update-banner svg{width:16px;height:16px;flex:none;color:var(--brand);}
+  /* ---- 캠핑 일정 ---- */
+  .trip-bar{margin-bottom:12px;}
+  .trip-chips .seg-btn{display:inline-flex;align-items:center;gap:5px;}
+  .trip-chips svg{width:14px;height:14px;}
+  .trip-new-chip{border-style:dashed;color:var(--brand);font-weight:600;}
+  .trip-card{margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
+  .trip-head{display:flex;align-items:flex-start;gap:10px;}
+  .trip-title{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:6px;}
+  .trip-title svg{width:17px;height:17px;color:var(--brand);flex:none;}
+  .trip-card .meta{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+  .trip-phase{flex:none;}
+  .trip-phase.ongoing{background:color-mix(in srgb, var(--brand) 18%, transparent);color:var(--brand);}
+  .trip-members{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+  .trip-members .meta{margin:0 0 0 4px;}
+  .trip-progress{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-dim);flex-wrap:wrap;}
+  .trip-bar-track{flex:1;min-width:120px;height:7px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
+  .trip-bar-track span{display:block;height:100%;background:var(--good);border-radius:99px;}
+  .trip-progress b{color:var(--text);}
+  .trip-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .trip-reviewed svg{width:12px;height:12px;vertical-align:-1px;}
+  .trip-tag{display:inline-flex;align-items:center;gap:3px;font-family:"Work Sans",sans-serif;font-size:11px;vertical-align:middle;}
+  .trip-tag svg{width:11px;height:11px;}
+  .tpl-manage-head{font-size:11.5px;font-weight:700;color:var(--text-dim);margin:12px 0 2px;}
+  .tpl-name-input{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px;}
+  .next-trip-wrap{margin-bottom:18px;display:flex;flex-direction:column;gap:8px;}
+  .next-trip-card{display:flex;align-items:center;gap:14px;cursor:pointer;
+    background:linear-gradient(120deg, color-mix(in srgb, var(--brand) 14%, var(--surface)), var(--surface));}
+  .next-trip-card:hover{border-color:var(--brand);}
+  .next-trip-icon{width:42px;height:42px;border-radius:12px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;}
+  .next-trip-icon svg{width:22px;height:22px;}
+  .next-trip-label{font-size:11.5px;font-weight:700;color:var(--text-dim);display:flex;align-items:center;gap:6px;}
+  .next-trip-label svg{width:11px!important;height:11px!important;}
+  .next-trip-title{font-family:"Fraunces",serif;font-weight:700;font-size:17px;margin-top:2px;}
+  .next-trip-line{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+  .next-trip-review{display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px dashed var(--border);border-radius:12px;
+    font-size:13px;cursor:pointer;background:var(--surface);}
+  .next-trip-review svg{width:15px;height:15px;color:var(--brand);flex:none;}
+  .next-trip-review span{flex:1;}
+  .next-trip-review:hover{border-color:var(--brand);}
   .app-version{text-align:center;font-size:12px;color:var(--text-dim);margin:28px 0 8px;}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none;}
@@ -339,6 +372,9 @@ const ICONS = {
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14c2.4.2 4 1.8 4.5 4.5"/>',
   send:'<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
+  calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  template:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
 };
 function icon(name, cls){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="${cls||''}">${ICONS[name]||''}</svg>`; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -373,7 +409,7 @@ const FEATURE_DEFS = [
   {id:'settings', label:'Settings', icon:'settings'},
 ];
 const HOME_WIDGET_DEFS = [
-  {key:'location', label:'기준 지역 위젯', desc:'Home 상단의 캠핑 계획용 기준 지역 선택 위젯'},
+  {key:'nextTrip', label:'다음 캠핑 카드', desc:'가장 가까운 캠핑 일정(내 일정 + 내 그룹 일정)과 준비 현황'},
   {key:'camping', label:'캠핑 기록 통계', desc:'지역별 캠핑 기록 파이 차트'},
   {key:'gear', label:'보유 장비 통계', desc:'카테고리별 보유 장비 파이 차트'},
   {key:'checklist', label:'준비물 체크 현황', desc:'체크리스트 완료/미완료 파이 차트'},
@@ -446,7 +482,9 @@ const state = {
   campingLogs:[], gear:[], checklists:[],
   weatherLocation:null,
   cookingChecks:{}, cookingCategory:'all',
-  homeWidgets:{location:true, camping:true, gear:true, checklist:true},
+  homeWidgets:{nextTrip:true, camping:true, gear:true, checklist:true},
+  trips:[], checklistTemplates:[],   // 내 공간의 캠핑 일정·체크리스트 템플릿
+  tripFilter:'all', showPastTrips:false,   // Checklist 탭의 일정 줄: 'all' 또는 일정 id
   campingFilter:'all', gearCategory:'all', checklistFilter:'all',
   campingSort:'date_desc',
   gearCategories:[...DEFAULT_GEAR_CATEGORIES],
@@ -487,10 +525,17 @@ state.bootMode = 'connecting';   // 'shared'(로그인됨) | 'signedOut' | 'prev
 state.online = true;
 state.user = null;               // {uid, name, email, photoURL}
 state.rootDb = null;             // 최상위(예전 공유 저장소) 어댑터 — 기존 데이터 가져오기 전용
-const USER_COLLECTIONS = ['campingLogs','gear','checklists','cookingChecks'];
+const USER_COLLECTIONS = ['campingLogs','gear','checklists','cookingChecks'];   // legacy 가져오기 대상(예전 공유 저장소에 있던 것)
 const SETTINGS_DOC = 'settings/app';            // users/{uid}/settings/app
 const LEGACY_SETTINGS_DOC = 'app/settings';     // 예전 공유 설정(최상위)
-const DEFAULT_HOME_WIDGETS = {location:true, camping:true, gear:true, checklist:true};
+const DEFAULT_HOME_WIDGETS = {nextTrip:true, camping:true, gear:true, checklist:true};
+// 예전 "기준 지역 위젯"(location) 켜기/끄기 값은 "다음 캠핑 카드"(nextTrip)가 이어받는다.
+function normalizeHomeWidgets(raw){
+  const w = (raw && typeof raw==='object') ? {...raw} : {};
+  if(w.nextTrip===undefined && typeof w.location==='boolean') w.nextTrip = w.location;
+  delete w.location;
+  return {...DEFAULT_HOME_WIDGETS, ...w};
+}
 
 function firebaseConfigured(){
   const c = window.FIREBASE_CONFIG;
@@ -667,6 +712,7 @@ function onAuthUser(user){
 }
 function resetUserState(){
   state.campingLogs = []; state.gear = []; state.checklists = []; state.cookingChecks = {};
+  state.trips = []; state.checklistTemplates = []; state.tripFilter = 'all'; state.showPastTrips = false;
   state.weatherLocation = null;
   state.gearCategories = [...DEFAULT_GEAR_CATEGORIES];
   state.homeWidgets = {...DEFAULT_HOME_WIDGETS};
@@ -701,12 +747,20 @@ function startUserData(){
     state.checklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     if(['home','checklist'].includes(state.currentView)) renderView();
   }), onErr));
+  _unsubs.push(db.collection('trips').onSnapshot(live(snap=>{
+    state.trips = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    if(['home','checklist'].includes(state.currentView)) renderView();
+  }), onErr));
+  _unsubs.push(db.collection('checklistTemplates').onSnapshot(live(snap=>{
+    state.checklistTemplates = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    refreshTripModalTemplates();
+  }), onErr));
   _unsubs.push(db.doc(SETTINGS_DOC).onSnapshot(live(snap=>{
     if(snap.exists){
       const d = unfreeze(snap.data()) || {};
       if(d.weatherLocation) state.weatherLocation = d.weatherLocation;
       if(d.gearCategories && d.gearCategories.length) state.gearCategories = d.gearCategories;
-      if(d.homeWidgets && typeof d.homeWidgets==='object') state.homeWidgets = {...DEFAULT_HOME_WIDGETS, ...d.homeWidgets};
+      if(d.homeWidgets && typeof d.homeWidgets==='object') state.homeWidgets = normalizeHomeWidgets(d.homeWidgets);
     }
     if(['home','settings','gear'].includes(state.currentView)) renderView();
   }), onErr));
@@ -930,10 +984,15 @@ function applyLegacyImport(plan){
 state.groups = [];                 // 내가 속한 그룹(실시간)
 state.space = 'me';                // 'me' 또는 그룹 id
 state.groupChecklists = [];        // 선택한 그룹의 체크리스트
+state.groupTemplates = [];         // 선택한 그룹의 체크리스트 템플릿
+state.groupTrips = {};             // gid → 그 그룹의 캠핑 일정 (내가 속한 모든 그룹, Home "다음 캠핑" 카드용으로 항상 구독)
+state.groupTripLists = {};         // gid → 그 그룹의 체크리스트 (일정 준비 진행률 계산용)
 state.groupGear = [];              // 선택한 그룹의 장비
 let _groupsUnsub = null, _spaceUnsubs = [], _spaceGen = 0, _pendingSpace = null;
+let _groupBg = {};                 // gid → 일정·체크리스트 구독 해제 함수들
 const SPACE_KEY_PREFIX = 'campbase.space.';
 const INVITE_DAYS = 7;
+const GROUP_SUBCOLLECTIONS = ['checklists','gear','trips','checklistTemplates'];   // firestore.rules의 허용 목록과 같아야 함
 const INVITE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // 헷갈리는 0/O/1/I 제외
 const INVITE_LEN = 6;
 
@@ -960,6 +1019,10 @@ const SP = {
   set checklists(v){ if(inGroupSpace()) state.groupChecklists = v; else state.checklists = v; },
   get gear(){ return inGroupSpace() ? state.groupGear : state.gear; },
   set gear(v){ if(inGroupSpace()) state.groupGear = v; else state.gear = v; },
+  get trips(){ const g = currentGroup(); return g ? (state.groupTrips[g.id] || []) : state.trips; },
+  set trips(v){ const g = currentGroup(); if(g) state.groupTrips[g.id] = v; else state.trips = v; },
+  get templates(){ return inGroupSpace() ? state.groupTemplates : state.checklistTemplates; },
+  set templates(v){ if(inGroupSpace()) state.groupTemplates = v; else state.checklistTemplates = v; },
   get gearCategories(){ const g = currentGroup(); return g ? g.gearCategories : state.gearCategories; },
   set gearCategories(v){ const g = currentGroup(); if(g) g.gearCategories = v; else state.gearCategories = v; },
 };
@@ -985,6 +1048,7 @@ function startGroups(){
     if(gen !== _dataGen) return;
     state.groups = snap.docs.map(d=>normalizeGroup(d.id, unfreeze(d.data())))
       .sort((a,b)=> String(a.createdAt||'').localeCompare(String(b.createdAt||'')) || a.name.localeCompare(b.name, 'ko'));
+    syncGroupBackground();
     // 기기에 기억해 둔 그룹 공간으로 복귀
     if(_pendingSpace && state.groups.some(g=>g.id===_pendingSpace)){ const p = _pendingSpace; _pendingSpace = null; selectSpace(p, true); return; }
     // 보고 있던 그룹에서 나가졌거나 그룹이 삭제됨
@@ -993,20 +1057,54 @@ function startGroups(){
       toast('그룹에 더 이상 속해 있지 않아서 내 공간으로 돌아왔어요.');
       return;
     }
-    if(['checklist','gear','settings'].includes(state.currentView)) renderView();
+    if(['home','checklist','gear','settings'].includes(state.currentView)) renderView();
   }, e=>{ if(gen===_dataGen) reportDbError(e); });
+}
+// 내가 속한 모든 그룹의 일정·체크리스트를 항상 구독(Home "다음 캠핑" 카드, 그룹 공간의 일정 줄).
+// 그룹에서 빠지면(나가기·내보내짐·삭제) 구독을 끊고 데이터도 지운다. 권한 거부는 조용히 무시.
+function syncGroupBackground(){
+  const gen = _dataGen;
+  const ids = new Set(state.groups.map(g=>g.id));
+  Object.keys(_groupBg).forEach(gid=>{
+    if(ids.has(gid)) return;
+    _groupBg[gid].forEach(fn=>{ try{ fn && fn(); }catch(e){} });
+    delete _groupBg[gid]; delete state.groupTrips[gid]; delete state.groupTripLists[gid];
+  });
+  ids.forEach(gid=>{
+    if(_groupBg[gid]) return;
+    const db = groupDb(gid);
+    const quiet = e=>{ if(gen===_dataGen && !(e && e.code==='permission-denied')) reportDbError(e); };
+    const ok = ()=> gen===_dataGen && !!_groupBg[gid];
+    _groupBg[gid] = [
+      db.collection('trips').onSnapshot(snap=>{
+        if(!ok()) return;
+        state.groupTrips[gid] = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+        if(['home','checklist'].includes(state.currentView)) renderView();
+      }, quiet),
+      db.collection('checklists').onSnapshot(snap=>{
+        if(!ok()) return;
+        state.groupTripLists[gid] = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+        if(state.currentView==='home') renderView();
+      }, quiet),
+    ];
+  });
+}
+function stopGroupBackground(){
+  Object.values(_groupBg).forEach(list=>list.forEach(fn=>{ try{ fn && fn(); }catch(e){} }));
+  _groupBg = {}; state.groupTrips = {}; state.groupTripLists = {};
 }
 function stopGroups(){
   if(_groupsUnsub){ try{ _groupsUnsub(); }catch(e){} }
   _groupsUnsub = null;
   stopSpaceData();
+  stopGroupBackground();
   state.groups = []; state.space = 'me'; _pendingSpace = null;
 }
 function stopSpaceData(){
   _spaceGen++;
   _spaceUnsubs.forEach(fn=>{ try{ fn && fn(); }catch(e){} });
   _spaceUnsubs = [];
-  state.groupChecklists = []; state.groupGear = [];
+  state.groupChecklists = []; state.groupGear = []; state.groupTemplates = [];
 }
 function startSpaceData(gid){
   const gen = _spaceGen, db = groupDb(gid);
@@ -1025,6 +1123,11 @@ function startSpaceData(gid){
     state.groupGear = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     if(state.currentView==='gear') renderView();
   }, onErr));
+  _spaceUnsubs.push(db.collection('checklistTemplates').onSnapshot(snap=>{
+    if(gen !== _spaceGen) return;
+    state.groupTemplates = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    refreshTripModalTemplates();
+  }, onErr));
 }
 // 공간 전환(Checklist·Gear 탭 위의 칩)
 function selectSpace(space, keepPending){
@@ -1035,7 +1138,7 @@ function selectSpace(space, keepPending){
   state.space = space;
   saveSpace();
   if(space!=='me') startSpaceData(space);
-  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; }   // 공간마다 카테고리·멤버가 다름
+  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; state.tripFilter = 'all'; state.showPastTrips = false; }   // 공간마다 카테고리·멤버·일정이 다름
   if(['checklist','gear','settings'].includes(state.currentView)) renderView();
 }
 function spaceChipsHtml(){
@@ -1286,7 +1389,7 @@ async function deleteGroup(gid){
   toast('그룹을 삭제하는 중…');
   try{
     const gdb = groupDb(gid);
-    for(const c of ['checklists','gear']){
+    for(const c of GROUP_SUBCOLLECTIONS){
       const snap = await gdb.collection(c).get();
       await Promise.all(snap.docs.map(d=>gdb.collection(c).doc(d.id).delete()));
     }
@@ -1379,7 +1482,7 @@ const HOME_WIDGETS_KEY = 'campbase.homeWidgets';
 function loadLocalHomeWidgets(){
   try{
     const raw = localStorage.getItem(HOME_WIDGETS_KEY);
-    if(raw){ const v = JSON.parse(raw); if(v && typeof v==='object') state.homeWidgets = {...state.homeWidgets, ...v}; }
+    if(raw){ const v = JSON.parse(raw); if(v && typeof v==='object') state.homeWidgets = normalizeHomeWidgets(v); }
   }catch(e){}
 }
 
@@ -1388,6 +1491,7 @@ function buildBackup(){
   return {
     app:'campbase', version:1, exportedAt: new Date().toISOString(),
     campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists,
+    trips: state.trips, checklistTemplates: state.checklistTemplates,
     cookingChecks: state.cookingChecks,
     settings: { weatherLocation: state.weatherLocation, homeWidgets: state.homeWidgets, gearCategories: state.gearCategories },
   };
@@ -1454,6 +1558,9 @@ function parseBackup(text){
     campingLogs: withIds(arr(data.campingLogs), 'c'),
     gear: withIds(arr(data.gear), 'g'),
     checklists: withIds(arr(data.checklists), 'cl').map(cl=>({...cl, items: Array.isArray(cl.items) ? cl.items : []})),
+    // 일정·템플릿은 새 백업에만 있음 → 예전 백업(필드 없음)을 가져오면 지금 것을 그대로 둔다
+    trips: Array.isArray(data.trips) ? withIds(arr(data.trips), 'trip') : null,
+    checklistTemplates: Array.isArray(data.checklistTemplates) ? withIds(arr(data.checklistTemplates), 'tpl').map(t=>({...t, items: Array.isArray(t.items) ? t.items : []})) : null,
     cookingChecks: (data.cookingChecks && typeof data.cookingChecks==='object' && !Array.isArray(data.cookingChecks)) ? data.cookingChecks : {},
     settings: (data.settings && typeof data.settings==='object') ? data.settings : {},
   }};
@@ -1468,11 +1575,14 @@ function startImportBackup(){
   confirmModal(`백업 내용(캠핑 기록 ${d.campingLogs.length}개, 장비 ${d.gear.length}개, 체크리스트 ${d.checklists.length}개)으로 바꿀까요? 지금 내 계정의 데이터는 모두 이 내용으로 바뀌어요. (다른 사람의 데이터에는 영향이 없어요)`, '바꾸기', ()=>applyBackup(d));
 }
 function applyBackup(d){
-  const cols = ['campingLogs','gear','checklists'];
-  const prev = { campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists, cookingChecks: state.cookingChecks };
+  const cols = ['campingLogs','gear','checklists', ...['trips','checklistTemplates'].filter(c=>Array.isArray(d[c]))];
+  const prev = { campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists, cookingChecks: state.cookingChecks,
+    trips: state.trips, checklistTemplates: state.checklistTemplates };
   state.campingLogs = d.campingLogs; state.gear = d.gear; state.checklists = d.checklists; state.cookingChecks = d.cookingChecks;
+  if(Array.isArray(d.trips)) state.trips = d.trips;
+  if(Array.isArray(d.checklistTemplates)) state.checklistTemplates = d.checklistTemplates;
   const s = d.settings;
-  if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = {...state.homeWidgets, ...s.homeWidgets}; }
+  if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = normalizeHomeWidgets(s.homeWidgets); }
   if(Array.isArray(s.gearCategories) && s.gearCategories.length){
     state.gearCategories = s.gearCategories.includes('기타') ? s.gearCategories.slice() : [...s.gearCategories, '기타'];
   }
@@ -1616,6 +1726,11 @@ function deleteGearRemote(id){ if(!state.dbAvailable) return; const db = spaceDb
 function persistChecklist(list){ if(!state.dbAvailable) return; stampGroupItem(list); const db = spaceDb(); safePersist(()=>db.collection('checklists').doc(list.id).set(stripId(list))); }
 function deleteChecklistRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('checklists').doc(id).delete()); }
 // 장비 카테고리: 그룹이면 groups/{gid}.gearCategories, 내 공간이면 users/{uid}/settings/app
+// 캠핑 일정·체크리스트 템플릿도 지금 공간(내 공간 또는 선택한 그룹)에 저장
+function persistTrip(trip){ if(!state.dbAvailable) return; if(state.user){ if(!trip.createdBy) trip.createdBy = state.user.uid; trip.updatedBy = state.user.uid; } const db = spaceDb(); safePersist(()=>db.collection('trips').doc(trip.id).set(stripId(trip))); }
+function deleteTripRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('trips').doc(id).delete()); }
+function persistTemplate(t){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('checklistTemplates').doc(t.id).set(stripId(t))); }
+function deleteTemplateRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('checklistTemplates').doc(id).delete()); }
 // 되돌리기: 삭제할 때 기억해 둔 공간의 db에 문서를 그대로(스탬프 없이) 다시 저장
 function restoreDocRemote(db, kind, doc){ if(db) safePersist(()=>db.collection(kind).doc(doc.id).set(stripId(doc))); }
 function persistGearCategories(){
@@ -1682,21 +1797,7 @@ function pieChartSvg(segments, size){
 /* ============================ HOME ============================ */
 function renderHome(){
   const hw = state.homeWidgets;
-  const loc = state.weatherLocation;
-  const locHtml = hw.location ? `
-    <div class="weather-widget">
-      ${icon('drop')}
-      <div>
-        <div class="loc">${loc ? esc(loc.name)+' 기준' : '기준 지역 미설정'}</div>
-        <div class="desc">캠핑 계획할 때 참고할 지역이에요. 날씨 연동은 지금 빠져 있어요.</div>
-      </div>
-      <div class="spacer"></div>
-      <select id="home-loc-select" style="padding:7px 9px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px;">
-        ${LOCATIONS.map(l=>`<option value="${l.name}" ${loc&&loc.name===l.name?'selected':''}>${l.name}</option>`).join('')}
-      </select>
-      <button class="btn btn-sm btn-primary" data-action="home-loc-save">${icon('save')} 설정</button>
-    </div>
-  ` : '';
+  const tripHtml = hw.nextTrip ? nextTripHtml() : '';
 
   const campBy = {};
   state.campingLogs.forEach(c=>{ const r = regionOf(c); campBy[r]=(campBy[r]||0)+1; });
@@ -1745,11 +1846,11 @@ function renderHome(){
     <div class="stat-grid">${cards.join('')}</div>
   ` : '';
 
-  const emptyHint = (!hw.location && cards.length===0) ? `
+  const emptyHint = (!hw.nextTrip && cards.length===0) ? `
     <div class="empty">Home에 표시할 위젯이 모두 꺼져 있어요. <span data-action="goto-settings" style="color:var(--brand);cursor:pointer;font-weight:600;">설정</span>에서 켜보세요.</div>
   ` : '';
 
-  return `${locHtml}${statBlock}${emptyHint}`;
+  return `${tripHtml}${statBlock}${emptyHint}`;
 }
 
 /* ============================ SETTINGS ============================ */
@@ -1857,17 +1958,22 @@ function renderCamping(){
     </div>
   `;
 }
-function campFormModal(id){
+// prefill: 일정에서 "후기 남기기"로 열 때 { name, region, date, tripRef:{space, tripId} }
+let _campTripRef = null;
+function campFormModal(id, prefill){
   const c = id ? state.campingLogs.find(x=>x.id===id) : null;
+  const pf = (!c && prefill) || {};
+  _campTripRef = (!c && pf.tripRef) || null;
   const initType = c ? (c.siteType||SITE_TYPES[0]) : SITE_TYPES[0];
   const initToilet = c ? (c.toiletCondition||'') : '';
   const initStore = c ? (c.storeCondition||'') : '';
   openModal(`
-    <h3>${c?'기록 수정':'캠핑 기록 추가'}</h3>
-    <div class="field"><label>캠핑장 이름</label><input id="cf-name" value="${c?esc(c.name):''}" placeholder="예: 홍천 강변 캠핑장"></div>
+    <h3>${c?'기록 수정':(_campTripRef?'캠핑 후기 남기기':'캠핑 기록 추가')}</h3>
+    ${_campTripRef ? `<p style="margin:0 0 12px;color:var(--text-dim);font-size:12.5px;">일정 정보로 미리 채웠어요. 후기는 내 캠핑 기록(나만 보는 공간)에 저장돼요.</p>` : ''}
+    <div class="field"><label>캠핑장 이름</label><input id="cf-name" value="${c?esc(c.name):esc(pf.name||'')}" placeholder="예: 홍천 강변 캠핑장"></div>
     <div class="field-row">
-      <div class="field"><label>방문일</label><input type="date" id="cf-date" value="${c?(c.date||''):''}"></div>
-      <div class="field"><label>지역</label><input id="cf-region" value="${c?esc(c.region||''):''}" placeholder="예: 홍천"></div>
+      <div class="field"><label>방문일</label><input type="date" id="cf-date" value="${c?esc(c.date||''):esc(pf.date||'')}"></div>
+      <div class="field"><label>지역</label><input id="cf-region" value="${c?esc(c.region||''):esc(pf.region||'')}" placeholder="예: 홍천"></div>
     </div>
     <div class="field">
       <label>사이트 종류</label>
@@ -1929,7 +2035,10 @@ function campFormModal(id){
 function saveCampForm(id){
   const name = document.getElementById('cf-name').value.trim();
   if(!name){ toast('캠핑장 이름을 입력해주세요.'); return; }
+  // 수정할 때는 폼에 없는 필드(tripRef 등)를 그대로 둠
+  const prev = id ? (state.campingLogs.find(x=>x.id===id) || {}) : {};
   const item = {
+    ...prev,
     id: id || uid('c'),
     name,
     date: document.getElementById('cf-date').value || '',
@@ -1943,10 +2052,13 @@ function saveCampForm(id){
     storeCondition: document.getElementById('cf-store-val').value || '',
     notes: document.getElementById('cf-notes').value.trim(),
   };
+  const fromTrip = !id && _campTripRef;
+  if(fromTrip) item.tripRef = { space: _campTripRef.space, tripId: _campTripRef.tripId };
+  _campTripRef = null;
   if(id){ state.campingLogs = state.campingLogs.map(c=>c.id===id?item:c); }
   else{ state.campingLogs.push(item); }
   persistCamping(item);
-  closeModal(); renderView(); toast('저장했어요.');
+  closeModal(); renderView(); toast(fromTrip ? '후기를 내 캠핑 기록에 저장했어요.' : '저장했어요.');
 }
 
 /* ============================ GEAR ============================ */
@@ -2122,15 +2234,6 @@ function deleteGearCategory(cat){
   toast(moved.length ? `카테고리를 삭제했어요. 장비 ${moved.length}개는 기타로 옮겨졌어요.` : '카테고리를 삭제했어요.');
 }
 
-function saveBaseLocation(){
-  const name = document.getElementById('home-loc-select').value;
-  const loc = LOCATIONS.find(l=>l.name===name);
-  if(!loc) return;
-  state.weatherLocation = {name:loc.name, nx:loc.nx, ny:loc.ny, stationId:loc.stationId, areaNo:loc.areaNo};
-  persistWeatherLocation(state.weatherLocation);
-  renderView();
-  toast('기준 지역을 설정했어요.');
-}
 
 /* ============================ CHECKLIST ============================ */
 function groupChecklistItems(items){
@@ -2155,8 +2258,14 @@ function renderChecklist(){
     {key:'undone', label:'미완료'},
     ...(grp ? [{key:'mine', label:'내 담당'}] : []),
   ];
+  const selTrip = selectedTrip();
+  const lists = selTrip ? SP.checklists.filter(cl=>cl.tripId===selTrip.id) : SP.checklists;
+  const tripTitles = {};
+  SP.trips.forEach(t=>{ tripTitles[t.id] = t.title; });
   return `
     ${spaceChipsHtml()}
+    ${state.user || state.bootMode==='preview' ? tripBarHtml() : ''}
+    ${selTrip ? tripCardHtml(selTrip, spaceKey(), SP.checklists, grp) : ''}
     <div class="section-head">
       <div><h1>${grp ? esc(grp.name) + ' 준비물' : '준비물 체크'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 체크하는 준비물이에요.' : '대분류(리스트) 안에 소분류를 만들어 항목을 정리하세요.'}</div></div>
       <button class="btn btn-accent" data-action="cl-new-list">${icon('plus')} 새 리스트</button>
@@ -2164,7 +2273,7 @@ function renderChecklist(){
     <div class="seg-group" style="margin-bottom:16px;">
       ${clFilters.map(f=>`<div class="seg-btn ${f.key===filter?'active':''}" data-action="cl-filter" data-filter="${f.key}">${f.label}</div>`).join('')}
     </div>
-    ${SP.checklists.length ? SP.checklists.map(cl=>{
+    ${lists.length ? lists.map(cl=>{
       const allItems = cl.items||[];
       const decided = allItems.filter(isDecided).length;
       const total = allItems.length;
@@ -2175,11 +2284,12 @@ function renderChecklist(){
       return `
       <div class="card checklist-group">
         <h3>
-          <span style="flex:1;">${esc(cl.title)}</span>
+          <span style="flex:1;">${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
           ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
           <button class="icon-btn" data-action="cl-list-rename" data-id="${cl.id}" title="리스트 이름 변경">${icon('edit')}</button>
           ${decided>0 ? `<button class="icon-btn" data-action="cl-list-reset" data-id="${cl.id}" title="전부 미정으로 초기화">${icon('refresh')}</button>` : ''}
           <button class="icon-btn" data-action="cl-add-item" data-id="${cl.id}" title="새 항목 추가">${icon('plus')}</button>
+          <button class="icon-btn" data-action="cl-save-template" data-id="${cl.id}" title="템플릿으로 저장" aria-label="템플릿으로 저장">${icon('template')}</button>
           ${!grp && state.groups.length ? `<button class="icon-btn" data-action="cl-send" data-id="${cl.id}" title="그룹으로 보내기(복사)">${icon('send')}</button>` : ''}
           <button class="icon-btn btn-danger" data-action="cl-del-list" data-id="${cl.id}">${icon('trash')}</button>
         </h3>
@@ -2210,9 +2320,343 @@ function renderChecklist(){
           </div>`;
         }).join('') : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`}
       </div>`;
-    }).join('') : '<div class="card empty">아직 체크리스트가 없어요. 새 리스트를 만들어보세요.</div>'}
+    }).join('') : `<div class="card empty">${selTrip ? '이 일정에 연결된 리스트가 없어요. 새 리스트를 만들면 이 일정에 연결돼요.' : '아직 체크리스트가 없어요. 새 리스트를 만들어보세요.'}</div>`}
   `;
 }
+/* ============================ 캠핑 일정 ============================
+ * 개인 users/{uid}/trips/{id}, 그룹 groups/{gid}/trips/{id}
+ *   { title, startDate, endDate(YYYY-MM-DD), campsiteName, region, memberUids(그룹만), createdBy, createdAt, updatedBy }
+ * 체크리스트의 선택 필드 tripId로 일정에 연결. 템플릿은 .../checklistTemplates/{id} = { title, items:[{label, group}] }.
+ * Checklist 탭 위쪽 일정 줄(state.tripFilter)로 고르고, Home "다음 캠핑" 카드는 개인 + 내 모든 그룹 일정에서 고른다. */
+function todayStr(){ const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function dayDiff(a, b){   // b - a (일)
+  const pa = String(a).split('-').map(Number), pb = String(b).split('-').map(Number);
+  return Math.round((Date.UTC(pb[0], pb[1]-1, pb[2]) - Date.UTC(pa[0], pa[1]-1, pa[2])) / 86400000);
+}
+const isYmd = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v||''));
+function tripEnd(t){ return isYmd(t.endDate) ? t.endDate : (t.startDate || ''); }
+function tripPhase(t, today){
+  today = today || todayStr();
+  if(!isYmd(t.startDate)) return { kind:'nodate', label:'날짜 미정' };
+  if(today < t.startDate){ const n = dayDiff(today, t.startDate); return { kind:'upcoming', label: 'D-' + n, days: n }; }
+  if(today <= tripEnd(t)) return { kind:'ongoing', label:'진행 중' };
+  return { kind:'past', label:'끝남', ago: dayDiff(tripEnd(t), today) };
+}
+function fmtTripDates(t){
+  if(!isYmd(t.startDate)) return '';
+  const [, m1, d1] = t.startDate.split('-').map(Number);
+  const end = tripEnd(t);
+  if(!end || end===t.startDate) return `${m1}월 ${d1}일`;
+  const [, m2, d2] = end.split('-').map(Number);
+  return m1===m2 ? `${m1}월 ${d1}일~${d2}일` : `${m1}월 ${d1}일~${m2}월 ${d2}일`;
+}
+function selectedTrip(){ return state.tripFilter==='all' ? null : (SP.trips.find(t=>t.id===state.tripFilter) || null); }
+function tripsOf(space){ return space==='me' ? state.trips : (state.groupTrips[space] || []); }
+function tripListsOf(space){ return space==='me' ? state.checklists : (state.space===space ? state.groupChecklists : (state.groupTripLists[space] || [])); }
+// 연결된 리스트 항목 중 결정된 것/전체, 그룹이면 내 담당 중 남은 개수
+function tripProgress(trip, lists, isGroup){
+  let decided = 0, total = 0, mine = 0;
+  const me = state.user ? state.user.uid : null;
+  (lists||[]).filter(l=>l.tripId===trip.id).forEach(l=>(l.items||[]).forEach(it=>{
+    total++; if(isDecided(it)) decided++;
+    else if(isGroup && me && it.assigneeUid===me) mine++;
+  }));
+  return { decided, total, mine };
+}
+function hasMyReview(space, tripId){ return state.campingLogs.some(c=>c.tripRef && c.tripRef.space===space && c.tripRef.tripId===tripId); }
+// 그룹 일정의 참가 멤버(없으면 그룹 멤버 전원)
+function tripMembers(trip, g){ return (Array.isArray(trip.memberUids) && trip.memberUids.length) ? trip.memberUids : (g ? g.memberUids : []); }
+function sortTrips(list){ return [...list].sort((a,b)=> String(a.startDate||'9999').localeCompare(String(b.startDate||'9999')) || String(a.title||'').localeCompare(String(b.title||''), 'ko')); }
+
+function tripBarHtml(){
+  const today = todayStr();
+  const all = sortTrips(SP.trips);
+  const current = all.filter(t=>tripPhase(t, today).kind!=='past');
+  const past = all.filter(t=>tripPhase(t, today).kind==='past').reverse();
+  const sel = state.tripFilter;
+  const selIsPast = past.some(t=>t.id===sel);
+  const chip = t=>`<div class="seg-btn trip-chip ${t.id===sel?'active':''}" data-action="trip-pick" data-trip="${esc(t.id)}">${esc(t.title)} <span class="num" style="opacity:.7;">${esc(tripPhase(t, today).label)}</span></div>`;
+  return `
+    <div class="trip-bar">
+      <div class="seg-group trip-chips">
+        <div class="seg-btn trip-chip ${sel==='all'?'active':''}" data-action="trip-pick" data-trip="all">전체</div>
+        ${current.map(chip).join('')}
+        ${past.length ? `<div class="seg-btn trip-past-toggle" data-action="trip-past-toggle">지난 일정 ${state.showPastTrips || selIsPast ? '▴' : '▾'} <span class="num" style="opacity:.7;">${past.length}</span></div>` : ''}
+        ${state.showPastTrips || selIsPast ? past.map(chip).join('') : ''}
+        <div class="seg-btn trip-new-chip" data-action="trip-new">${icon('plus')} 일정 만들기</div>
+      </div>
+    </div>`;
+}
+function tripCardHtml(trip, space, lists, g){
+  const ph = tripPhase(trip);
+  const pr = tripProgress(trip, lists, !!g);
+  const pct = pr.total ? Math.round(pr.decided / pr.total * 100) : 0;
+  const where = [trip.campsiteName, trip.region].filter(Boolean).map(esc).join(' · ');
+  const members = g ? tripMembers(trip, g) : [];
+  const reviewed = hasMyReview(space, trip.id);
+  return `
+    <div class="card trip-card" data-trip-card="${esc(trip.id)}">
+      <div class="trip-head">
+        <div style="flex:1;min-width:0;">
+          <div class="trip-title">${icon('calendar')} ${esc(trip.title)}</div>
+          <div class="meta">${esc(fmtTripDates(trip))}${where ? ' · ' + where : ''}</div>
+        </div>
+        <span class="tag trip-phase ${ph.kind}">${esc(ph.label)}</span>
+      </div>
+      ${members.length ? `<div class="trip-members">${members.map(u=>`<span title="${esc(memberName(g,u))}">${memberAvatarHtml(g,u)}</span>`).join('')}<span class="meta">${members.length}명 참가</span></div>` : ''}
+      <div class="trip-progress">
+        <div class="trip-bar-track"><span style="width:${pct}%"></span></div>
+        <span class="trip-progress-text">준비 <b class="num">${pr.decided}/${pr.total}</b>${g ? ` · 내 담당 <b class="num">${pr.mine}</b>개 남음` : ''}</span>
+      </div>
+      <div class="trip-actions">
+        ${ph.kind==='past' ? (reviewed
+          ? `<span class="tag done-tag trip-reviewed">${icon('check')} 내 후기 작성함</span>`
+          : `<button class="btn btn-sm btn-primary" data-action="trip-review" data-space="${esc(space)}" data-trip="${esc(trip.id)}">${icon('pen')} 후기 남기기</button>`) : ''}
+        <span style="flex:1;"></span>
+        <button class="btn btn-sm" data-action="trip-edit" data-trip="${esc(trip.id)}">${icon('edit')} 수정</button>
+        <button class="btn btn-sm btn-danger" data-action="trip-del" data-trip="${esc(trip.id)}">${icon('trash')} 삭제</button>
+      </div>
+    </div>`;
+}
+
+/* ---- 일정 만들기 / 수정 ---- */
+let _tripStartMethod = 'empty';
+function tripFormModal(id){
+  const t = id ? SP.trips.find(x=>x.id===id) : null;
+  if(id && !t) return;
+  const g = currentGroup();
+  const tpls = SP.templates;
+  _tripStartMethod = tpls.length ? 'template' : 'empty';
+  const picked = new Set(t ? tripMembers(t, g) : (g ? g.memberUids : []));
+  const linkable = SP.checklists;
+  openModal(`
+    <h3>${t ? '일정 수정' : '캠핑 일정 만들기'}</h3>
+    <p style="margin:0 0 12px;color:var(--text-dim);font-size:12.5px;">${g ? `<b style="color:var(--text);">${esc(g.name)}</b> 그룹 일정이에요. 멤버 모두에게 보여요.` : '내 공간 일정이에요. 나만 보여요.'}</p>
+    <div class="field"><label>일정 이름</label><input id="tf-title" maxlength="60" value="${t ? esc(t.title) : ''}" placeholder="예: 10월 홍천 캠핑"></div>
+    <div class="field-row">
+      <div class="field"><label>시작일</label><input type="date" id="tf-start" value="${t ? esc(t.startDate||'') : ''}"></div>
+      <div class="field"><label>종료일</label><input type="date" id="tf-end" value="${t ? esc(t.endDate||'') : ''}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>캠핑장 이름</label><input id="tf-campsite" value="${t ? esc(t.campsiteName||'') : ''}" placeholder="예: 홍천 강변 캠핑장"></div>
+      <div class="field"><label>지역</label><input id="tf-region" value="${t ? esc(t.region||'') : ''}" placeholder="예: 홍천"></div>
+    </div>
+    ${g ? `<div class="field"><label>참가 멤버</label>
+      <div class="send-list" id="tf-members">
+        ${sortedMemberUids(g).map(u=>`<label class="send-row"><input type="checkbox" class="tf-member" value="${esc(u)}" ${picked.has(u)?'checked':''}> ${memberAvatarHtml(g,u)} <span>${esc(memberName(g,u))}${state.user&&u===state.user.uid?' (나)':''}</span></label>`).join('')}
+      </div></div>` : ''}
+    ${t ? '' : `
+    <div class="field">
+      <label>체크리스트 시작 방법</label>
+      <div class="seg-group" id="tf-start-method">
+        <div class="seg-btn ${_tripStartMethod==='template'?'active':''}" data-action="trip-start-pick" data-val="template">템플릿에서 복사</div>
+        <div class="seg-btn" data-action="trip-start-pick" data-val="link">기존 리스트 연결</div>
+        <div class="seg-btn ${_tripStartMethod==='empty'?'active':''}" data-action="trip-start-pick" data-val="empty">빈 리스트</div>
+      </div>
+    </div>
+    <div class="field tf-method" data-method="template" style="${_tripStartMethod==='template'?'':'display:none;'}">
+      <label>템플릿</label>
+      <select id="tf-template"></select>
+      <div id="tpl-manage" class="tpl-manage"></div>
+    </div>
+    <div class="field tf-method" data-method="link" style="display:none;">
+      <label>연결할 리스트</label>
+      ${linkable.length ? `<select id="tf-link">${linkable.map(l=>`<option value="${esc(l.id)}">${esc(l.title)}${l.tripId ? ' (다른 일정에 연결됨)' : ''}</option>`).join('')}</select>`
+        : `<div class="meta" style="font-size:12.5px;color:var(--text-dim);">연결할 리스트가 없어요. 빈 리스트로 시작해보세요.</div>`}
+    </div>
+    <div class="field tf-method" data-method="empty" style="${_tripStartMethod==='empty'?'':'display:none;'}">
+      <div class="meta" style="font-size:12.5px;color:var(--text-dim);">'일정 이름 준비물' 리스트를 새로 만들어 연결해요.</div>
+    </div>`}
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="trip-save" data-id="${t ? esc(t.id) : ''}">${icon('save')} ${t ? '저장' : '만들기'}</button>
+    </div>`);
+  refreshTripModalTemplates();
+}
+// 일정 모달 안의 템플릿 선택·관리 영역만 다시 그림(다른 입력값은 그대로)
+function refreshTripModalTemplates(){
+  const sel = document.getElementById('tf-template');
+  const box = document.getElementById('tpl-manage');
+  if(!sel || !box) return;
+  const tpls = [...SP.templates].sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''), 'ko'));
+  const cur = sel.value;
+  sel.innerHTML = tpls.length ? tpls.map(t=>`<option value="${esc(t.id)}" ${t.id===cur?'selected':''}>${esc(t.title)} (${(t.items||[]).length}개)</option>`).join('')
+    : `<option value="">저장된 템플릿이 없어요</option>`;
+  box.innerHTML = tpls.length ? `
+    <div class="tpl-manage-head">템플릿 관리</div>
+    ${tpls.map(t=>`
+      <div class="list-row tpl-row" style="align-items:center;padding:6px 2px;">
+        <input class="tpl-name-input" data-id="${esc(t.id)}" value="${esc(t.title)}" maxlength="60">
+        <button class="icon-btn" data-action="tpl-rename" data-id="${esc(t.id)}" title="이름 변경" aria-label="템플릿 이름 변경">${icon('save')}</button>
+        <button class="icon-btn btn-danger" data-action="tpl-del" data-id="${esc(t.id)}" title="삭제" aria-label="템플릿 삭제">${icon('trash')}</button>
+      </div>`).join('')}`
+    : `<div class="meta" style="font-size:12px;color:var(--text-dim);margin-top:6px;">체크리스트 리스트 옆 ${icon('template','chev-mini')} 버튼으로 템플릿을 만들 수 있어요.</div>`;
+}
+function pickTripStartMethod(val){
+  _tripStartMethod = val;
+  document.querySelectorAll('#tf-start-method .seg-btn').forEach(el=>el.classList.toggle('active', el.getAttribute('data-val')===val));
+  document.querySelectorAll('.tf-method').forEach(el=>{ el.style.display = el.getAttribute('data-method')===val ? '' : 'none'; });
+}
+function newListFromTemplate(tpl, tripId){
+  const u = state.user ? state.user.uid : null;
+  const grp = inGroupSpace();
+  return {
+    id: uid('cl'), title: tpl.title || '준비물', tripId,
+    items: (tpl.items||[]).map(it=>{
+      const item = { id: uid('i'), label: String(it.label||''), status:'pending', group: it.group || '기타' };
+      if(grp && u) item.addedBy = u;
+      return item;
+    }).filter(it=>it.label),
+  };
+}
+function saveTripForm(id){
+  const val = k=>{ const el = document.getElementById(k); return el ? el.value.trim() : ''; };
+  const title = val('tf-title');
+  const startDate = val('tf-start');
+  let endDate = val('tf-end');
+  if(!title){ toast('일정 이름을 입력해주세요.'); return; }
+  if(!isYmd(startDate)){ toast('시작일을 골라주세요.'); return; }
+  if(!isYmd(endDate)) endDate = startDate;
+  if(endDate < startDate){ toast('종료일이 시작일보다 빨라요.'); return; }
+  const g = currentGroup();
+  const prev = id ? (SP.trips.find(t=>t.id===id) || {}) : {};
+  const trip = { ...prev, id: id || uid('trip'), title, startDate, endDate, campsiteName: val('tf-campsite'), region: val('tf-region') };
+  if(g){
+    const picked = Array.from(document.querySelectorAll('.tf-member:checked')).map(el=>el.value);
+    if(!picked.length){ toast('참가 멤버를 한 명 이상 골라주세요.'); return; }
+    trip.memberUids = picked;
+  }
+  if(!id) trip.createdAt = new Date().toISOString();
+  if(id) SP.trips = SP.trips.map(t=>t.id===id ? trip : t);
+  else SP.trips = [...SP.trips, trip];
+  persistTrip(trip);
+  let msg = id ? '일정을 저장했어요.' : `'${title}' 일정을 만들었어요.`;
+  if(!id){
+    if(_tripStartMethod==='template'){
+      const tplId = val('tf-template');
+      const tpl = SP.templates.find(t=>t.id===tplId);
+      if(tpl){ const list = newListFromTemplate(tpl, trip.id); SP.checklists.push(list); persistChecklist(list); msg += ` '${list.title}' 리스트를 템플릿에서 복사했어요.`; }
+      else{ const list = { id: uid('cl'), title: title + ' 준비물', items: [], tripId: trip.id }; SP.checklists.push(list); persistChecklist(list); }
+    }else if(_tripStartMethod==='link'){
+      const list = SP.checklists.find(l=>l.id===val('tf-link'));
+      if(list){ list.tripId = trip.id; persistChecklist(list); msg += ` '${list.title}' 리스트를 연결했어요.`; }
+    }else{
+      const list = { id: uid('cl'), title: title + ' 준비물', items: [], tripId: trip.id };
+      SP.checklists.push(list); persistChecklist(list);
+    }
+    state.tripFilter = trip.id;
+  }
+  closeModal(); renderView(); toast(msg, 'ok');
+}
+// 일정 삭제: 연결된 리스트는 지우지 않고 연결만 해제. 되돌리면 일정과 연결을 모두 복구.
+function deleteTripConfirm(id){
+  const t = SP.trips.find(x=>x.id===id);
+  if(!t) return;
+  const linked = SP.checklists.filter(l=>l.tripId===id);
+  confirmModal(`'${t.title}' 일정을 삭제할까요? 연결된 리스트 ${linked.length}개는 지우지 않고 연결만 풀어요. 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
+    const space = spaceKey();
+    const linkedIds = SP.checklists.filter(l=>l.tripId===id).map(l=>l.id);
+    SP.checklists.forEach(l=>{ if(l.tripId===id){ delete l.tripId; persistChecklist(l); } });
+    if(state.tripFilter===id) state.tripFilter = 'all';
+    deleteDocWithUndo('trips', id, '일정을 삭제했어요.', db=>{
+      const arr = spaceArray(space, 'checklists');
+      linkedIds.forEach(lid=>{
+        const l = arr && arr.find(x=>x.id===lid);
+        if(l){ l.tripId = id; restoreDocRemote(db, 'checklists', l); return; }
+        if(db) db.collection('checklists').doc(lid).get().then(snap=>{
+          if(snap.exists) restoreDocRemote(db, 'checklists', { id: lid, ...unfreeze(snap.data()), tripId: id });
+        }).catch(onSaveFail);
+      });
+    });
+  });
+}
+
+/* ---- 체크리스트 템플릿 ---- */
+function saveListAsTemplate(listId){
+  const list = SP.checklists.find(c=>c.id===listId);
+  if(!list) return;
+  const tpl = { id: uid('tpl'), title: list.title, items: (list.items||[]).map(it=>({ label: it.label, group: it.group || '기타' })) };
+  SP.templates = [...SP.templates, tpl];
+  persistTemplate(tpl);
+  toast(`'${list.title}'을(를) 템플릿으로 저장했어요. 일정 만들 때 복사할 수 있어요.`, 'ok');
+}
+function renameTemplate(id){
+  const input = document.querySelector(`.tpl-name-input[data-id="${CSS.escape(id)}"]`);
+  const name = input ? input.value.trim() : '';
+  const tpl = SP.templates.find(t=>t.id===id);
+  if(!tpl) return;
+  if(!name){ toast('템플릿 이름을 입력해주세요.'); return; }
+  tpl.title = name;
+  persistTemplate(tpl);
+  refreshTripModalTemplates();
+  toast('템플릿 이름을 바꿨어요.');
+}
+
+/* ---- 일정 → 후기: 끝난 일정에서 내 개인 캠핑 기록 폼을 미리 채워 열기 ---- */
+function openTripReview(space, tripId){
+  const t = tripsOf(space).find(x=>x.id===tripId);
+  if(!t){ toast('일정을 찾지 못했어요.'); return; }
+  campFormModal(null, { name: t.campsiteName || t.title, region: t.region || '', date: t.startDate || '', tripRef: { space, tripId } });
+}
+
+/* ---- Home "다음 캠핑" 카드 ---- */
+function allMyTrips(){
+  const me = state.user ? state.user.uid : null;
+  const out = state.trips.map(t=>({ space:'me', group:null, trip:t }));
+  state.groups.forEach(g=>{
+    (state.groupTrips[g.id] || []).forEach(t=>{
+      if(Array.isArray(t.memberUids) && t.memberUids.length && me && !t.memberUids.includes(me)) return;   // 참가하지 않는 그룹 일정은 빼기
+      out.push({ space:g.id, group:g, trip:t });
+    });
+  });
+  return out;
+}
+function nextTripHtml(){
+  const today = todayStr();
+  const all = allMyTrips();
+  const next = all.filter(x=>['upcoming','ongoing'].includes(tripPhase(x.trip, today).kind))
+    .sort((a,b)=> String(a.trip.startDate).localeCompare(String(b.trip.startDate)) || (a.space==='me' ? -1 : b.space==='me' ? 1 : 0))[0];
+  const reviewDue = all.filter(x=>{ const ph = tripPhase(x.trip, today); return ph.kind==='past' && ph.ago <= 7 && !hasMyReview(x.space, x.trip.id); })
+    .sort((a,b)=> String(tripEnd(b.trip)).localeCompare(String(tripEnd(a.trip))));
+  let main;
+  if(next){
+    const t = next.trip, ph = tripPhase(t, today);
+    const pr = tripProgress(t, tripListsOf(next.space), !!next.group);
+    const parts = [ph.kind==='ongoing' ? '진행 중' : ph.label, fmtTripDates(t), t.campsiteName || t.region || '', `준비 ${pr.decided}/${pr.total}`];
+    if(next.group) parts.push(`내 담당 ${pr.mine}개 남음`);
+    main = `
+      <div class="card next-trip-card" data-action="home-trip-open" data-space="${esc(next.space)}" data-trip="${esc(t.id)}">
+        <div class="next-trip-icon">${icon('calendar')}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="next-trip-label">다음 캠핑${next.group ? ` · <span class="tag">${icon('users','chev-mini')} ${esc(next.group.name)}</span>` : ''}</div>
+          <div class="next-trip-title">${esc(t.title)}</div>
+          <div class="next-trip-line">${parts.filter(Boolean).map(esc).join(' · ')}</div>
+        </div>
+        ${icon('chev', 'chev-mini')}
+      </div>`;
+  }else{
+    main = `
+      <div class="card next-trip-card next-trip-empty" data-action="home-trip-new">
+        <div class="next-trip-icon">${icon('calendar')}</div>
+        <div style="flex:1;"><div class="next-trip-title">다음 캠핑 일정을 만들어보세요</div><div class="next-trip-line">일정을 만들면 준비물 체크리스트와 함께 챙길 수 있어요.</div></div>
+        ${icon('plus', 'chev-mini')}
+      </div>`;
+  }
+  const reviews = reviewDue.map(x=>`
+    <div class="next-trip-review" data-action="trip-review" data-space="${esc(x.space)}" data-trip="${esc(x.trip.id)}">
+      ${icon('pen')}<span>'${esc(x.trip.title)}' 후기를 남겨보세요</span>${icon('chev','chev-mini')}
+    </div>`).join('');
+  return `<div class="next-trip-wrap">${main}${reviews}</div>`;
+}
+function openTripFromHome(space, tripId){
+  if(space!=='me' && !groupById(space)){ toast('그 그룹에 더 이상 속해 있지 않아요.'); return; }
+  if(space!==state.space) selectSpace(space);
+  state.tripFilter = tripId;
+  state.checklistFilter = 'all';
+  state.currentView = 'checklist';
+  renderNav(); renderView();
+}
+
 /* ---- 그룹 체크리스트 담당자 (assigneeUid: 멤버 uid만 저장, 이름은 그룹 members에서 찾음) ---- */
 function assigneeChipHtml(g, listId, it){
   const a = it.assigneeUid;
@@ -2256,6 +2700,7 @@ function newChecklistModal(){
   openModal(`
     <h3>새 체크리스트</h3>
     <div class="field"><label>리스트 이름</label><input id="ncl-title" placeholder="예: 겨울 캠핑 준비물"></div>
+    ${selectedTrip() ? `<p style="margin:0;color:var(--text-dim);font-size:12.5px;">'${esc(selectedTrip().title)}' 일정에 연결돼요.</p>` : ''}
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="cl-new-list-save">${icon('save')} 만들기</button>
@@ -2266,6 +2711,8 @@ function saveNewChecklist(){
   const title = document.getElementById('ncl-title').value.trim();
   if(!title){ toast('리스트 이름을 입력해주세요.'); return; }
   const list = { id: uid('cl'), title, items: [] };
+  const t = selectedTrip();
+  if(t) list.tripId = t.id;   // 일정을 보고 있을 때 만든 리스트는 그 일정에 연결
   SP.checklists.push(list);
   persistChecklist(list);
   closeModal(); renderView(); toast('리스트를 만들었어요.');
@@ -2456,30 +2903,38 @@ function runUndo(){
 }
 // 삭제한 그 공간('me' 또는 gid)의 화면 데이터 배열. 지금 다른 공간을 보고 있으면 null.
 function spaceKey(){ return inGroupSpace() ? state.space : 'me'; }
+const GROUP_SPACE_ARRAYS = { checklists:'groupChecklists', gear:'groupGear', checklistTemplates:'groupTemplates' };
 function spaceArray(space, kind){
   if(space==='me') return state[kind];
+  if(kind==='trips') return state.groupTrips[space] || null;
   if(state.space!==space) return null;
-  return kind==='checklists' ? state.groupChecklists : kind==='gear' ? state.groupGear : null;
+  return GROUP_SPACE_ARRAYS[kind] ? state[GROUP_SPACE_ARRAYS[kind]] : null;
+}
+function setSpaceArray(space, kind, arr){
+  if(space==='me') state[kind] = arr;
+  else if(kind==='trips') state.groupTrips[space] = arr;
+  else if(state.space===space && GROUP_SPACE_ARRAYS[kind]) state[GROUP_SPACE_ARRAYS[kind]] = arr;
 }
 // 문서 하나(체크리스트·장비·캠핑 기록)를 지우고 되돌리기를 붙인다.
 // 되돌리면 지우기 직전 문서를 같은 id·같은 내용(addedBy, updatedBy, ownerUid 등 포함) 그대로 다시 저장.
-function deleteDocWithUndo(kind, id, msg){
+// after(db): 되돌린 뒤 추가로 할 일(예: 일정에 연결돼 있던 리스트 다시 연결)
+function deleteDocWithUndo(kind, id, msg, after){
   const space = kind==='campingLogs' ? 'me' : spaceKey();
   const arr = spaceArray(space, kind) || [];
   const target = arr.find(x=>x.id===id);
   if(!target) return;
   const snapshot = unfreeze(target);
   const db = state.dbAvailable ? (space==='me' ? state.db : groupDb(space)) : null;
-  if(space==='me') state[kind] = state[kind].filter(x=>x.id!==id);
-  else if(kind==='checklists') state.groupChecklists = state.groupChecklists.filter(x=>x.id!==id);
-  else state.groupGear = state.groupGear.filter(x=>x.id!==id);
-  ({campingLogs: deleteCampingRemote, gear: deleteGearRemote, checklists: deleteChecklistRemote})[kind](id);
-  renderView();
+  setSpaceArray(space, kind, arr.filter(x=>x.id!==id));
+  ({campingLogs: deleteCampingRemote, gear: deleteGearRemote, checklists: deleteChecklistRemote,
+    trips: deleteTripRemote, checklistTemplates: deleteTemplateRemote})[kind](id);
+  renderView(); refreshTripModalTemplates();
   undoToast(msg, ()=>{
     const now = spaceArray(space, kind);
     if(now && !now.some(x=>x.id===id)) now.push(unfreeze(snapshot));
     restoreDocRemote(db, kind, snapshot);
-    renderView(); toast('되돌렸어요.', 'ok');
+    if(after) after(db);
+    renderView(); refreshTripModalTemplates(); toast('되돌렸어요.', 'ok');
   });
 }
 // 체크리스트 안의 항목 하나: 되돌리면 그 리스트의 원래 위치로 다시 넣는다.
@@ -2573,7 +3028,6 @@ function wireGlobalActions(){
         deleteGearCategory(a.getAttribute('data-cat'));
         break;
 
-      case 'home-loc-save': saveBaseLocation(); break;
 
       case 'goto-settings':
         state.currentView = 'settings';
@@ -2606,13 +3060,34 @@ function wireGlobalActions(){
         if(state.space!=='me') selectSpace('me');   // Home 통계는 개인 공간 기준
         if(tab==='camping') state.campingFilter = filterVal;
         if(tab==='gear') state.gearCategory = filterVal;
-        if(tab==='checklist') state.checklistFilter = filterVal;
+        if(tab==='checklist'){ state.checklistFilter = filterVal; state.tripFilter = 'all'; }
         state.currentView = tab;
         renderNav(); renderView();
         break;
       }
 
       case 'cl-new-list': newChecklistModal(); break;
+      case 'trip-pick': state.tripFilter = a.getAttribute('data-trip') || 'all'; renderView(); break;
+      case 'trip-past-toggle': state.showPastTrips = !state.showPastTrips; renderView(); break;
+      case 'trip-new': tripFormModal(); break;
+      case 'trip-edit': tripFormModal(a.getAttribute('data-trip')); break;
+      case 'trip-save': saveTripForm(id); break;
+      case 'trip-del': deleteTripConfirm(a.getAttribute('data-trip')); break;
+      case 'trip-start-pick': pickTripStartMethod(a.getAttribute('data-val')); break;
+      case 'trip-review': openTripReview(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
+      case 'tpl-rename': renameTemplate(id); break;
+      case 'tpl-del': {
+        const tpl = SP.templates.find(t=>t.id===id);
+        deleteDocWithUndo('checklistTemplates', id, `'${tpl ? tpl.title : '템플릿'}' 템플릿을 삭제했어요.`);
+        break;
+      }
+      case 'cl-save-template': saveListAsTemplate(id); break;
+      case 'home-trip-open': openTripFromHome(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
+      case 'home-trip-new':
+        state.currentView = 'checklist';
+        renderNav(); renderView();
+        tripFormModal();
+        break;
       case 'cl-new-list-save': saveNewChecklist(); break;
       case 'cl-del-list': {
         const target = SP.checklists.find(c=>c.id===id);
