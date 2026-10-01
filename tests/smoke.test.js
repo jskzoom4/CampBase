@@ -72,11 +72,11 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   // 2. Home: click each stat card title/legend (home-cat-nav) to jump to tabs
   await page.click('[data-nav="home"]');
   await page.waitForTimeout(150);
-  const homeCatLinks = await page.locator('[data-action="home-cat-nav"]').count();
+  const homeCatLinks = await page.locator('[data-action="home-cat-nav"]:visible').count();   // 화면 폭에 따라 원형/막대 중 보이는 것만
   console.log('home-cat-nav elements found:', homeCatLinks);
   for (let i = 0; i < homeCatLinks; i++) {
     try {
-      await page.locator('[data-action="home-cat-nav"]').nth(i).click();
+      await page.locator('[data-action="home-cat-nav"]:visible').nth(i).click();
       await page.waitForTimeout(120);
       log('home-cat-nav #' + i);
       await page.click('[data-nav="home"]');

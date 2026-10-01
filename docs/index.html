@@ -104,6 +104,12 @@
   .legend-dot{width:8px;height:8px;border-radius:50%;flex:none;}
   .legend-row .lv{flex:1;text-align:left;}
   .stat-card .big-num{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;}
+  .stat-bars{display:none;flex-direction:column;gap:2px;width:100%;}
+  .bar-row{display:grid;grid-template-columns:minmax(64px, 30%) 1fr 28px;align-items:center;gap:8px;min-height:30px;padding:2px 4px;margin:0 -4px;font-size:12.5px;}
+  .bar-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+  .bar-track{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;}
+  .bar-fill{display:block;height:100%;border-radius:99px;}
+  .bar-num{text-align:right;color:var(--text-dim);}
   .home-cat-link{cursor:pointer;border-radius:6px;transition:background .12s ease;}
   .legend-row.home-cat-link{padding:3px 4px;margin:0 -4px;}
   .home-cat-link:hover{background:var(--surface-2);color:var(--brand-text);}
@@ -358,7 +364,13 @@
     #main{--main-pt:14px;padding:var(--main-pt) 14px calc(var(--tabbar-h) + var(--safe-bottom) + 32px);}
     body.kbd-open #main{padding-bottom:32px;}
     .toast{bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 18px);}
-    .stat-grid{grid-template-columns:1fr;}
+    .stat-grid{grid-template-columns:1fr;gap:10px;}
+    /* 휴대폰: 원형 대신 작은 가로 막대(카드 높이 절반 이하) */
+    .stat-card:not(.placeholder-card-sm){display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 10px;text-align:left;padding:12px 14px;}
+    .stat-card:not(.placeholder-card-sm) h3{justify-content:flex-start;}
+    .stat-card .stat-pie, .stat-card .legend{display:none;}
+    .stat-card .big-num{font-size:18px;}
+    .stat-card .stat-bars{display:flex;grid-column:1 / -1;}
     .field-row{flex-direction:column;}
     /* 휴대폰: 아래에서 올라오는 시트(최대 높이 90%, 안쪽만 스크롤), 버튼 바는 아래 고정 */
     .modal-backdrop{align-items:flex-end;padding:0;}
@@ -2038,13 +2050,23 @@ function renderHome(){
           <p style="margin:0;font-size:12px;color:var(--text-dim);">${emptyMsg}</p>
         </div>`;
     }
+    // 0개 항목은 범례·막대에서 숨김(3-8). 데스크톱은 원형 + 범례, 휴대폰은 작은 가로 막대(.stat-bars)
+    const shown = segs.filter(s=>s.value > 0);
+    const max = Math.max(...shown.map(s=>s.value), 1);
     return `
       <div class="card stat-card">
         <h3 class="home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">${title} ${icon('chev', 'chev-mini')}</h3>
-        ${pieChartSvg(segs, 108)}
+        <div class="stat-pie">${pieChartSvg(segs, 108)}</div>
         <div class="big-num home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="all">${total}</div>
         <div class="legend">
-          ${segs.map(s=>`<div class="legend-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}"><span class="legend-dot" style="background:${s.color}"></span><span class="lv">${esc(s.label)}</span><span class="num">${s.value}</span></div>`).join('')}
+          ${shown.map(s=>`<div class="legend-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}"><span class="legend-dot" style="background:${s.color}"></span><span class="lv">${esc(s.label)}</span><span class="num">${s.value}</span></div>`).join('')}
+        </div>
+        <div class="stat-bars">
+          ${shown.map(s=>`<div class="bar-row home-cat-link" data-action="home-cat-nav" data-tab="${tab}" data-filter="${esc(filterOf(s.label))}">
+            <span class="bar-label">${esc(s.label)}</span>
+            <span class="bar-track"><span class="bar-fill" style="width:${Math.max(4, Math.round(s.value / max * 100))}%;background:${s.color}"></span></span>
+            <span class="num bar-num">${s.value}</span>
+          </div>`).join('')}
         </div>
       </div>`;
   }
