@@ -38,7 +38,7 @@ function seed() {
   s[A + 'checklists/cl1'] = { title: '기본 캠핑 준비물', items: [
     { id: 'i1', label: '텐트', status: 'packed', group: '텐트/침구' }, { id: 'i2', label: '침낭', status: 'pending', group: '텐트/침구' },
     { id: 'i3', label: '랜턴', status: 'skip', group: '조명/전기' } ] };
-  s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
+  s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', description: '사이트 A-12 (강 바로 앞)\n장작은 현장 구매, 금요일 6시 출발', createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
   s[G] = { name: '캠핑팸', ownerUid: 'uidAlice', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdAt: '1', gearCategories: ['텐트', '타프', '조리용품', '기타'],
     members: { uidAlice: mem('앨리스', 'owner'), uidBob: mem('밥', 'member'), uidCarol: mem('캐롤', 'member') } };
   s[G + '/trips/gt'] = { title: '10월 팸 캠핑', startDate: ymd(3), endDate: ymd(4), campsiteName: '가평 숲속 야영장', region: '가평', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
@@ -98,6 +98,13 @@ function seed() {
       await tryClick('.gear-head-actions .more-btn'); await tryClick('[data-action="gear-cat-manage"]'); await sleep(200); await shot('10-modal-gear-categories');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('[data-action="gear-new"]'); await sleep(200); await shot('11-modal-gear-form');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await nav('checklist'); await tryClick('.space-chip:has-text("내 공간")'); await tryClick('.trip-chip:has-text("홍천 가을 캠핑")'); await sleep(200);
+      await shot('12-checklist-trip-memo');
+      if (await tryClick('[data-action="trip-gear-import"]')) { await sleep(200); await tryClick('.gpk-sec-row input'); await sleep(150); }
+      await shot('13-modal-gear-pick');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('.trip-panel .more-btn'); await tryClick('[data-action="trip-edit"]'); await sleep(200); await shot('14-modal-trip-edit');
       await ctx.close();
     }
   }
