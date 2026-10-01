@@ -3341,7 +3341,7 @@ function closeModal(){
 function trapModalTab(e){
   const modal = document.querySelector('#modal-root .modal');
   if(!modal) return;
-  const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el=>el.offsetParent!==null || el===document.activeElement);
+  const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el=>isShown(el) || el===document.activeElement);
   if(!items.length) return;
   const first = items[0], last = items[items.length-1];
   if(!modal.contains(document.activeElement)){ e.preventDefault(); first.focus(); return; }
@@ -3366,8 +3366,32 @@ function closeAllMenus(except){
   document.querySelectorAll('.more-menu:not([hidden])').forEach(m=>{
     if(except && m===except) return;
     m.hidden = true;
+    ['position','top','right','maxHeight','overflowY'].forEach(k=>{ m.style[k] = ''; });
     const w = m.closest('.more'); if(w){ w.classList.remove('up'); const b = w.querySelector('.more-btn'); if(b) b.setAttribute('aria-expanded','false'); }
   });
+}
+// 보이는지 판단: position:fixed 요소(하단 탭바 등)는 offsetParent가 항상 null이라 쓰면 안 됨 → 실제 스타일·크기로 판단
+function isShown(el){
+  if(!el || !el.isConnected) return false;
+  const cs = getComputedStyle(el);
+  if(cs.display==='none' || cs.visibility==='hidden') return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
+}
+// ⋯ 메뉴 위치: 아래로 펼쳐서 탭바·화면 밖으로 나가면 위로, 위로도 모자라면 화면 안(탭바 위)에 고정 위치로 맞춤
+function placeMenu(wrap, menu, btn){
+  wrap.classList.remove('up');
+  const tab = document.getElementById('mobile-tabbar');
+  const bottomLimit = (isShown(tab) ? tab.getBoundingClientRect().top : window.innerHeight) - 8;
+  const topLimit = 8;
+  if(menu.getBoundingClientRect().bottom <= bottomLimit) return;
+  const b = btn.getBoundingClientRect(), mh = menu.offsetHeight;
+  if(b.top - 4 - mh >= topLimit){ wrap.classList.add('up'); return; }
+  menu.style.position = 'fixed';
+  menu.style.top = Math.max(topLimit, bottomLimit - mh) + 'px';
+  menu.style.right = Math.max(8, window.innerWidth - b.right) + 'px';
+  menu.style.maxHeight = Math.max(80, bottomLimit - topLimit) + 'px';
+  menu.style.overflowY = 'auto';
 }
 function toggleMenu(btn, focusLast){
   const wrap = btn.closest('.more'), menu = wrap && wrap.querySelector('.more-menu');
@@ -3378,10 +3402,7 @@ function toggleMenu(btn, focusLast){
   btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
   wrap.classList.remove('up');
   if(!opening) return;
-  // 화면 아래(탭바 포함)에 가리면 위로 펼침
-  const tab = document.getElementById('mobile-tabbar');
-  const bottomLimit = window.innerHeight - (tab && tab.offsetParent ? tab.offsetHeight : 0) - 8;
-  if(menu.getBoundingClientRect().bottom > bottomLimit && btn.getBoundingClientRect().top > menu.offsetHeight + 16) wrap.classList.add('up');
+  placeMenu(wrap, menu, btn);
   const items = menu.querySelectorAll('.more-item');
   const target = focusLast ? items[items.length-1] : items[0];
   if(target) target.focus({ preventScroll: true });
@@ -3792,6 +3813,10 @@ function wireGlobalActions(){
     const shrunk = !!vv && vv.height < window.innerHeight * 0.75;
     document.body.classList.toggle('kbd-open', typing || shrunk);
   };
+  // 화면 안에 고정 위치로 띄운 ⋯ 메뉴는 본문이 스크롤되면 닫음(버튼과 떨어지지 않게)
+  document.getElementById('main').addEventListener('scroll', ()=>{
+    if(document.querySelector('.more-menu:not([hidden])[style*="fixed"]')) closeAllMenus();
+  }, { passive: true });
   document.addEventListener('focusin', kbdCheck);
   document.addEventListener('focusout', ()=>setTimeout(kbdCheck, 50));
   if(window.visualViewport) window.visualViewport.addEventListener('resize', kbdCheck);
