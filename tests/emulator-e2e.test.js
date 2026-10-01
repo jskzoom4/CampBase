@@ -5,6 +5,7 @@
 //   npm i --no-save playwright firebase-tools@13 @firebase/rules-unit-testing@3 firebase@10.12.2
 //   npx firebase emulators:exec --only firestore,auth --project demo-campbase "node tests/emulator-e2e.test.js"
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -163,7 +164,7 @@ const until = async (fn, t = 8000) => { const end = Date.now() + t; while (Date.
   await B.waitForSelector('.checklist-group:has-text("그룹 준비물")', { timeout: 8000 }).catch(() => {});
   check('실제 규칙: A의 그룹 리스트가 B에게 보임', (await B.locator('.checklist-group:has-text("그룹 준비물")').count()) === 1);
   await nav(B, 'settings');
-  await B.click('.group-row [data-action="group-leave"]');
+  await menuClick(B, '.group-row [data-action="group-leave"]');
   await B.click('[data-action="confirm-yes"]');
   const left = await until(() => admin(async db => !(await getDoc(doc(db, 'groups/' + gid))).data().memberUids.includes(bUid)));
   check('실제 규칙: 나가기', !!left);

@@ -4,6 +4,7 @@
 // 가짜 저장소도 firestore.rules와 같은 규칙(users/{uid}는 본인만)을 흉내 낸다.
 // 실행: node tests/shared-app.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -173,7 +174,7 @@ const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => 
   check('A2가 체크한 내용이 A 화면에 실시간 반영', await A.locator('.check-row:has-text("랜턴") .cl-status-btn.packed.active').count() === 1);
   check('A 화면 대분류에 완료 배지', await A.locator('.checklist-group:has-text("공유테스트") .done-tag').count() === 1);
 
-  await A.click('.checklist-group:has-text("공유테스트") [data-action="cl-list-rename"]');
+  await menuClick(A, '.checklist-group:has-text("공유테스트") [data-action="cl-list-rename"]');
   await A.fill('#cl-title-name', '공유테스트-이름변경');
   await A.click('[data-action="cl-list-rename-save"]');
   await A2.waitForSelector('.checklist-group h3:has-text("공유테스트-이름변경")', { timeout: 3000 }).catch(() => {});

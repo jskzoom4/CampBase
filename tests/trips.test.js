@@ -4,6 +4,7 @@
 //  후기 남기기 미리 채움 + tripRef + "작성함" 표시, 그룹 B에게 그룹 일정 실시간 표시, 예전 위젯 설정 이어받기.
 // 실행: node tests/trips.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -108,7 +109,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await A.click('[data-action="modal-close"]');
 
   // ================= 2. 템플릿으로 저장 =================
-  await A.click('.checklist-group:has-text("기본 준비물") [data-action="cl-save-template"]');
+  await menuClick(A, '.checklist-group:has-text("기본 준비물") [data-action="cl-save-template"]');
   await settle();
   const tpls = docsUnder(A_ + 'checklistTemplates/');
   check('템플릿으로 저장: { title, items:[{label, group}] } (체크 상태·id 없음)', tpls.length === 1 && tpls[0].title === '기본 준비물'
@@ -175,7 +176,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   // ================= 6. 삭제(연결만 해제) → 되돌리기 =================
   await A.click('.trip-chip:has-text("가평 당일")');
   const t2before = JSON.parse(JSON.stringify(server[A_ + 'trips/' + t2.id]));
-  await A.click('.trip-card [data-action="trip-del"]');
+  await menuClick(A, '.trip-card [data-action="trip-del"]');
   check('일정 삭제는 확인 모달', /일정을 삭제할까요[\s\S]*연결만 풀어요/.test(await A.locator('#modal-root').innerText()));
   await confirmYes(A);
   await settle();
@@ -212,7 +213,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await pickSpace(A, '캠핑팸');
   check('공간을 바꾸면 일정 선택은 "전체"로', (await A.locator('[data-action="trip-pick"][data-trip="all"].active').count()) === 1);
   check('그룹 공간에는 개인 일정이 안 보임', (await A.locator('.trip-chip:has-text("홍천")').count()) === 0);
-  await A.click('.checklist-group:has-text("그룹 기본") [data-action="cl-save-template"]');
+  await menuClick(A, '.checklist-group:has-text("그룹 기본") [data-action="cl-save-template"]');
   await settle();
   const gtpl = docsUnder(G + '/checklistTemplates/');
   check('그룹 템플릿은 groups/{gid}/checklistTemplates에 저장', gtpl.length === 1 && gtpl[0].title === '그룹 기본' && docsUnder(A_ + 'checklistTemplates/').length === 1);
@@ -305,7 +306,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   // ================= 11. 그룹 일정 삭제(그룹 공간) 되돌리기 + 규칙 =================
   await A.click('.trip-chip:has-text("팸 캠핑")');
   const gtBefore = JSON.parse(JSON.stringify(server[G + '/trips/' + gt.id]));
-  await A.click('.trip-card [data-action="trip-del"]');
+  await menuClick(A, '.trip-card [data-action="trip-del"]');
   await confirmYes(A);
   await settle();
   await B.waitForSelector('.trip-chip:has-text("팸 캠핑"):not(:has-text("지난"))', { state: 'detached', timeout: 3000 }).catch(() => {});
@@ -334,7 +335,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await A.click('[data-action="modal-close"]');
 
   // ================= 13. 그룹 삭제 시 일정·템플릿도 삭제 =================
-  await A.click('.group-row:has-text("캠핑팸") [data-action="group-delete"]');
+  await menuClick(A, '.group-row:has-text("캠핑팸") [data-action="group-delete"]');
   await confirmYes(A);
   await A.waitForSelector('[data-action="confirm-yes"]', { timeout: 2000 }).catch(() => {});
   await confirmYes(A);

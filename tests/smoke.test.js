@@ -5,6 +5,7 @@
 // ANY exception the user might be hitting -- since their report gave
 // no specific action ("작업 중 오류가 발생했어요" with no other context).
 const { chromium } = require('playwright');
+const { menuClick } = require('./ui-helpers');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -33,7 +34,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   // would mean the app regressed back to window.confirm().
   page.on('dialog', d => { issues.push('UNEXPECTED NATIVE DIALOG: ' + d.message()); d.dismiss(); });
   async function clickAndConfirm(locator, label) {
-    await locator.click();
+    await menuClick(page, locator);   // ⋯ 메뉴 안으로 옮긴 버튼이면 메뉴를 열고 누름
     await page.waitForTimeout(120);
     const confirmBtn = page.locator('[data-action="confirm-yes"]');
     if (await confirmBtn.count()) { await confirmBtn.click(); await page.waitForTimeout(150); return true; }
@@ -191,7 +192,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   // group rename
   const renameBtn = page.locator('[data-action="cl-group-rename"]').last();
   if (await renameBtn.count()) {
-    await renameBtn.click();
+    await menuClick(page, renameBtn);
     await page.waitForTimeout(150);
     const nameInput = page.locator('#clg-name');
     if (await nameInput.count()) {
@@ -214,7 +215,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
 
   // delete the item, then the list
   const delItem = page.locator('[data-action="cl-del-item"]').last();
-  if (await delItem.count()) { await delItem.click(); await page.waitForTimeout(150); log('checklist del item'); }
+  if (await delItem.count()) { await menuClick(page, delItem); await page.waitForTimeout(150); log('checklist del item'); }
   const delList = page.locator('[data-action="cl-del-list"]').last();
   if (await delList.count()) { await clickAndConfirm(delList, 'cl-del-list'); log('checklist del list'); }
 

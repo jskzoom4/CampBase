@@ -16,20 +16,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --brand:#2f6f4f; --brand-dark:#1f4d36; --accent:#d98e2f; --good:#2f9e5e; --warn:#c98a2c; --bad:#c1503f;
-    --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee7; --border:#e4e1d8; --text:#1f2420; --text-dim:#6b6f68;
-    --radius:14px;
+    /* 색 규칙(CLAUDE.md "화면 규칙"): accent(앰버)는 만들기/추가 버튼에만, 진행률·태그·배지는 중립(회색), 완료는 good(초록).
+       글자 대비는 WCAG AA(4.5:1) 이상이 되도록 고른 값 — --brand-text/--good-text는 글자용, --brand/--good/--bad-solid는 칠하는 배경용. */
+    --brand:#2f6f4f; --brand-text:#2f6f4f; --brand-dark:#1f4d36; --accent:#ad5f0c; --on-accent:#ffffff;
+    --good:#237d48; --good-text:#1d6b3d; --warn:#c98a2c; --bad:#b5452f; --bad-solid:#b5452f;
+    --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee7; --border:#e4e1d8; --text:#1f2420; --text-dim:#63675f;
+    --radius:14px; --tabbar-h:62px; --safe-bottom:env(safe-area-inset-bottom, 0px);
     color-scheme: light dark;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --bg:#141815; --surface:#1c211d; --surface-2:#232821; --border:#333a32; --text:#eceae3; --text-dim:#9aa199;
-      --brand:#4d9b74; --brand-dark:#3a7f5c; --accent:#e3a54f;
+      --brand:#357a57; --brand-text:#5fae86; --brand-dark:#2c6a4b; --accent:#e3a54f; --on-accent:#141815;
+      --good:#24814c; --good-text:#4cc27d; --bad:#e06a57; --bad-solid:#b5452f;
     }
   }
   :root[data-theme="dark"]{
     --bg:#141815; --surface:#1c211d; --surface-2:#232821; --border:#333a32; --text:#eceae3; --text-dim:#9aa199;
-    --brand:#4d9b74; --brand-dark:#3a7f5c; --accent:#e3a54f;
+    --brand:#357a57; --brand-text:#5fae86; --brand-dark:#2c6a4b; --accent:#e3a54f; --on-accent:#141815;
+    --good:#24814c; --good-text:#4cc27d; --bad:#e06a57; --bad-solid:#b5452f;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
@@ -79,16 +84,16 @@
     color:var(--text);border-radius:9px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
   .btn svg{width:15px;height:15px;}
   .btn:hover{background:var(--surface-2);}
-  .btn-accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .btn-accent{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+  .btn-accent:hover{background:var(--accent);filter:brightness(1.08);}
   .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff;}
   .btn-ghost{background:transparent;}
   .btn-sm{padding:6px 10px;font-size:12px;}
   .btn-danger{color:var(--bad);}
-  .btn-danger-solid{background:var(--bad);border-color:var(--bad);color:#fff;}
+  .btn-danger-solid{background:var(--bad-solid);border-color:var(--bad-solid);color:#fff;}
   .btn-danger-solid:hover{opacity:.9;}
 
   .tag{display:inline-block;background:var(--surface-2);color:var(--text-dim);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;}
-  .tag.accent{background:color-mix(in srgb, var(--accent) 20%, transparent);color:var(--accent);}
 
   /* ---- home ---- */
   .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:6px;}
@@ -101,7 +106,7 @@
   .stat-card .big-num{font-family:"JetBrains Mono",monospace;font-size:22px;font-weight:700;}
   .home-cat-link{cursor:pointer;border-radius:6px;transition:background .12s ease;}
   .legend-row.home-cat-link{padding:3px 4px;margin:0 -4px;}
-  .home-cat-link:hover{background:var(--surface-2);color:var(--brand);}
+  .home-cat-link:hover{background:var(--surface-2);color:var(--brand-text);}
   .chev-mini{width:12px!important;height:12px!important;opacity:.6;}
 
   /* ---- forms/modal ---- */
@@ -152,19 +157,19 @@
     background:color-mix(in srgb, var(--brand) 14%, var(--surface));border-bottom:1px solid var(--border);}
   #update-banner.show{display:flex;}
   #update-banner .spacer{flex:1;}
-  #update-banner svg{width:16px;height:16px;flex:none;color:var(--brand);}
+  #update-banner svg{width:16px;height:16px;flex:none;color:var(--brand-text);}
   /* ---- 캠핑 일정 ---- */
   .trip-bar{margin-bottom:12px;}
   .trip-chips .seg-btn{display:inline-flex;align-items:center;gap:5px;}
   .trip-chips svg{width:14px;height:14px;}
-  .trip-new-chip{border-style:dashed;color:var(--brand);font-weight:600;}
+  .trip-new-chip{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600;}
   .trip-card{margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
   .trip-head{display:flex;align-items:flex-start;gap:10px;}
   .trip-title{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:6px;}
-  .trip-title svg{width:17px;height:17px;color:var(--brand);flex:none;}
+  .trip-title svg{width:17px;height:17px;color:var(--brand-text);flex:none;}
   .trip-card .meta{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
   .trip-phase{flex:none;}
-  .trip-phase.ongoing{background:color-mix(in srgb, var(--brand) 18%, transparent);color:var(--brand);}
+  .trip-phase.ongoing{background:color-mix(in srgb, var(--brand) 18%, transparent);color:var(--brand-text);}
   .trip-members{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
   .trip-members .meta{margin:0 0 0 4px;}
   .trip-progress{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text-dim);flex-wrap:wrap;}
@@ -189,7 +194,7 @@
   .next-trip-line{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
   .next-trip-review{display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px dashed var(--border);border-radius:12px;
     font-size:13px;cursor:pointer;background:var(--surface);}
-  .next-trip-review svg{width:15px;height:15px;color:var(--brand);flex:none;}
+  .next-trip-review svg{width:15px;height:15px;color:var(--brand-text);flex:none;}
   .next-trip-review span{flex:1;}
   .next-trip-review:hover{border-color:var(--brand);}
   /* ---- 그룹 후기 공유 ---- */
@@ -206,7 +211,7 @@
   .review-card .meta{font-size:12px;color:var(--text-dim);margin-top:3px;}
   .review-card-head{display:flex;gap:10px;align-items:flex-start;}
   .review-avg{flex:none;font-size:14px;font-weight:700;}
-  .review-star{color:var(--warn);}
+  .review-star{color:var(--text-dim);}
   .review-summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .review-authors{margin-left:auto;display:inline-flex;gap:2px;}
   .review-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
@@ -230,6 +235,8 @@
   .check-row{display:flex;align-items:center;gap:9px;padding:8px 2px;border-bottom:1px solid var(--border);}
   .check-row:last-child{border-bottom:none;}
   .check-row .label{flex:1;font-size:13.5px;}
+  .checklist-group h3 .btn{font-family:"Work Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-weight:600;}
+  .checklist-group h3 .tag, .cl-subgroup-head .tag{font-family:"Work Sans","Apple SD Gothic Neo",sans-serif;}
   .check-row .label.done{text-decoration:line-through;color:var(--text-dim);}
   .check-row .label.skip{color:var(--text-dim);font-style:italic;}
   .cl-status-group{display:flex;gap:4px;flex:none;}
@@ -238,8 +245,8 @@
   .cl-status-btn svg{width:14px;height:14px;}
   .cl-status-btn:hover{background:var(--surface-2);}
   .cl-status-btn.packed.active{background:var(--good);border-color:var(--good);color:#fff;}
-  .cl-status-btn.skip.active{background:var(--text-dim);border-color:var(--text-dim);color:#fff;}
-  .tag.done-tag{background:color-mix(in srgb, var(--good) 20%, transparent);color:var(--good);}
+  .cl-status-btn.skip.active{background:var(--text-dim);border-color:var(--text-dim);color:var(--bg);}
+  .tag.done-tag{background:color-mix(in srgb, var(--good) 20%, transparent);color:var(--good-text);}
   .tag.skip-tag{margin-left:6px;}
 
   .placeholder-card{text-align:center;padding:48px 20px;}
@@ -249,20 +256,70 @@
   .placeholder-card-sm{text-align:center;padding:22px 14px;cursor:pointer;}
   .placeholder-icon-sm{width:26px;height:26px;color:var(--text-dim);margin-bottom:8px;}
 
-  #mobile-topbar{display:none;}
+  /* ---- 모바일 하단 고정 탭바(820px 이하) ---- */
+  #mobile-tabbar{display:none;}
   @media (max-width:820px){
     #sidebar{display:none;}
-    #mobile-topbar{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:var(--surface);
-      border-bottom:1px solid var(--border);}
-    .mnav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-dim);
-      padding:6px 12px;border-radius:10px;flex:none;cursor:pointer;}
-    .mnav-item.active{background:var(--brand);color:#fff;}
-    .mnav-item svg{width:17px;height:17px;}
+    #mobile-tabbar{display:grid;grid-template-columns:repeat(6, 1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;
+      background:var(--surface);border-top:1px solid var(--border);padding:4px 4px var(--safe-bottom);
+      box-shadow:0 -4px 16px rgba(0,0,0,.06);}
+    .mnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:var(--tabbar-h);
+      padding:6px 2px;border:none;background:none;border-radius:12px;font-size:10.5px;font-weight:600;color:var(--text-dim);cursor:pointer;}
+    .mnav-item span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .mnav-item svg{width:22px;height:22px;padding:3px 10px;box-sizing:content-box;border-radius:999px;transition:background .15s ease;}
+    .mnav-item.active{color:var(--brand-text);}
+    .mnav-item.active svg{background:color-mix(in srgb, var(--brand) 16%, transparent);}
+    /* 키보드가 올라오면 탭바를 숨겨 입력칸을 가리지 않게 */
+    body.kbd-open #mobile-tabbar{display:none;}
     #topbar{padding:12px 16px;}
-    #main{padding:16px 14px 60px;}
+    #main{padding:16px 14px calc(var(--tabbar-h) + var(--safe-bottom) + 32px);}
+    body.kbd-open #main{padding-bottom:32px;}
+    .toast{bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 18px);}
     .stat-grid{grid-template-columns:1fr;}
     .field-row{flex-direction:column;}
+    .modal-backdrop{align-items:flex-end;padding:12px 12px calc(12px + var(--safe-bottom));}
   }
+  /* ---- 버튼 누르는 영역(최소 40×40) ---- */
+  .icon-btn{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:8px;}
+  .cl-status-btn, .assignee-chip{position:relative;}
+  .cl-status-btn::after, .assignee-chip::after{content:"";position:absolute;inset:-7px -3px;}
+  /* ---- 키보드 초점 표시: 키보드로 움직일 때만 브랜드 초록 2px ---- */
+  :focus-visible{outline:2px solid var(--brand-text);outline-offset:2px;}
+  :focus:not(:focus-visible){outline:none;}
+  .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible, .backup-text:focus-visible{outline-offset:0;}
+  /* ---- ⋯ 메뉴(공통) ---- */
+  .more{position:relative;display:inline-flex;flex:none;}
+  .more-btn svg{width:18px;height:18px;}
+  .more-menu{position:absolute;right:0;top:calc(100% + 4px);z-index:30;min-width:180px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;}
+  .more-menu[hidden]{display:none;}
+  .more.up .more-menu{top:auto;bottom:calc(100% + 4px);}
+  .more-item{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:8px 12px;border:none;background:none;border-radius:8px;
+    font-size:13.5px;font-weight:500;color:var(--text);text-align:left;cursor:pointer;white-space:nowrap;}
+  .more-item svg{width:16px;height:16px;flex:none;color:var(--text-dim);}
+  .more-item:hover, .more-item:focus-visible{background:var(--surface-2);}
+  .more-item.danger{color:var(--bad);}
+  .more-item.danger svg{color:var(--bad);}
+  .more-sep{height:1px;background:var(--border);margin:4px 6px;}
+  /* ---- 모달: 닫기(X), 나타남/사라짐 효과 ---- */
+  .modal{position:relative;}
+  .modal h3{padding-right:40px;}
+  .modal-x{position:absolute;top:10px;right:10px;}
+  .modal-backdrop{animation:cb-fade-in .18s ease both;}
+  .modal-backdrop .modal{animation:cb-pop-in .18s ease both;}
+  .modal-backdrop.closing{animation:cb-fade-out .15s ease both;pointer-events:none;}
+  .modal-backdrop.closing .modal{animation:cb-pop-out .15s ease both;}
+  @keyframes cb-fade-in{from{opacity:0;}to{opacity:1;}}
+  @keyframes cb-fade-out{from{opacity:1;}to{opacity:0;}}
+  @keyframes cb-pop-in{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
+  @keyframes cb-pop-out{from{opacity:1;transform:none;}to{opacity:0;transform:scale(.96);}}
+  @media (prefers-reduced-motion: reduce){
+    .modal-backdrop, .modal-backdrop .modal, .modal-backdrop.closing, .modal-backdrop.closing .modal{animation:none;}
+    .toast, .mnav-item svg{transition:none;}
+  }
+  #modal-ghost{position:fixed;inset:0;pointer-events:none;z-index:49;}
+  /* 사이드바 메뉴는 버튼(키보드로 이동 가능) */
+  button.nav-item{width:100%;background:none;text-align:left;}
   /* ---- 공유 앱(웹/APK) 전용 ---- */
   #db-status-top{display:none;margin-left:auto;align-items:center;font-size:11px;color:var(--text-dim);
     background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;white-space:nowrap;}
@@ -296,20 +353,20 @@
   .space-chips svg{width:14px;height:14px;}
   .space-note{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12.5px;color:var(--text-dim);
     background:color-mix(in srgb, var(--brand) 10%, transparent);border:1px solid color-mix(in srgb, var(--brand) 30%, transparent);border-radius:9px;padding:7px 10px;}
-  .space-note svg{width:15px;height:15px;flex:none;color:var(--brand);}
+  .space-note svg{width:15px;height:15px;flex:none;color:var(--brand-text);}
   .invite-code{font-family:"JetBrains Mono",monospace;font-size:30px;font-weight:700;letter-spacing:6px;text-align:center;
     padding:14px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);user-select:all;}
   .send-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:9px;padding:4px 8px;background:var(--bg);}
   .send-row{display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:13.5px;border-bottom:1px solid var(--border);cursor:pointer;}
   .send-row:last-child{border-bottom:none;}
   .send-row span:first-of-type{flex:1;}
-  .link-btn{color:var(--brand);cursor:pointer;font-weight:600;}
+  .link-btn{color:var(--brand-text);cursor:pointer;font-weight:600;}
   /* ---- 담당자·장비 주인 ---- */
   .mini-avatar{width:20px;height:20px;border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center;
     background:var(--surface-2);color:var(--text-dim);font-size:10.5px;font-weight:700;vertical-align:middle;}
   .member-pick .mini-avatar{width:28px;height:28px;font-size:12px;}
   .member-pick.active{background:color-mix(in srgb, var(--brand) 10%, transparent);border-radius:8px;}
-  .member-pick .pick-check{width:18px;height:18px;color:var(--brand);}
+  .member-pick .pick-check{width:18px;height:18px;color:var(--brand-text);}
   .assignee-chip{display:inline-flex;align-items:center;gap:5px;max-width:110px;flex:none;border:1px dashed var(--border);background:transparent;
     color:var(--text-dim);border-radius:999px;padding:3px 9px 3px 4px;font-size:11.5px;cursor:pointer;}
   .assignee-chip svg{width:14px;height:14px;margin-left:3px;}
@@ -319,7 +376,7 @@
     background:var(--surface-2);border-radius:999px;padding:2px 8px 2px 2px;vertical-align:middle;}
   .assign-suggest{margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border);}
   .suggest-pick .meta{font-size:12px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .suggest-tag{background:color-mix(in srgb, var(--brand) 16%, transparent);color:var(--brand);}
+  .suggest-tag{background:color-mix(in srgb, var(--brand) 16%, transparent);color:var(--brand-text);}
   .owner-filter .seg-btn{display:inline-flex;align-items:center;gap:5px;}
   .account-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2);
     display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);}
@@ -358,15 +415,16 @@
 
   <div id="main-wrap">
     <div id="update-banner"></div>
-    <div id="mobile-topbar"></div>
     <div id="topbar">
       <h2 id="view-title" class="disp">Home</h2>
       <span id="db-status-top">연결 확인 중…</span>
     </div>
     <div id="main"></div>
+    <nav id="mobile-tabbar" aria-label="탭"></nav>
   </div>
 </div>
 <div id="modal-root"></div>
+<div id="modal-ghost" aria-hidden="true"></div>
 <div class="toast" id="toast"></div>
 
 <script src="firebase-config.js"></script>
@@ -394,6 +452,7 @@ const ICONS = {
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14c2.4.2 4 1.8 4.5 4.5"/>',
   send:'<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
+  dots:'<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
   calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   template:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
@@ -1198,24 +1257,25 @@ function groupsSectionHtml(){
         return `
         <div class="list-row group-row" data-gid="${esc(g.id)}" style="align-items:center;flex-wrap:wrap;">
           <div style="flex:1;min-width:140px;">
-            <div class="name">${esc(g.name)} <span class="tag ${owner?'accent':''}">${owner?'그룹장':'멤버'}</span></div>
+            <div class="name">${esc(g.name)} <span class="tag">${owner?'그룹장':'멤버'}</span></div>
             <div class="meta">멤버 ${g.memberUids.length}명</div>
           </div>
           <div class="row-actions" style="flex-wrap:wrap;">
-            <button class="btn btn-sm" data-action="group-members" data-gid="${esc(g.id)}">멤버</button>
-            <button class="btn btn-sm" data-action="group-invite" data-gid="${esc(g.id)}">초대 코드</button>
-            ${owner ? `
-              <button class="btn btn-sm" data-action="group-rename" data-gid="${esc(g.id)}">이름 변경</button>
-              <button class="btn btn-sm" data-action="group-backup-export" data-gid="${esc(g.id)}">백업 내보내기</button>
-              <button class="btn btn-sm" data-action="group-backup-import" data-gid="${esc(g.id)}">백업 가져오기</button>
-              <button class="btn btn-sm btn-danger" data-action="group-delete" data-gid="${esc(g.id)}">삭제</button>
-            ` : `<button class="btn btn-sm btn-danger" data-action="group-leave" data-gid="${esc(g.id)}">나가기</button>`}
+            <button class="btn btn-sm" data-action="group-invite" data-gid="${esc(g.id)}">${icon('users')} 초대 코드</button>
+            ${moreMenuHtml('grp:' + g.id, [
+              { action:'group-members', attrs:{'data-gid':g.id}, icon:'users', label:'멤버 보기' },
+              owner ? { action:'group-rename', attrs:{'data-gid':g.id}, icon:'edit', label:'이름 변경' } : null,
+              owner ? { action:'group-backup-export', attrs:{'data-gid':g.id}, icon:'save', label:'그룹 백업 내보내기' } : null,
+              owner ? { action:'group-backup-import', attrs:{'data-gid':g.id}, icon:'refresh', label:'그룹 백업 가져오기' } : null,
+              owner ? { action:'group-delete', attrs:{'data-gid':g.id}, icon:'trash', label:'그룹 삭제', danger:true }
+                    : { action:'group-leave', attrs:{'data-gid':g.id}, icon:'close', label:'그룹 나가기', danger:true },
+            ], `'${g.name}' 그룹 메뉴`)}
           </div>
         </div>`;
       }).join('') : `<div class="empty">아직 그룹이 없어요. 그룹을 만들거나, 친구에게 받은 초대 코드로 참여해보세요.</div>`}
     </div>
     <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-      <button class="btn btn-primary" data-action="group-new">${icon('plus')} 그룹 만들기</button>
+      <button class="btn btn-accent" data-action="group-new">${icon('plus')} 그룹 만들기</button>
       <button class="btn" data-action="group-join">${icon('users')} 코드로 참여</button>
     </div>
     <div style="height:24px;"></div>`;
@@ -1787,13 +1847,13 @@ function toggleHomeWidget(key){
 /* ============================ NAV ============================ */
 function renderNav(){
   document.getElementById('nav').innerHTML = FEATURE_DEFS.map(f=>navItemHtml(f)).join('');
-  document.getElementById('mobile-topbar').innerHTML = FEATURE_DEFS.map(f=>`
-    <div class="mnav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}">
+  document.getElementById('mobile-tabbar').innerHTML = FEATURE_DEFS.map(f=>`
+    <button type="button" class="mnav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>
       ${icon(f.icon)}<span>${f.label}</span>
-    </div>`).join('');
+    </button>`).join('');
 }
 function navItemHtml(f){
-  return `<div class="nav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}">${icon(f.icon)}<span>${f.label}</span></div>`;
+  return `<button type="button" class="nav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>${icon(f.icon)}<span>${f.label}</span></button>`;
 }
 
 /* ============================ VIEW DISPATCH ============================ */
@@ -1884,7 +1944,7 @@ function renderHome(){
   ` : '';
 
   const emptyHint = (!hw.nextTrip && cards.length===0) ? `
-    <div class="empty">Home에 표시할 위젯이 모두 꺼져 있어요. <span data-action="goto-settings" style="color:var(--brand);cursor:pointer;font-weight:600;">설정</span>에서 켜보세요.</div>
+    <div class="empty">Home에 표시할 위젯이 모두 꺼져 있어요. <span data-action="goto-settings" style="color:var(--brand-text);cursor:pointer;font-weight:600;">설정</span>에서 켜보세요.</div>
   ` : '';
 
   return `${tripHtml}${statBlock}${emptyHint}`;
@@ -1991,8 +2051,10 @@ function renderMyCamping(){
             ${c.notes?`<div class="notes">${esc(c.notes)}</div>`:''}
           </div>
           <div class="row-actions">
-            <button class="icon-btn" data-action="camp-edit" data-id="${c.id}">${icon('edit')}</button>
-            <button class="icon-btn btn-danger" data-action="camp-del" data-id="${c.id}">${icon('trash')}</button>
+            <button class="icon-btn" data-action="camp-edit" data-id="${c.id}" title="수정" aria-label="'${esc(c.name)}' 기록 수정">${icon('edit')}</button>
+            ${moreMenuHtml('camp:' + c.id, [
+              { action:'camp-del', attrs:{'data-id':c.id}, icon:'trash', label:'기록 삭제', danger:true },
+            ], `'${c.name}' 기록 메뉴`)}
           </div>
         </div>
       `).join('') : `<div class="empty">${filter==='all' ? '아직 기록이 없어요. 다녀온 캠핑장을 기록해보세요.' : '이 지역으로 기록된 캠핑장이 없어요.'}</div>`}
@@ -2370,8 +2432,10 @@ function renderGear(){
             <div class="meta">${esc(g.brand||'')} · ${esc(g.category)}${g.price?' · '+Number(g.price).toLocaleString()+'원':''}${g.weight?' · '+g.weight+'kg':''}${g.date?' · '+esc(g.date):''}${grp && g.addedBy ? ' · ' + esc(memberName(grp, g.addedBy)) + ' 추가' : ''}</div>
           </div>
           <div class="row-actions">
-            <button class="icon-btn" data-action="gear-edit" data-id="${g.id}">${icon('edit')}</button>
-            <button class="icon-btn btn-danger" data-action="gear-del" data-id="${g.id}">${icon('trash')}</button>
+            <button class="icon-btn" data-action="gear-edit" data-id="${g.id}" title="수정" aria-label="'${esc(g.name)}' 수정">${icon('edit')}</button>
+            ${moreMenuHtml('gear:' + g.id, [
+              { action:'gear-del', attrs:{'data-id':g.id}, icon:'trash', label:'장비 삭제', danger:true },
+            ], `'${g.name}' 장비 메뉴`)}
           </div>
         </div>
       `).join('') : `<div class="empty">${filter==='all' && ownerFilter==='all' ? '등록된 장비가 없어요.' : '이 조건에 맞는 장비가 없어요.'}</div>`}
@@ -2456,8 +2520,8 @@ function categoryRowHtml(c){
       <input class="cat-edit-input" data-old="${esc(c)}" value="${esc(c)}" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13.5px;" ${locked?'disabled':''}>
       <div class="row-actions">
         ${locked ? `<span class="tag">기본값</span>` : `
-          <button class="icon-btn" data-action="gear-cat-rename" data-old="${esc(c)}" title="이름 변경">${icon('save')}</button>
-          <button class="icon-btn btn-danger" data-action="gear-cat-del" data-cat="${esc(c)}" title="삭제">${icon('trash')}</button>
+          <button class="icon-btn" data-action="gear-cat-rename" data-old="${esc(c)}" title="이름 변경" aria-label="카테고리 이름 변경">${icon('save')}</button>
+          <button class="icon-btn btn-danger" data-action="gear-cat-del" data-cat="${esc(c)}" title="삭제" aria-label="카테고리 삭제">${icon('trash')}</button>
         `}
       </div>
     </div>
@@ -2549,12 +2613,14 @@ function renderChecklist(){
         <h3>
           <span style="flex:1;">${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
           ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
-          <button class="icon-btn" data-action="cl-list-rename" data-id="${cl.id}" title="리스트 이름 변경">${icon('edit')}</button>
-          ${decided>0 ? `<button class="icon-btn" data-action="cl-list-reset" data-id="${cl.id}" title="전부 미정으로 초기화">${icon('refresh')}</button>` : ''}
-          <button class="icon-btn" data-action="cl-add-item" data-id="${cl.id}" title="새 항목 추가">${icon('plus')}</button>
-          <button class="icon-btn" data-action="cl-save-template" data-id="${cl.id}" title="템플릿으로 저장" aria-label="템플릿으로 저장">${icon('template')}</button>
-          ${!grp && state.groups.length ? `<button class="icon-btn" data-action="cl-send" data-id="${cl.id}" title="그룹으로 보내기(복사)">${icon('send')}</button>` : ''}
-          <button class="icon-btn btn-danger" data-action="cl-del-list" data-id="${cl.id}">${icon('trash')}</button>
+          <button class="btn btn-sm cl-add-btn" data-action="cl-add-item" data-id="${cl.id}">${icon('plus')} 항목 추가</button>
+          ${moreMenuHtml('cl:' + cl.id, [
+            { action:'cl-list-rename', attrs:{'data-id':cl.id}, icon:'edit', label:'이름 변경' },
+            decided>0 ? { action:'cl-list-reset', attrs:{'data-id':cl.id}, icon:'refresh', label:'전부 미정으로 초기화' } : null,
+            { action:'cl-save-template', attrs:{'data-id':cl.id}, icon:'template', label:'템플릿으로 저장' },
+            !grp && state.groups.length ? { action:'cl-send', attrs:{'data-id':cl.id}, icon:'send', label:'그룹으로 보내기(복사)' } : null,
+            { action:'cl-del-list', attrs:{'data-id':cl.id}, icon:'trash', label:'리스트 삭제', danger:true },
+          ], `'${cl.title}' 리스트 메뉴`)}
         </h3>
         ${groups.length ? groups.map(gr=>{
           const gDecided = gr.items.filter(isDecided).length;
@@ -2564,20 +2630,24 @@ function renderChecklist(){
               <span class="cl-subgroup-name">${esc(gr.group)}</span>
               <span class="tag">${gDecided}/${gr.items.length}</span>
               <div class="spacer"></div>
-              <button class="icon-btn" data-action="cl-group-add" data-list="${cl.id}" data-group="${esc(gr.group)}" title="이 소분류에 항목 추가">${icon('plus')}</button>
-              ${gr.group!=='기타' ? `<button class="icon-btn" data-action="cl-group-rename" data-list="${cl.id}" data-group="${esc(gr.group)}" title="소분류 이름 변경">${icon('edit')}</button>` : ''}
+              <button class="icon-btn" data-action="cl-group-add" data-list="${cl.id}" data-group="${esc(gr.group)}" title="이 소분류에 항목 추가" aria-label="'${esc(gr.group)}'에 항목 추가">${icon('plus')}</button>
+              ${gr.group!=='기타' ? moreMenuHtml('clg:' + cl.id + ':' + gr.group, [
+                { action:'cl-group-rename', attrs:{'data-list':cl.id, 'data-group':gr.group}, icon:'edit', label:'소분류 이름 변경' },
+              ], `'${gr.group}' 소분류 메뉴`) : ''}
             </div>
             ${gr.items.map(it=>{
               const status = itemStatus(it);
               return `
               <div class="check-row">
                 <div class="cl-status-group">
-                  <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="가져감">${icon('check')}</button>
-                  <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="안 가져감 (일부러 제외)">${icon('close')}</button>
+                  <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="가져감" aria-label="'${esc(it.label)}' 가져감" aria-pressed="${status==='packed'}">${icon('check')}</button>
+                  <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="안 가져감 (일부러 제외)" aria-label="'${esc(it.label)}' 안 가져감" aria-pressed="${status==='skip'}">${icon('close')}</button>
                 </div>
                 <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}</span>
                 ${grp ? assigneeChipHtml(grp, cl.id, it) : ''}
-                <button class="icon-btn btn-danger" data-action="cl-del-item" data-list="${cl.id}" data-item="${it.id}">${icon('trash')}</button>
+                ${moreMenuHtml('cli:' + cl.id + ':' + it.id, [
+                  { action:'cl-del-item', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'trash', label:'항목 삭제', danger:true },
+                ], `'${it.label}' 항목 메뉴`)}
               </div>
             `;}).join('')}
           </div>`;
@@ -2657,6 +2727,7 @@ function tripCardHtml(trip, space, lists, g){
   const where = [trip.campsiteName, trip.region].filter(Boolean).map(esc).join(' · ');
   const members = g ? tripMembers(trip, g) : [];
   const reviewed = hasMyReview(space, trip.id);
+  const needsReview = ph.kind==='past' && !reviewed;   // 끝났고 내 후기가 없으면 "후기 남기기"가 가장 자주 쓰는 동작
   return `
     <div class="card trip-card" data-trip-card="${esc(trip.id)}">
       <div class="trip-head">
@@ -2672,12 +2743,15 @@ function tripCardHtml(trip, space, lists, g){
         <span class="trip-progress-text">준비 <b class="num">${pr.decided}/${pr.total}</b>${g ? ` · 내 담당 <b class="num">${pr.mine}</b>개 남음` : ''}</span>
       </div>
       <div class="trip-actions">
-        ${ph.kind==='past' ? (reviewed
-          ? `<span class="tag done-tag trip-reviewed">${icon('check')} 내 후기 작성함</span>`
-          : `<button class="btn btn-sm btn-primary" data-action="trip-review" data-space="${esc(space)}" data-trip="${esc(trip.id)}">${icon('pen')} 후기 남기기</button>`) : ''}
+        ${ph.kind==='past' && reviewed ? `<span class="tag done-tag trip-reviewed">${icon('check')} 내 후기 작성함</span>` : ''}
         <span style="flex:1;"></span>
-        <button class="btn btn-sm" data-action="trip-edit" data-trip="${esc(trip.id)}">${icon('edit')} 수정</button>
-        <button class="btn btn-sm btn-danger" data-action="trip-del" data-trip="${esc(trip.id)}">${icon('trash')} 삭제</button>
+        ${needsReview
+          ? `<button class="btn btn-sm btn-primary" data-action="trip-review" data-space="${esc(space)}" data-trip="${esc(trip.id)}">${icon('pen')} 후기 남기기</button>`
+          : `<button class="btn btn-sm" data-action="trip-edit" data-trip="${esc(trip.id)}">${icon('edit')} 수정</button>`}
+        ${moreMenuHtml('trip:' + trip.id, [
+          needsReview ? { action:'trip-edit', attrs:{'data-trip':trip.id}, icon:'edit', label:'일정 수정' } : null,
+          { action:'trip-del', attrs:{'data-trip':trip.id}, icon:'trash', label:'일정 삭제', danger:true },
+        ], `'${trip.title}' 일정 메뉴`)}
       </div>
     </div>`;
 }
@@ -3188,7 +3262,7 @@ function recipeCardHtml(r){
       </div>
       <div class="section-desc" style="margin-bottom:10px;line-height:1.5;">${esc(r.steps)}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-        <span class="tag accent">재료 ${doneCount}/${total}</span>
+        <span class="tag ${total && doneCount===total ? 'done-tag' : ''}">재료 ${doneCount}/${total}</span>
         <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
       </div>
     </div>
@@ -3196,14 +3270,143 @@ function recipeCardHtml(r){
 }
 
 /* ============================ MODAL / TOAST ============================ */
-function openModal(html){
-  document.getElementById('modal-root').innerHTML = `
-    <div class="modal-backdrop" id="modal-backdrop">
-      <div class="modal">${html}</div>
-    </div>`;
-  document.getElementById('modal-backdrop').addEventListener('click', e=>{ if(e.target.id==='modal-backdrop') closeModal(); });
+/* ---- 모달 규칙(CLAUDE.md "화면 규칙") ----
+ * 모든 모달: 오른쪽 위 닫기(X), Esc로 닫기, 나타남/사라짐 효과(동작 줄이기 설정이면 없음).
+ * 열리면 첫 입력칸(없으면 첫 버튼)으로 초점, Tab은 모달 안에서만 돌고, 닫히면 연 버튼으로 초점 복귀.
+ * 입력칸이 있는 모달은 배경을 눌러도 닫히지 않음(입력이 날아가지 않게), 확인만 하는 모달은 배경을 누르면 닫힘. */
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+let _modalOpener = null;
+let _lastClick = { el: null, at: 0 };   // 마우스로 누른 버튼(포커스가 안 갈 수 있어서 따로 기억)
+function reducedMotion(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+// 초점을 돌려줄 버튼을 기억. 다시 그려져서 없어져도 같은 data-action·data-id 버튼을 찾아 돌아간다.
+function rememberOpener(){
+  let el = (_lastClick.el && Date.now() - _lastClick.at < 1500) ? _lastClick.el : document.activeElement;
+  if(!el || el===document.body || el.closest('#modal-root')) return;
+  const menu = el.closest('.more');
+  if(menu) el = menu.querySelector('.more-btn') || el;   // ⋯ 메뉴 항목으로 열었으면 ⋯ 버튼으로
+  const sig = ['data-action','data-id','data-list','data-item','data-gid','data-trip','data-nav','data-key']
+    .filter(k=>el.hasAttribute && el.hasAttribute(k)).map(k=>`[${k}="${CSS.escape(el.getAttribute(k))}"]`).join('');
+  const more = el.classList && el.classList.contains('more-btn') ? el.getAttribute('data-more') : null;
+  _modalOpener = { el, sig: more ? `.more-btn[data-more="${CSS.escape(more)}"]` : sig };
 }
-function closeModal(){ document.getElementById('modal-root').innerHTML=''; _confirmCallback = null; _reviewModalKey = null; }
+function restoreOpenerFocus(){
+  const o = _modalOpener; _modalOpener = null;
+  if(!o) return;
+  let el = o.el && o.el.isConnected ? o.el : (o.sig ? document.querySelector(o.sig) : null);
+  if(el && el.closest('.more-menu[hidden]')) el = el.closest('.more').querySelector('.more-btn');
+  if(el && typeof el.focus==='function') el.focus({ preventScroll: true });
+}
+function modalHasInputs(root){ return !!root.querySelector('input:not([type="hidden"]), textarea, select'); }
+function openModal(html){
+  const root = document.getElementById('modal-root');
+  if(!root.querySelector('#modal-backdrop')) rememberOpener();   // 모달에서 모달로 바뀔 때는 처음 연 버튼을 유지
+  else ghostCurrentModal();
+  closeAllMenus();
+  root.innerHTML = `
+    <div class="modal-backdrop" id="modal-backdrop">
+      <div class="modal" role="dialog" aria-modal="true">
+        <button type="button" class="icon-btn modal-x" data-action="modal-close" aria-label="닫기" title="닫기">${icon('close')}</button>
+        ${html}
+      </div>
+    </div>`;
+  const bd = document.getElementById('modal-backdrop');
+  const modal = bd.querySelector('.modal');
+  const h = modal.querySelector('h3');
+  if(h){ h.id = 'modal-title'; modal.setAttribute('aria-labelledby', 'modal-title'); }
+  bd.addEventListener('click', e=>{ if(e.target===bd && !modalHasInputs(modal)) closeModal(); });
+  const first = modal.querySelector('input:not([type="hidden"]):not([type="checkbox"]):not([type="file"]), textarea:not([readonly]), select')
+    || [...modal.querySelectorAll(FOCUSABLE)].find(el=>!el.classList.contains('modal-x'))
+    || modal.querySelector('.modal-x');
+  if(first) first.focus({ preventScroll: true });
+}
+// 닫히는 모달은 잠깐(사라지는 효과 동안) 따로 떼어 보여주기만 함 — 버튼·id를 지워 눌리거나 찾아지지 않게
+function ghostCurrentModal(){
+  const bd = document.getElementById('modal-backdrop');
+  if(!bd) return;
+  if(reducedMotion()){ bd.remove(); return; }
+  bd.removeAttribute('id');
+  bd.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+  bd.querySelectorAll('[data-action]').forEach(el=>el.removeAttribute('data-action'));
+  bd.classList.add('closing');
+  document.getElementById('modal-ghost').appendChild(bd);
+  setTimeout(()=>bd.remove(), 170);
+}
+function closeModal(){
+  const had = !!document.getElementById('modal-backdrop');
+  ghostCurrentModal();
+  document.getElementById('modal-root').innerHTML = '';
+  _confirmCallback = null; _reviewModalKey = null;
+  if(had) restoreOpenerFocus();
+}
+function trapModalTab(e){
+  const modal = document.querySelector('#modal-root .modal');
+  if(!modal) return;
+  const items = [...modal.querySelectorAll(FOCUSABLE)].filter(el=>el.offsetParent!==null || el===document.activeElement);
+  if(!items.length) return;
+  const first = items[0], last = items[items.length-1];
+  if(!modal.contains(document.activeElement)){ e.preventDefault(); first.focus(); return; }
+  if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+}
+
+/* ---- ⋯ 메뉴(공통 컴포넌트) ----
+ * moreMenuHtml(key, items): items = [{ action, attrs:{data-*}, icon, label, danger }]. 위험한 항목(danger)은 빨간색으로 맨 아래.
+ * 항목도 같은 data-action으로 wireGlobalActions()에서 처리. 바깥을 누르거나 Esc를 누르면 닫힘, 화살표/Home/End/Tab/Enter로 쓸 수 있음. */
+function moreMenuHtml(key, items, label){
+  items = (items || []).filter(Boolean);
+  if(!items.length) return '';
+  const safe = items.filter(it=>!it.danger), danger = items.filter(it=>it.danger);
+  const btn = it=>`<button type="button" role="menuitem" tabindex="-1" class="more-item ${it.danger?'danger':''}" data-action="${it.action}" ${Object.entries(it.attrs||{}).map(([k,v])=>`${k}="${esc(v)}"`).join(' ')}>${it.icon ? icon(it.icon) : ''}<span>${esc(it.label)}</span></button>`;
+  return `<div class="more">
+    <button type="button" class="icon-btn more-btn" data-action="more-toggle" data-more="${esc(key)}" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(label || '더 보기')}" title="${esc(label || '더 보기')}">${icon('dots')}</button>
+    <div class="more-menu" role="menu" hidden>${safe.map(btn).join('')}${safe.length && danger.length ? '<div class="more-sep" role="separator"></div>' : ''}${danger.map(btn).join('')}</div>
+  </div>`;
+}
+function closeAllMenus(except){
+  document.querySelectorAll('.more-menu:not([hidden])').forEach(m=>{
+    if(except && m===except) return;
+    m.hidden = true;
+    const w = m.closest('.more'); if(w){ w.classList.remove('up'); const b = w.querySelector('.more-btn'); if(b) b.setAttribute('aria-expanded','false'); }
+  });
+}
+function toggleMenu(btn, focusLast){
+  const wrap = btn.closest('.more'), menu = wrap && wrap.querySelector('.more-menu');
+  if(!menu) return;
+  const opening = menu.hidden;
+  closeAllMenus(opening ? menu : null);
+  menu.hidden = !opening;
+  btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+  wrap.classList.remove('up');
+  if(!opening) return;
+  // 화면 아래(탭바 포함)에 가리면 위로 펼침
+  const tab = document.getElementById('mobile-tabbar');
+  const bottomLimit = window.innerHeight - (tab && tab.offsetParent ? tab.offsetHeight : 0) - 8;
+  if(menu.getBoundingClientRect().bottom > bottomLimit && btn.getBoundingClientRect().top > menu.offsetHeight + 16) wrap.classList.add('up');
+  const items = menu.querySelectorAll('.more-item');
+  const target = focusLast ? items[items.length-1] : items[0];
+  if(target) target.focus({ preventScroll: true });
+}
+function menuKeydown(e){
+  const item = e.target.closest && e.target.closest('.more-item');
+  const btn = e.target.closest && e.target.closest('.more-btn');
+  if(btn && (e.key==='ArrowDown' || e.key==='ArrowUp')){
+    e.preventDefault();
+    const menu = btn.closest('.more').querySelector('.more-menu');
+    if(menu.hidden) toggleMenu(btn, e.key==='ArrowUp');
+    else{ const items = menu.querySelectorAll('.more-item'); (e.key==='ArrowUp' ? items[items.length-1] : items[0]).focus(); }
+    return true;
+  }
+  if(!item) return false;
+  const menu = item.closest('.more-menu');
+  const items = [...menu.querySelectorAll('.more-item')];
+  const i = items.indexOf(item);
+  if(e.key==='ArrowDown'){ e.preventDefault(); items[(i+1) % items.length].focus(); return true; }
+  if(e.key==='ArrowUp'){ e.preventDefault(); items[(i-1+items.length) % items.length].focus(); return true; }
+  if(e.key==='Home'){ e.preventDefault(); items[0].focus(); return true; }
+  if(e.key==='End'){ e.preventDefault(); items[items.length-1].focus(); return true; }
+  if(e.key==='Tab'){ closeAllMenus(); return false; }
+  return false;
+}
 // confirmModal: replaces window.confirm() for destructive actions. The
 // sandboxed iframe this Artifact runs in silently blocks native confirm()/
 // alert() dialogs (no popup ever appears and it just resolves as cancelled)
@@ -3323,8 +3526,13 @@ function deleteChecklistItemWithUndo(listId, itemId){
 function wireGlobalActions(){
   document.addEventListener('click', (e)=>{
    try{
+    _lastClick = { el: e.target.closest('[data-action], [data-nav]'), at: Date.now() };
+    // ⋯ 메뉴: 바깥을 누르면 닫힘, 항목을 누르면 동작 후 닫힘
+    if(!e.target.closest('.more')) closeAllMenus();
+    const moreItem = e.target.closest('.more-item');
+    if(moreItem) closeAllMenus();
     const navEl = e.target.closest('[data-nav]');
-    if(navEl && navEl.closest('#nav, #mobile-topbar')){
+    if(navEl && navEl.closest('#nav, #mobile-tabbar')){
       state.currentView = navEl.getAttribute('data-nav');
       renderNav(); renderView();
       return;
@@ -3336,6 +3544,7 @@ function wireGlobalActions(){
 
     switch(action){
       case 'modal-close': closeModal(); break;
+      case 'more-toggle': toggleMenu(a, false); break;
       case 'undo-delete': runUndo(); break;
 
       case 'camp-new': campFormModal(); break;
@@ -3563,6 +3772,29 @@ function wireGlobalActions(){
      toast('작업 중 오류가 발생했어요: ' + (err && err.message ? err.message : String(err)), 'fail');
    }
   });
+  document.addEventListener('keydown', (e)=>{
+   try{
+    if(menuKeydown(e)) return;
+    if(e.key==='Escape'){
+      const open = document.querySelector('.more-menu:not([hidden])');
+      if(open){ e.preventDefault(); const b = open.closest('.more').querySelector('.more-btn'); closeAllMenus(); if(b) b.focus(); return; }
+      if(document.getElementById('modal-backdrop')){ e.preventDefault(); closeModal(); }
+      return;
+    }
+    if(e.key==='Tab' && document.getElementById('modal-backdrop')) trapModalTab(e);
+   }catch(err){ console.error('[wireGlobalActions:keydown]', err); }
+  });
+  // 모바일 키보드가 올라오면(입력칸에 초점 / 화면 높이가 줄어듦) 하단 탭바를 숨김
+  const kbdCheck = ()=>{
+    const el = document.activeElement;
+    const typing = !!el && (el.tagName==='TEXTAREA' || el.tagName==='SELECT' || (el.tagName==='INPUT' && !['checkbox','radio','button','file','submit'].includes(el.type)));
+    const vv = window.visualViewport;
+    const shrunk = !!vv && vv.height < window.innerHeight * 0.75;
+    document.body.classList.toggle('kbd-open', typing || shrunk);
+  };
+  document.addEventListener('focusin', kbdCheck);
+  document.addEventListener('focusout', ()=>setTimeout(kbdCheck, 50));
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', kbdCheck);
   document.addEventListener('change', (e)=>{
    try{
     const cc = e.target.closest('[data-action="cook-toggle"]');
