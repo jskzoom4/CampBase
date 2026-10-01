@@ -145,7 +145,8 @@
 - **⋯ 메뉴(공통 컴포넌트)**: 한 줄·카드에 버튼이 여러 개면 가장 자주 쓰는 동작 1개만 보이게 두고 나머지는 `moreMenuHtml(key, items, label)`로.
   `items = [{ action, attrs:{'data-id':…}, icon, label, danger }]` — 항목도 **같은 data-action**으로 `wireGlobalActions()`에서 처리된다.
   위험한 항목(`danger:true`, 삭제·나가기)은 빨간색으로 맨 아래. 바깥 클릭·Esc로 닫힘, 화살표/Home/End/Tab/Enter 지원, 한 번에 하나만 열림(`closeAllMenus`).
-  지금 메뉴에 있는 것: 리스트(장비에서 불러오기·이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제), 장비·캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기), Gear 위쪽(카테고리 관리).
+  지금 메뉴에 있는 것: 리스트(장비에서 불러오기·이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제), 캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기).
+  **Gear는 예외**: 장비 줄은 연필(수정) + X(삭제, `gear-del`, 확인 후 되돌리기) 버튼, 카테고리 관리는 "장비 추가" 옆에 바로 보이는 버튼(사용자 요청).
   메뉴 위치는 `placeMenu()`: 아래로 펼쳐서 하단 탭바(위쪽 끝)를 넘으면 위로, 위도 모자라면 화면 안에 `position:fixed`로(넘치면 메뉴 안 스크롤). #main을 스크롤하면 닫힌다.
   테스트에서 메뉴 안 버튼은 `tests/ui-helpers.js`의 `menuClick(page, selector)`로 누른다(메뉴를 열고 누름). Gear 선택 모드 동작은 `gearAction(page, action, ids)`(선택 모드로 고르고 액션 바 버튼을 누름).
 - **모달**: `openModal()`이 오른쪽 위 닫기(X, `data-action="modal-close"`)를 자동으로 넣는다. Esc로 닫기, 나타남/사라짐 효과(fade+scale, `prefers-reduced-motion`이면 없음).
@@ -166,6 +167,7 @@
   390px에서 일정을 고르면 첫 준비물 항목이 화면 위쪽 절반 안에 있어야 한다(테스트가 확인) — 패널 위쪽에 줄을 더하면 확인할 것.
 - **선택 모드 + 아래 액션 바**(Gear): 여러 개를 골라 하는 동작은 버튼을 늘어놓지 말고 "선택" → 줄을 눌러 고르기(체크 표시, Enter/Space) → 화면 아래 `.select-bar`
   (n개 선택 · 동작 버튼 · 취소). 0개면 동작 버튼 비활성, 성공·공간 변경·탭 이동 때 선택 모드 끝. 고른 것은 열리는 창에 미리 체크된다.
+  카테고리마다 전체 선택 상자(`gear-pick-many`, `role=checkbox`, `aria-checked` true/false/mixed): 묶음 머리, 소분류 제목, 칩으로 고른 목록 위 줄. 모두 골라져 있으면 누를 때 모두 해제.
 - **별점 입력**: `starInputHtml(v)` — 숨은 `#cf-rating` + `role="radiogroup"` 안에 별 5개 버튼(`role="radio"`, `aria-checked`, `data-action="cf-star"`). 같은 별 다시 누르면 0,
   화살표/Home/End로 바꾼다. select로 되돌리지 말 것.
 - **본문 최대 폭**: `renderView()`가 `<div class="view view-<탭>">`로 감싼다. Home을 뺀 탭은 `max-width:780px` 가운데 정렬. 새 탭도 이 안에 그린다.
@@ -196,7 +198,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열한 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열두 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -209,11 +211,12 @@ node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 �
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
                                 # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+node tests/gear-i.test.js       # Gear 수정(I): 장비 X 삭제(맨 아래도 눌림·되돌리기), 카테고리별 전체 선택(mixed), 카테고리 관리 버튼 위치
 node tests/trip-gear-h.test.js  # 일정 → 장비에서 불러오기(전체·묶음 선택, 이미 있는 항목 제외, 그룹/내 장비 담당자), 일정 메모(Description)
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8777, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

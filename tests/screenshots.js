@@ -86,6 +86,8 @@ function seed() {
       await tryClick('.camp-view-chip:has-text("캠핑팸")'); await sleep(200); await shot('3-camping-group-reviews');
       await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');
       await shot('4-gear');
+      if (await tryClick('[data-action="gear-select"]')) { await tryClick('.gear-sec-top [data-action="gear-pick-many"]'); await tryClick('[data-action="gear-pick"]'); }
+      await shot('15-gear-select'); await tryClick('[data-action="gear-select-cancel"]');
       await nav('checklist'); await tryClick('.space-chip:has-text("내 공간")'); await tryClick('[data-action="trip-pick"][data-trip="all"]'); await shot('5-checklist-all');
       await tryClick('.space-chip:has-text("캠핑팸")'); await sleep(200);
       await tryClick('.trip-chip:has-text("10월 팸 캠핑")'); await shot('6-checklist-trip-panel');
