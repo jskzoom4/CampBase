@@ -9,4 +9,11 @@ async function menuClick(page, target) {
   }
   await loc.click();
 }
-module.exports = { menuClick };
+// Gear 선택 모드(3-3): "선택" → 장비 줄 고르기 → 아래 액션 바의 버튼 누르기. ids를 안 주면 첫 장비를 고른다.
+async function gearAction(page, action, ids) {
+  if (!(await page.locator('.select-bar').count())) await page.click('[data-action="gear-select"]');
+  if (ids && ids.length) { for (const id of ids) await page.click(`.gear-row[data-action="gear-pick"][data-id="${id}"]`); }
+  else await page.locator('.gear-row[data-action="gear-pick"]').first().click();
+  await page.click(`.select-bar [data-action="${action}"]`);
+}
+module.exports = { menuClick, gearAction };

@@ -3,7 +3,7 @@
 // 개인 공간 분리, 그룹 2개 전환, 그룹으로 보내기(복사), 만료 코드 거부, 내보내기/나가기/이름 변경/삭제.
 // 실행: node tests/groups.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
-const { menuClick } = require('./ui-helpers');
+const { menuClick, gearAction } = require('./ui-helpers');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -192,7 +192,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await nav(A, 'gear');
   await pickSpace(A, '캠핑팸');
   check('그룹 장비 화면 제목', /캠핑팸 장비/.test(await A.locator('#main h1').first().innerText()));
-  await A.click('[data-action="gear-cat-manage"]');
+  await menuClick(A, '[data-action="gear-cat-manage"]');
   await A.fill('#cat-new-name', '그룹카테고리');
   await A.click('[data-action="gear-cat-add"]');
   await A.click('[data-action="modal-close"]');
@@ -298,7 +298,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // ================= 6. 그룹으로 보내기(복사) =================
   await pickSpace(A, '내 공간');
   // 개인 카테고리 '해먹' + 장비 2개
-  await A.click('[data-action="gear-cat-manage"]');
+  await menuClick(A, '[data-action="gear-cat-manage"]');
   await A.fill('#cat-new-name', '해먹');
   await A.click('[data-action="gear-cat-add"]');
   await A.click('[data-action="modal-close"]');
@@ -309,7 +309,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await A.click('[data-action="gear-save"]');
   }
   await settle();
-  await A.click('[data-action="gear-send"]');
+  await gearAction(A, 'gear-send');
   await A.selectOption('#send-group', gid);
   await A.click('[data-action="gear-send-all"]');
   await A.click('[data-action="gear-send-go"]');

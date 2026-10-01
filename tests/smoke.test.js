@@ -145,7 +145,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   log('gear filters');
   await page.locator('[data-action="gear-filter"]').first().click(); // back to 'all'
   await page.waitForTimeout(100);
-  await page.click('[data-action="gear-cat-manage"]');
+  await menuClick(page, '[data-action="gear-cat-manage"]');
   await page.waitForTimeout(150);
   const catInput = page.locator('#cat-new-name');
   if (await catInput.count()) {
