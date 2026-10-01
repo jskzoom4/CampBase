@@ -86,6 +86,10 @@
 - **담당자(그룹 체크리스트 항목)**: 항목의 `assigneeUid`(멤버 uid만 저장, 선택). 이름·사진은 그룹 `members`에서 찾아 표시(`memberName()`, `memberAvatarHtml()`),
   나간 멤버면 "나간 멤버". 항목 옆 `assignee-chip` → `assignModal()` → `setAssignee()`. 필터 `'mine'`("내 담당")은 그룹 공간에서만.
 - **장비 주인(그룹 장비)**: 장비의 `ownerUid`(선택). 장비 폼의 `#gf-owner`(그룹 공간에서만), 목록의 `owner-tag`, 주인 필터 `state.gearOwnerFilter`(`'all'|'none'|uid`, 공간 바꾸면 초기화).
+- **담당자 추천**: `assignModal()` 맨 위 `assignSuggestHtml()` — 항목 이름과 비슷한(`namesSimilar`: 공백·대소문자 무시, 한쪽이 다른 쪽을 포함) **그룹 장비**의 주인(지금 멤버만).
+  다른 멤버의 개인 장비는 규칙상 못 보므로 대상 아님. 추천이 없으면 기존 목록만.
+- **장비 → 체크리스트**(개인·그룹 모두): Gear 탭 "체크리스트에 추가"(`gearToChecklistModal` → `addGearToChecklist`). 같은 공간의 리스트를 일정별로 묶어 고르고(`checklistOptionsHtml`),
+  장비 이름 = 항목, 카테고리 = 소분류. 같은 이름(`normName` 같음) 항목은 건너뛰고 "○개 추가, ○개는 이미 있음". 그룹이면 주인(지금 멤버)을 담당자로, `addedBy` 기록.
 - 담당자·주인은 **개인 공간에서는 보이지 않는다.** 필드가 없는 기존 항목도 그대로 보인다.
 - 장비 수정(`saveGearForm`)은 기존 필드(`addedBy`, `ownerUid` 등)를 유지하고 폼 값만 덮어쓴다.
 
@@ -119,7 +123,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 다섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 여섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -127,9 +131,10 @@ node tests/smoke.test.js        # 로그인 후 모든 탭의 주요 동작 클�
 node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·담당자·장비 주인·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
 node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
 node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 후기 남기기(tripRef)
+node tests/gear-checklist.test.js  # 장비↔준비물: 담당자 추천(일치·불일치·주인 없음), 장비→체크리스트(개인/그룹, 중복 건너뛰기, 주인 자동 담당)
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8771)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8772)로 띄운다. 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):
