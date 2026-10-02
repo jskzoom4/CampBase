@@ -22,7 +22,8 @@ service cloud.firestore {
     //   groups/{gid} = { name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role } },
     //                    createdAt, gearCategories?, gearCategoryMeta?, joinCode? }
     //   gearCategoryMeta = { majors:[{name,desc}], subs:[{name,major,desc}] } (장비 대분류·소분류·설명)
-    //   groups/{gid}/checklists|gear|trips|checklistTemplates/{id} : 그룹 멤버만 읽기·쓰기
+    //   groups/{gid}/checklists|gear|trips/{id}                    : 그룹 멤버만 읽기·쓰기
+    //   groups/{gid}/checklistTemplates/{id}                        : 멤버 읽기, 고치기·삭제는 만든 사람(createdBy)만(아래 별도 규칙)
     //   groups/{gid}/sharedReviews/{uid_기록id}                     : 멤버가 공유한 후기 사본(아래 별도 규칙)
     //   groupInvites/{code} = { gid, groupName, createdBy, expiresAt(밀리초), createdAt }
     // 서버 코드 없이 규칙만으로 "누가 무엇을 바꿀 수 있는지"를 정해요.
@@ -91,10 +92,23 @@ service cloud.firestore {
       allow delete: if isOwner();                                                                   // 그룹 삭제: 그룹장
     }
     // 그룹 안의 데이터: 멤버만 읽기·쓰기. 정해진 하위 컬렉션만 허용(그 밖의 이름·더 깊은 경로는 거부)
-    //   checklists(체크리스트) · gear(장비) · trips(캠핑 일정) · checklistTemplates(체크리스트 템플릿)
-    //   (앱의 GROUP_SUBCOLLECTIONS와 같은 목록)
+    //   checklists(체크리스트) · gear(장비) · trips(캠핑 일정)   (checklistTemplates는 아래 별도 규칙)
+    //   (앱의 GROUP_SUBCOLLECTIONS = 이 셋 + checklistTemplates)
     match /groups/{gid}/{sub}/{docId} {
-      allow read, write: if sub in ['checklists', 'gear', 'trips', 'checklistTemplates'] && isGroupMember(gid);
+      allow read, write: if sub in ['checklists', 'gear', 'trips'] && isGroupMember(gid);
+    }
+    // 그룹 체크리스트 템플릿: 멤버 모두 읽기(일정·새 리스트에서 불러오기)
+    //   만들기: 멤버가 createdBy == 나로   고치기: 만든 사람만(createdBy 바꿀 수 없음)
+    //   삭제: 만든 사람 또는 그룹장(그룹 삭제 때 정리)   createdBy가 없는 예전 템플릿은 멤버 누구나 고치기·삭제
+    match /groups/{gid}/checklistTemplates/{tid} {
+      function tplCreator() { return 'createdBy' in resource.data ? resource.data.createdBy : null; }
+      allow read: if isGroupMember(gid);
+      allow create: if isGroupMember(gid) && request.resource.data.createdBy == me();
+      allow update: if isGroupMember(gid)
+        && (tplCreator() == null
+              ? (!('createdBy' in request.resource.data) || request.resource.data.createdBy == me())
+              : (tplCreator() == me() && request.resource.data.createdBy == me()));
+      allow delete: if isGroupMember(gid) && (tplCreator() == null || tplCreator() == me() || groupDoc(gid).data.ownerUid == me());
     }
     // 그룹 후기 모음(읽기 전용 공유): 작성자 개인 캠핑 기록의 사본
     //   groups/{gid}/sharedReviews/{작성자uid}_{기록id} = 후기 필드 + { authorUid, sourceLogId, updatedAt }
