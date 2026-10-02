@@ -200,7 +200,7 @@ const foreignAccess = (p, uid) => p.evaluate(u => window.__fsAccess.filter(x => 
   await nav(A, 'home');
   await nav(B, 'home');
   const bHome = await B.locator('#main').innerText();
-  check('Home 대시보드도 내 데이터만 (B: 장비 1, 체크 항목 없음)', /보유 장비[\s\S]*1/.test(bHome) && /체크리스트 항목이 없어요/.test(bHome), bHome.replace(/\s+/g, ' ').slice(0, 160));
+  check('Home 대시보드도 내 데이터만 (B: 체크 항목 없음, 보유 장비 통계는 없음)', !/보유 장비/.test(bHome) && /체크리스트 항목이 없어요/.test(bHome), bHome.replace(/\s+/g, ' ').slice(0, 160));
   check('A는 자기 공간 경로만 접근', (await foreignAccess(A, UA.uid)).length === 0, await foreignAccess(A, UA.uid));
   check('B는 자기 공간 경로만 접근', (await foreignAccess(B, UB.uid)).length === 0, await foreignAccess(B, UB.uid));
   const bDenied = await B.evaluate(async () => {

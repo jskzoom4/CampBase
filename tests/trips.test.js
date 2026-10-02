@@ -187,23 +187,23 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await settle();
   check('되돌리기: 일정이 같은 내용으로 + 리스트 연결도 복구', same(server[A_ + 'trips/' + t2.id], t2before) && server[A_ + 'checklists/cl2'].tripId === t2.id);
 
-  // ================= 7. 템플릿 관리(일정 만들기 창 안) =================
-  await A.click('[data-action="trip-new"]');
-  await A.fill('#tf-title', '입력 중');
+  // ================= 7. 템플릿 관리(Checklist → 템플릿 페이지, J-2) =================
   const tplId = tpls[0].id;
-  await A.fill(`.tpl-name-input[data-id="${tplId}"]`, '기본 세트');
-  await A.click(`[data-action="tpl-rename"][data-id="${tplId}"]`);
-  await settle();
-  check('템플릿 이름 변경(입력 중인 일정 이름은 그대로)', server[A_ + 'checklistTemplates/' + tplId].title === '기본 세트' && (await A.inputValue('#tf-title')) === '입력 중'
-    && /기본 세트/.test(await A.locator('#tf-template').innerText()));
-  await A.click(`[data-action="tpl-del"][data-id="${tplId}"]`);
-  await settle();
+  await A.click('[data-action="trip-new"]');
+  check('일정 만들기 창에는 템플릿 관리 대신 "템플릿 페이지" 안내', (await A.locator('#modal-root .tpl-name-input').count()) === 0 && /템플릿/.test(await A.locator('#tpl-manage').innerText()));
+  await A.click('[data-action="modal-close"]'); await settle();
+  await A.click(`[data-action="trip-pick"][data-trip="__tpl"]`); await settle();
+  await menuClick(A, `.tpl-card[data-tpl="${tplId}"] [data-action="tpl-rename"]`);
+  await A.fill('#tpl-rename-name', '기본 세트');
+  await A.click('[data-action="tpl-rename-save"]'); await settle();
+  check('템플릿 페이지에서 이름 변경', server[A_ + 'checklistTemplates/' + tplId].title === '기본 세트' && /기본 세트/.test(await A.locator(`.tpl-card[data-tpl="${tplId}"] h3`).innerText()));
+  await menuClick(A, `.tpl-card[data-tpl="${tplId}"] [data-action="tpl-del"]`); await settle();
   check('템플릿 삭제 + 되돌리기 토스트', !server[A_ + 'checklistTemplates/' + tplId] && (await A.locator('#toast [data-action="undo-delete"]').count()) === 1);
   await A.click('#toast [data-action="undo-delete"]');
   await settle();
-  check('템플릿 삭제 되돌리기(창 안 목록도 다시 보임)', server[A_ + 'checklistTemplates/' + tplId] && server[A_ + 'checklistTemplates/' + tplId].title === '기본 세트'
-    && (await A.locator(`.tpl-name-input[data-id="${tplId}"]`).count()) === 1);
-  await A.click('[data-action="modal-close"]');
+  check('템플릿 삭제 되돌리기(페이지에 다시 보임)', server[A_ + 'checklistTemplates/' + tplId] && server[A_ + 'checklistTemplates/' + tplId].title === '기본 세트'
+    && (await A.locator(`.tpl-card[data-tpl="${tplId}"]`).count()) === 1);
+  await A.click('[data-action="trip-pick"][data-trip="all"]'); await settle();
 
   // ================= 8. 그룹 일정 =================
   const B = await phone(UB, { mobile: true });

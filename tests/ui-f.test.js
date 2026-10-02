@@ -227,7 +227,7 @@ const server = {};
   // ================= 3-3 Gear 선택 모드 =================
   await nav(D, 'gear');
   await pickSpace(D, '내 공간');
-  check('3-3 평소 위쪽은 "선택"·"+ 장비 추가"·"카테고리 관리"(I-3: 같은 줄에 바로 보임)만', await D.locator('[data-action="gear-select"]').isVisible() && await D.locator('[data-action="gear-new"]').isVisible()
+  check('3-3 평소 위쪽은 "선택"·"+ 장비 추가"·"카테고리 관리"(I-3: 같은 줄에 바로 보임)만', await D.locator('[data-action="gear-select"]').isVisible() && await D.locator('.gear-head-actions [data-action="gear-new"]').isVisible()
     && (await D.locator('[data-action="gear-send"], [data-action="gear-to-checklist"]').count()) === 0 && await D.locator('.gear-head-actions > [data-action="gear-cat-manage"]').isVisible());
   const cats = await D.locator('[data-action="gear-filter"]').allInnerTexts();
   check('3-3 개수 0인 카테고리 칩은 숨김', !cats.some(t => /\s0$/.test(t.trim())) && cats.length === 4, cats);

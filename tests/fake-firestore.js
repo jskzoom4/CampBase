@@ -142,6 +142,13 @@
       if (isOwner && only(['memberUids', 'members']) && removed.length > 0 && !removed.includes(me()) && membersOk([], removed)) return true;   // 내보내기
       return false;
     }
+    if (seg[0] === 'groups' && seg[2] === 'checklistTemplates' && seg.length === 4) {   // 그룹 템플릿: 만든 사람만 고치기
+      if (!isMemberOf(seg[1])) return false;
+      if (!before) return !!after && after.createdBy === me();
+      const creator = before.createdBy === undefined ? null : before.createdBy;
+      if (!after) return creator === null || creator === me() || (store['groups/' + seg[1]] || {}).ownerUid === me();
+      return creator === null ? (after.createdBy === undefined || after.createdBy === me()) : (creator === me() && after.createdBy === me());
+    }
     if (seg[0] === 'groups' && seg[2] === 'sharedReviews' && seg.length === 4) {   // 그룹 후기 사본
       if (!after) return !!before && (before.authorUid === me() || (store['groups/' + seg[1]] || {}).ownerUid === me());
       const own = after.authorUid === me() && typeof after.sourceLogId === 'string' && seg[3] === me() + '_' + after.sourceLogId;

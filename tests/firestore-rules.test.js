@@ -131,11 +131,37 @@ async function check(name, p) {
       await assertFails(getDoc(doc(carol, `groups/fam/${c}/keep`)));
     })());
     await check(`그룹 ${c}: 비멤버 쓰기·삭제 거부`, (async () => {
-      await assertFails(setDoc(doc(carol, `groups/fam/${c}/evil`), { title: 'x' }));
+      await assertFails(setDoc(doc(carol, `groups/fam/${c}/evil`), { title: 'x', createdBy: 'carol' }));
       await assertFails(deleteDoc(doc(carol, `groups/fam/${c}/keep`)));
     })());
     await check(`그룹 ${c}: 로그인 안 하면 거부`, assertFails(getDocs(collection(anon, `groups/fam/${c}`))));
   }
+  // 그룹 템플릿: 만든 사람만 고치기·삭제(그룹장은 삭제만), createdBy 없는 예전 템플릿은 누구나
+  await check('그룹 템플릿: 만들 때 createdBy == 나 필요(남의 이름·없음 거부)', (async () => {
+    await assertFails(setDoc(doc(bob, 'groups/fam/checklistTemplates/x1'), { title: 'x', items: [] }));
+    await assertFails(setDoc(doc(bob, 'groups/fam/checklistTemplates/x2'), { title: 'x', items: [], createdBy: 'alice' }));
+    await assertSucceeds(setDoc(doc(bob, 'groups/fam/checklistTemplates/bt'), { title: '밥 세트', items: [], createdBy: 'bob' }));
+  })());
+  await check('그룹 템플릿: 만든 사람은 고치기 허용, 작성자 바꾸기 거부', (async () => {
+    await assertSucceeds(setDoc(doc(bob, 'groups/fam/checklistTemplates/bt'), { title: '밥 세트 2', items: [{ label: '물', group: '기타' }], createdBy: 'bob' }));
+    await assertFails(setDoc(doc(bob, 'groups/fam/checklistTemplates/bt'), { title: '밥 세트 2', items: [], createdBy: 'alice' }));
+  })());
+  await check('그룹 템플릿: 다른 멤버(그룹장 포함)는 고치기 거부, 읽기는 허용', (async () => {
+    await assertSucceeds(getDoc(doc(alice, 'groups/fam/checklistTemplates/bt')));
+    await assertFails(setDoc(doc(alice, 'groups/fam/checklistTemplates/bt'), { title: '앨리스가 바꿈', items: [], createdBy: 'bob' }));
+    await assertFails(updateDoc(doc(alice, 'groups/fam/checklistTemplates/bt'), { title: '앨리스가 바꿈' }));
+  })());
+  await check('그룹 템플릿: 만든 사람·그룹장은 삭제 허용', (async () => {
+    await assertSucceeds(setDoc(doc(bob, 'groups/fam/checklistTemplates/bt2'), { title: 't', items: [], createdBy: 'bob' }));
+    await assertSucceeds(deleteDoc(doc(alice, 'groups/fam/checklistTemplates/bt2')));
+    await assertSucceeds(deleteDoc(doc(bob, 'groups/fam/checklistTemplates/bt')));
+  })());
+  await check('그룹 템플릿: createdBy 없는 예전 템플릿은 멤버 누구나 고치기·삭제', (async () => {
+    await env.withSecurityRulesDisabled(ctx => setDoc(doc(ctx.firestore(), 'groups/fam/checklistTemplates/old'), { title: '예전', items: [] }));
+    await assertSucceeds(updateDoc(doc(bob, 'groups/fam/checklistTemplates/old'), { title: '예전 2' }));
+    await assertFails(updateDoc(doc(bob, 'groups/fam/checklistTemplates/old'), { createdBy: 'alice' }));
+    await assertSucceeds(deleteDoc(doc(bob, 'groups/fam/checklistTemplates/old')));
+  })());
   await check('그룹: 허용 목록에 없는 하위 컬렉션은 멤버도 거부', (async () => {
     await assertFails(setDoc(doc(bob, 'groups/fam/secretStuff/x'), { v: 1 }));
     await assertFails(getDocs(collection(bob, 'groups/fam/secretStuff')));

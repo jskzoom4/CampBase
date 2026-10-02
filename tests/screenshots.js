@@ -28,6 +28,7 @@ function seed() {
     gearCategoryMeta: { majors: [{ name: '쉘터', desc: '집 짓기 — 텐트·타프' }, { name: '잠자리', desc: '' }, { name: '키친', desc: '요리·식사 도구' }],
       subs: [{ name: '텐트', major: '쉘터', desc: '4인용 이상' }, { name: '타프', major: '쉘터', desc: '' }, { name: '침낭', major: '잠자리', desc: '' }, { name: '매트', major: '잠자리', desc: '' },
         { name: '체어/테이블', major: '키친', desc: '' }, { name: '조리용품', major: '키친', desc: '' }] } };
+  s[A + 'checklistTemplates/tp1'] = { title: '여름 오토캠핑 기본', createdBy: 'uidAlice', items: [{ label: '텐트', group: '텐트' }, { label: '타프', group: '텐트' }, { label: '버너', group: '조리' }, { label: '코펠', group: '조리' }, { label: '랜턴', group: '조명' }] };
   s[A + 'gear/g1'] = { name: '스텔스 5 텐트', brand: 'Snow Peak', category: '텐트', price: 520000, weight: 8.2, date: '2024-04-12', comment: '폴대 하나 수리함. 우중 캠핑 땐 그라운드시트 같이' };
   s[A + 'gear/g2'] = { name: '체어 원', brand: 'Helinox', category: '체어/테이블', price: 139000, weight: 0.9, date: '2024-05-20' };
   s[A + 'gear/g3'] = { name: '부스터 플러스1', brand: 'Kovea', category: '조리용품', price: 78000, weight: 0.4, date: '2023-09-02', comment: '가스 카트리지 2개' };
@@ -107,6 +108,10 @@ function seed() {
       await shot('13-modal-gear-pick');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('.trip-panel .more-btn'); await tryClick('[data-action="trip-edit"]'); await sleep(200); await shot('14-modal-trip-edit');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('[data-action="trip-pick"][data-trip="__tpl"]'); await sleep(200); await shot('16-checklist-templates');
+      await tryClick('[data-action="trip-pick"][data-trip="all"]'); await tryClick('[data-action="cl-new-list"]'); await sleep(200);
+      await p.selectOption('#ncl-tpl', 'tp1').catch(() => {}); await sleep(100); await shot('17-modal-new-list');
       await ctx.close();
     }
   }

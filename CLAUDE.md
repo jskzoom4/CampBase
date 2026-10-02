@@ -56,8 +56,12 @@
   `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, description?(메모, 비우면 필드 삭제), memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
   메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
 - 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
-- 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }] }`(체크 상태·담당자 없음).
-  리스트 헤더 `cl-save-template`로 저장, 이름 변경·삭제(되돌리기)는 일정 만들기 창 안(`refreshTripModalTemplates()`).
+- 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }], createdBy? }`(체크 상태·담당자 없음).
+  **템플릿 페이지**: Checklist 일정 줄 끝의 "템플릿" 칩(`state.tripFilter = TPL_PAGE('__tpl')`, `renderTemplatesPage()`) — 리스트 없이 바로 만들기(`tpl-new`, "소분류: 항목" 줄 입력),
+  항목 추가(`tpl-add-item`)·빼기(`tpl-item-del`, 되돌리기)·이름 변경(`tpl-rename`)·삭제(`tpl-del`, 되돌리기)·"이 템플릿으로 새 리스트"(`tpl-make-list`). 리스트 ⋯의 `cl-save-template`도 그대로.
+  **그룹 템플릿은 만든 사람(`createdBy`)만 고치기·삭제**(`tplCanEdit()`, 규칙도 같음: 만들기 createdBy==나, 수정은 만든 사람만, 삭제는 만든 사람·그룹장). 다른 멤버는 "보기 전용" + 새 리스트만.
+  `createdBy`가 없는 예전 템플릿은 멤버 누구나 고칠 수 있음. 템플릿 저장은 `tplStamp()`로 createdBy를 넣는다. 일정 만들기 창에는 관리 대신 안내만(`refreshTripModalTemplates()`).
+- 새 리스트(`newChecklistModal`)에서 템플릿 불러오기(`#ncl-tpl`, 고르면 빈 이름 칸에 템플릿 이름) → 항목 모두 미정으로 복사. 일정을 보는 중이면 그 일정에 연결.
 - Checklist 탭: `spaceChipsHtml()` 아래 `tripBarHtml()`(전체 | 일정… | 지난 일정 ▾ | + 일정 만들기). `state.tripFilter`('all' 또는 일정 id), `state.showPastTrips`. 공간을 바꾸면 둘 다 초기화.
   일정을 고르면 **일정 패널** `tripPanelHtml()` 하나(아래 "화면 규칙"): 날짜·D-n/진행 중/끝남, 캠핑장·지역, 참가 멤버, 진행률 `tripProgress()`(연결된 리스트 항목 중 결정된 것/전체, 그룹이면 내 담당 남은 개수), 필터, 연결된 리스트(`checklistListHtml(cl, ctx, true)`).
   "전체"를 고르면 예전 구조(리스트 카드들) + 한 줄 설명.
@@ -95,7 +99,7 @@
 
 ## 그룹
 - `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, gearCategoryMeta?, joinCode? }`
-  - `groups/{gid}/checklists|gear|trips|checklistTemplates/{id}` — 멤버 모두 읽기·쓰기(규칙은 이 네 하위 컬렉션만 허용 = 앱의 `GROUP_SUBCOLLECTIONS`. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
+  - `groups/{gid}/checklists|gear|trips/{id}` — 멤버 모두 읽기·쓰기, `checklistTemplates`는 위 "템플릿" 규칙(앱의 `GROUP_SUBCOLLECTIONS` = 이 넷. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
   - 그룹 장비 카테고리는 `groups/{gid}.gearCategories` + `gearCategoryMeta`(아래 "장비 카테고리"). 멤버는 이 두 필드만 바꿀 수 있다(규칙).
   - 내 그룹 목록: `state.rootDb.collection('groups').where('memberUids','array-contains', uid)` 실시간 구독 → `state.groups`.
 - `groupInvites/{code}` = `{ gid, groupName, createdBy, expiresAt(밀리초 숫자), createdAt }`. 코드는 6자리, 문자 `INVITE_CHARS`(0/O/1/I 제외), 7일 만료.
@@ -125,7 +129,7 @@
   `SP.gearCategories`는 null이면 계산값을 돌려주므로 **push 말고 새 배열을 대입**한다. 저장은 `persistGearCategories()`(두 필드 함께).
 - 화면은 `gearCatTree(cats, meta, gear)` 하나로 그린다: [대분류(+소분류)… → 대분류 없는 소분류… → 목록에 없는 카테고리(장비에만 있음) → 미분류]. `gearTopKey`/`gearInCat`로 거른다.
   Gear 전체 보기 = 묶음 카드(`.gear-sec`, 머리 `gear-sec-toggle`로 접기, 기기별 `localStorage` `campbase.gearClosed`), 대분류 칩을 고르면 아래 줄에 소분류 칩. 고른 카테고리가 "장비 추가"의 기본값(`defaultGearCategory`).
-  Home 장비 통계도 맨 위 묶음(대분류) 기준.
+  카테고리 묶음 머리·소분류 제목의 + 버튼(`gear-new` + `data-cat`)으로 그 카테고리에 바로 장비 추가(선택 모드에서는 숨김). Home에는 장비 통계가 없다(J-4).
 - 카테고리 관리 창: 위/아래(`gear-cat-move`), 연필(`gear-cat-edit` → 이름·대분류·설명, 삭제 `gear-cat-del`), 추가(`#cat-new-name` + `#cat-new-parent`: 대분류 없음/대분류 안/대분류로 만들기). 목록만 바꿀 땐 `refreshCatManage()`.
 - 개인·그룹 백업에 `gearCategoryMeta` 포함(없는 예전 백업도 그대로 가져옴).
 
@@ -172,7 +176,7 @@
   화살표/Home/End로 바꾼다. select로 되돌리지 말 것.
 - **본문 최대 폭**: `renderView()`가 `<div class="view view-<탭>">`로 감싼다. Home을 뺀 탭은 `max-width:780px` 가운데 정렬. 새 탭도 이 안에 그린다.
 - **체크 버튼**(가져감/안 가져감): 버튼 자체가 40×40(누르는 영역), 보이는 칸은 `::before` 32px. 보이는 크기를 줄이려고 버튼 크기를 줄이지 말 것.
-- **Home 통계**: 휴대폰은 가로 막대(`.stat-bars`), 데스크톱은 원형. 0개 항목은 범례·막대 모두 숨김.
+- **Home 통계**: 캠핑 기록·준비물 체크 두 가지(보유 장비 통계는 없앰, 예전 `homeWidgets.gear` 값은 무시). 휴대폰은 가로 막대(`.stat-bars`), 데스크톱은 원형. 0개 항목은 범례·막대 모두 숨김.
 - **보이는지 확인할 때 `offsetParent`를 쓰지 말 것**: `position:fixed` 요소(탭바·메뉴·액션 바)는 보여도 `offsetParent`가 `null`이다. 앱은 `isShown(el)`(계산된 display/visibility + 크기),
   테스트는 Playwright `isVisible()`이나 `elementFromPoint`(실제로 눌리는지)를 쓴다. 메뉴가 탭바에 가리는지는 메뉴 항목 가운데를 `elementFromPoint`로 확인.
 - 화면을 바꾸면 `node tests/screenshots.js <폴더> [docs 폴더]`로 390px·1280px × 밝은/어두운 모드 스크린샷을 찍어 확인할 수 있다(자동 테스트 아님).
@@ -198,7 +202,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열두 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열세 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -211,12 +215,13 @@ node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 �
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
                                 # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+node tests/template-j.test.js   # 템플릿 페이지(리스트 없이 만들기·항목·되돌리기, 그룹은 만든 사람만), 새 리스트에서 템플릿, Gear 카테고리별 +, Home 장비 통계 없음
 node tests/gear-i.test.js       # Gear 수정(I): 장비 X 삭제(맨 아래도 눌림·되돌리기), 카테고리별 전체 선택(mixed), 카테고리 관리 버튼 위치
 node tests/trip-gear-h.test.js  # 일정 → 장비에서 불러오기(전체·묶음 선택, 이미 있는 항목 제외, 그룹/내 장비 담당자), 일정 메모(Description)
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):
