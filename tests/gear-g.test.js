@@ -197,12 +197,9 @@ const server = {};
   check('4 바뀐 순서·이름이 목록 묶음에 반영(빈 대분류는 숨김)', JSON.stringify(await secNames(D)) === JSON.stringify(['쉘터', '해먹', '미분류']), await secNames(D));
   check('9 바꾼 소분류 설명이 목록에 보임', /겨울용/.test(await D.locator('.gear-sec:has(.gear-sec-name:text-is("쉘터"))').innerText()));
 
-  // ================= Home 통계: 대분류 기준 =================
+  // ================= Home: 보유 장비 통계는 없앰(J-4) =================
   await nav(D, 'home'); await settle();
-  const legend = await D.locator('.stat-card:has-text("보유 장비") .legend-row .lv').allInnerTexts();
-  check('Home 장비 통계는 맨 위 묶음(대분류) 기준', legend.includes('쉘터') && !legend.includes('텐트'), legend);
-  await D.locator('.stat-card:has-text("보유 장비") .legend-row:has-text("쉘터")').click(); await settle();
-  check('Home에서 대분류를 누르면 Gear 탭의 그 대분류 칩', (await D.locator('.gear-cat-row .seg-btn.active').innerText()).startsWith('쉘터'));
+  check('Home에 보유 장비 통계 카드 없음(J-4)', (await D.locator('.stat-card:has-text("보유 장비")').count()) === 0);
 
   // ================= 7. 저장한 적 없는 사람: 기본 목록 대신 쓰는 카테고리만 =================
   await nav(B, 'gear'); await settle();
