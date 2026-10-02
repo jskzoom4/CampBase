@@ -500,6 +500,8 @@
   #modal-ghost{position:fixed;inset:0;pointer-events:none;z-index:49;}
   /* 사이드바 메뉴는 버튼(키보드로 이동 가능) */
   button.nav-item{width:100%;background:none;text-align:left;}
+  .nav-item.nav-sub{padding:7px 10px 7px 30px;font-size:13px;margin-top:-2px;}
+  .nav-item.nav-sub svg{width:15px;height:15px;}
   /* ---- 공유 앱(웹/APK) 전용 ---- */
   #db-status-top{display:none;margin-left:auto;align-items:center;font-size:11px;color:var(--text-dim);
     background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;white-space:nowrap;}
@@ -1029,6 +1031,7 @@ function startUserData(){
   _unsubs.push(db.collection('checklistTemplates').onSnapshot(live(snap=>{
     state.checklistTemplates = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     refreshTripModalTemplates();
+    if(['templates','checklist'].includes(state.currentView) && !inGroupSpace()) renderView();
   }), onErr));
   _unsubs.push(db.doc(SETTINGS_DOC).onSnapshot(live(snap=>{
     if(snap.exists){
@@ -1343,7 +1346,7 @@ function startGroups(){
       toast('그룹에 더 이상 속해 있지 않아서 내 공간으로 돌아왔어요.');
       return;
     }
-    if(['home','camping','checklist','gear','settings'].includes(state.currentView)) renderView();
+    if(['home','camping','checklist','gear','settings','templates'].includes(state.currentView)) renderView();
   }, e=>{ if(gen===_dataGen) reportDbError(e); });
 }
 // 내가 속한 모든 그룹의 일정·체크리스트를 항상 구독(Home "다음 캠핑" 카드, 그룹 공간의 일정 줄).
@@ -1415,6 +1418,7 @@ function startSpaceData(gid){
     if(gen !== _spaceGen) return;
     state.groupTemplates = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     refreshTripModalTemplates();
+    if(['templates','checklist'].includes(state.currentView)) renderView();
   }, onErr));
 }
 // 공간 전환(Checklist·Gear 탭 위의 칩)
@@ -1427,7 +1431,7 @@ function selectSpace(space, keepPending){
   saveSpace();
   if(space!=='me') startSpaceData(space);
   if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; state.tripFilter = 'all'; state.showPastTrips = false; setGearSelecting(false); }   // 공간마다 카테고리·멤버·일정이 다름
-  if(['checklist','gear','settings'].includes(state.currentView)) renderView();
+  if(['checklist','gear','settings','templates'].includes(state.currentView)) renderView();
 }
 function spaceChipsHtml(){
   if(!state.user || !state.groups.length) return '';
@@ -2056,24 +2060,29 @@ function toggleHomeWidget(key){
 }
 
 /* ============================ NAV ============================ */
+// K-1: 템플릿은 왼쪽 메뉴 Checklist 아래 하위 메뉴(휴대폰 탭바에서는 Checklist가 켜진 채로, Checklist 일정 줄의 "템플릿" 칩으로 들어감)
+const SUB_NAV = { checklist: [{ id:'templates', label:'템플릿', icon:'template' }] };
+const NAV_PARENT = { templates: 'checklist' };
 function renderNav(){
-  document.getElementById('nav').innerHTML = FEATURE_DEFS.map(f=>navItemHtml(f)).join('');
+  document.getElementById('nav').innerHTML = FEATURE_DEFS.map(f=>navItemHtml(f) + (SUB_NAV[f.id] || []).map(sf=>navItemHtml(sf, true)).join('')).join('');
+  const tabView = NAV_PARENT[state.currentView] || state.currentView;
   document.getElementById('mobile-tabbar').innerHTML = FEATURE_DEFS.map(f=>`
-    <button type="button" class="mnav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>
+    <button type="button" class="mnav-item ${tabView===f.id?'active':''}" data-nav="${f.id}" ${tabView===f.id?'aria-current="page"':''}>
       ${icon(f.icon)}<span>${f.label}</span>
     </button>`).join('');
 }
-function navItemHtml(f){
-  return `<button type="button" class="nav-item ${state.currentView===f.id?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>${icon(f.icon)}<span>${f.label}</span></button>`;
+function navItemHtml(f, sub){
+  return `<button type="button" class="nav-item ${sub?'nav-sub':''} ${state.currentView===f.id?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>${icon(f.icon)}<span>${f.label}</span></button>`;
 }
 
 /* ============================ VIEW DISPATCH ============================ */
 function renderView(){
-  const titles = Object.fromEntries(FEATURE_DEFS.map(f=>[f.id,f.label]));
+  const titles = { ...Object.fromEntries(FEATURE_DEFS.map(f=>[f.id,f.label])), templates: '템플릿' };
   document.getElementById('view-title').textContent = titles[state.currentView] || '';
   const renderers = {
     home: renderHome, camping: renderCamping, gear: renderGear,
     checklist: renderChecklist, cooking: renderCooking, settings: renderSettings,
+    templates: ()=>renderTemplatesPage(spaceChipsHtml(), currentGroup()),
   };
   // 3-9: Home 대시보드만 넓게, 나머지 탭 본문은 최대 폭 약 780px로 가운데(.view)
   const view = renderers[state.currentView] ? state.currentView : 'home';
@@ -3130,7 +3139,6 @@ function renderChecklist(){
   SP.trips.forEach(t=>{ tripTitles[t.id] = t.title; });
   const ctx = { grp, filter, myUid, selTrip, tripTitles };
   const top = `${spaceChipsHtml()}${state.user || state.bootMode==='preview' ? tripBarHtml() : ''}`;
-  if(state.tripFilter===TPL_PAGE) return renderTemplatesPage(top, grp);
   // 일정을 고르면: 일정 카드 + 준비물을 하나의 패널로(2-1)
   if(selTrip){
     const lists = SP.checklists.filter(cl=>cl.tripId===selTrip.id);
@@ -3268,7 +3276,7 @@ function tripBarHtml(){
         ${past.length ? `<div class="seg-btn trip-past-toggle" data-action="trip-past-toggle">지난 일정 ${state.showPastTrips || selIsPast ? '▴' : '▾'} <span class="num" style="opacity:.7;">${past.length}</span></div>` : ''}
         ${state.showPastTrips || selIsPast ? past.map(chip).join('') : ''}
         <div class="seg-btn trip-new-chip" data-action="trip-new">${icon('plus')} 일정 만들기</div>
-        <div class="seg-btn trip-tpl-chip ${sel===TPL_PAGE?'active':''}" data-action="trip-pick" data-trip="${TPL_PAGE}">${icon('template')} 템플릿 <span class="num" style="opacity:.7;">${SP.templates.length}</span></div>
+        <div class="seg-btn trip-tpl-chip" data-action="go-templates">${icon('template')} 템플릿 <span class="num" style="opacity:.7;">${SP.templates.length}</span></div>
       </div>
     </div>`;
 }
@@ -3516,10 +3524,9 @@ function saveListAsTemplate(listId){
   toast(`'${list.title}'을(를) 템플릿으로 저장했어요. Checklist → 템플릿에서 볼 수 있어요.`, 'ok');
 }
 
-/* ---- 템플릿 페이지(J-2): Checklist 일정 줄 끝의 "템플릿" 칩(state.tripFilter = TPL_PAGE) ----
+/* ---- 템플릿 페이지(J-2, K-1): 왼쪽 메뉴 Checklist 아래 "템플릿"(state.currentView = 'templates'), 휴대폰은 Checklist 일정 줄의 "템플릿" 칩 ----
  * 지금 공간(개인/그룹)의 템플릿을 리스트 없이 바로 만들고 고친다. 그룹 템플릿은 만든 사람(createdBy)만 고치기·삭제(규칙도 같음),
  * 다른 멤버는 보기 + "이 템플릿으로 새 리스트"만. createdBy가 없는 예전 템플릿은 누구나 고칠 수 있음. */
-const TPL_PAGE = '__tpl';
 function tplCanEdit(t){
   if(!inGroupSpace()) return true;
   const me = state.user ? state.user.uid : null;
@@ -3531,7 +3538,7 @@ function renderTemplatesPage(top, grp){
   return `
     ${top}
     <div class="section-head">
-      <div style="min-width:0;flex:1;"><h1>템플릿</h1><div class="section-desc">자주 챙기는 준비물 묶음을 만들어 두고, 일정이나 새 리스트를 만들 때 불러와요.${grp ? ' 그룹 템플릿은 만든 사람만 고칠 수 있어요.' : ''}</div></div>
+      <div style="min-width:0;flex:1;"><h1>${grp ? esc(grp.name) + ' 템플릿' : '내 템플릿'}</h1><div class="section-desc">자주 챙기는 준비물 묶음을 만들어 두고, 일정이나 새 리스트를 만들 때 불러와요.${grp ? ' 그룹 템플릿은 만든 사람만 고칠 수 있어요.' : ''}</div></div>
       <button class="btn btn-accent" data-action="tpl-new">${icon('plus')} 새 템플릿</button>
     </div>
     ${tpls.length ? tpls.map(t=>tplCardHtml(t, grp)).join('')
@@ -3549,6 +3556,7 @@ function tplCardHtml(t, grp){
         ${grp && t.createdBy ? `<span class="owner-tag tpl-owner" title="만든 사람">${memberAvatarHtml(grp, t.createdBy)}${esc(memberName(grp, t.createdBy))}</span>` : ''}
         ${can ? `<button class="btn btn-sm" data-action="tpl-add-item" data-id="${esc(t.id)}">${icon('plus')} 항목</button>` : `<span class="tag tpl-ro" title="만든 사람만 고칠 수 있어요">보기 전용</span>`}
         ${moreMenuHtml('tpl:' + t.id, [
+          can ? { action:'tpl-gear-import', attrs:{'data-id':t.id}, icon:'gear', label:'장비에서 불러오기' } : null,
           { action:'tpl-make-list', attrs:{'data-id':t.id}, icon:'checklist', label:'이 템플릿으로 새 리스트' },
           can ? { action:'tpl-rename', attrs:{'data-id':t.id}, icon:'edit', label:'이름 변경' } : null,
           can ? { action:'tpl-del', attrs:{'data-id':t.id}, icon:'trash', label:'템플릿 삭제', danger:true } : null,
@@ -3559,7 +3567,7 @@ function tplCardHtml(t, grp){
           <div class="cl-subgroup-head"><span class="cl-subgroup-name">${esc(gr.group)}</span><span class="tag">${gr.items.length}</span><div class="spacer"></div></div>
           ${gr.items.map(it=>`<div class="check-row tpl-item"><span class="label">${esc(it.label)}</span>${can ? `<button class="icon-btn" data-action="tpl-item-del" data-id="${esc(t.id)}" data-idx="${it.id}" aria-label="'${esc(it.label)}' 템플릿에서 빼기" title="빼기">${icon('close')}</button>` : ''}</div>`).join('')}
         </div>`).join('')
-        : `<div class="empty">항목이 없어요.${can ? ' "+ 항목"으로 추가해 보세요.' : ''}</div>`}
+        : `<div class="empty cl-empty">항목이 없어요.${can ? `<br><button class="btn btn-sm" data-action="tpl-gear-import" data-id="${esc(t.id)}">${icon('gear')} 장비에서 불러오기</button>` : ''}</div>`}
     </div>`;
 }
 // 여러 줄 입력 → 항목들. "소분류: 항목"으로 쓰면 그 소분류, 아니면 기본 소분류
@@ -3570,10 +3578,18 @@ function parseTplLines(text, group){
   }).filter(x=>x.label);
 }
 function tplFormModal(){
+  const useGear = !!(SP.gear.length || (inGroupSpace() && state.gear.length));
   openModal(`
     <h3>새 템플릿</h3>
     <div class="field"><label for="tpl-title">템플릿 이름</label><input id="tpl-title" maxlength="60" placeholder="예: 여름 오토캠핑 기본"></div>
-    <div class="field"><label for="tpl-items">항목 (한 줄에 하나)</label><textarea id="tpl-items" rows="7" placeholder="텐트: 텐트&#10;텐트: 타프&#10;조리: 버너&#10;랜턴"></textarea>
+    <div class="field"><label>항목 채우는 방법</label>
+      <div class="seg-group" id="tpl-start-method">
+        <div class="seg-btn ${useGear?'active':''}" data-action="tpl-start-pick" data-val="gear">${icon('gear')} 장비에서 고르기</div>
+        <div class="seg-btn ${useGear?'':'active'}" data-action="tpl-start-pick" data-val="text">직접 입력</div>
+      </div>
+      <div class="meta" id="tpl-gear-note" style="font-size:12px;color:var(--text-dim);margin-top:6px;${useGear?'':'display:none;'}">만들면 바로 Gear 장비 고르기 창이 열려요(카테고리별·전체 선택). 장비 카테고리가 소분류가 돼요.</div>
+    </div>
+    <div class="field" id="tpl-items-box" style="${useGear?'display:none;':''}"><label for="tpl-items">항목 (한 줄에 하나)</label><textarea id="tpl-items" rows="7" placeholder="텐트: 텐트&#10;텐트: 타프&#10;조리: 버너&#10;랜턴"></textarea>
       <div class="meta" style="font-size:12px;color:var(--text-dim);margin-top:5px;">"소분류: 항목"으로 쓰면 소분류가 정해지고, 그냥 쓰면 '기타'에 들어가요. 나중에 더 추가할 수 있어요.</div></div>
     ${inGroupSpace() ? `<p style="margin:0;color:var(--text-dim);font-size:12.5px;">그룹 멤버 모두가 쓸 수 있고, 고치기는 나만 할 수 있어요.</p>` : ''}
     <div class="modal-actions">
@@ -3585,11 +3601,14 @@ function saveNewTemplate(){
   const title = (document.getElementById('tpl-title').value || '').trim();
   if(!title){ toast('템플릿 이름을 입력해주세요.'); return; }
   const seen = new Set();
-  const items = parseTplLines(document.getElementById('tpl-items').value).filter(x=>{ const k = normName(x.label); if(seen.has(k)) return false; seen.add(k); return true; });
+  const methodEl = document.querySelector('#tpl-start-method .seg-btn.active');
+  const byGear = !!methodEl && methodEl.getAttribute('data-val')==='gear';
+  const items = byGear ? [] : parseTplLines(document.getElementById('tpl-items').value).filter(x=>{ const k = normName(x.label); if(seen.has(k)) return false; seen.add(k); return true; });
   const tpl = tplStamp({ id: uid('tpl'), title, items });
   SP.templates = [...SP.templates, tpl];
   persistTemplate(tpl);
   closeModal(); renderView(); toast(`'${title}' 템플릿을 만들었어요.`, 'ok');
+  if(byGear) gearPickModal(tpl.id, 'space', 'tpl');
 }
 function tplAddItemModal(id){
   const t = SP.templates.find(x=>x.id===id);
@@ -3665,8 +3684,8 @@ function makeListFromTemplate(id){
   if(!t) return;
   const list = newListFromTemplate(t, null);
   SP.checklists.push(list); persistChecklist(list);
-  state.tripFilter = 'all';
-  renderView(); toast(`'${list.title}' 리스트를 만들었어요.`, 'ok');
+  state.tripFilter = 'all'; state.currentView = 'checklist';
+  renderNav(); renderView(); toast(`'${list.title}' 리스트를 만들었어요.`, 'ok');
 }
 
 /* ---- 일정 → 후기: 끝난 일정에서 내 개인 캠핑 기록 폼을 미리 채워 열기 ---- */
@@ -3855,13 +3874,15 @@ function addGearItemsToList(list, gearArr, ids, fromMine){
 /* ---- 장비에서 불러오기(H-1): 일정 만들기 → 리스트에서 Gear 장비를 골라 불러와 체크 ----
  * 장비는 카테고리 묶음별로(대분류 기준), 전체 선택·묶음 선택, 리스트에 이미 있는 이름은 회색(고를 수 없음).
  * 그룹 공간에서는 [그룹 장비 | 내 장비]를 바꿔 고를 수 있음(내 장비는 내가 담당자). */
-let _gpk = { listId:'', src:'space' };
-function gearPickModal(listId, src){
-  const list = SP.checklists.find(l=>l.id===listId);
-  if(!list) return;
+let _gpk = { listId:'', src:'space', kind:'list' };
+// kind 'tpl'(K-2): 템플릿에 장비를 항목({label, group})으로 넣기 — 체크 상태·담당자 없음
+function gearPickModal(listId, src, kind){
+  const isTpl = kind==='tpl';
+  const list = isTpl ? SP.templates.find(t=>t.id===listId) : SP.checklists.find(l=>l.id===listId);
+  if(!list || (isTpl && !tplCanEdit(list))) return;
   const grp = currentGroup();
   src = grp && src==='me' ? 'me' : 'space';
-  _gpk = { listId, src };
+  _gpk = { listId, src, kind: isTpl ? 'tpl' : 'list' };
   const gear = src==='me' ? state.gear : SP.gear;
   const tree = src==='me' ? gearCatTree(myGearCats(), state.gearCategoryMeta, gear) : gearCatTree(SP.gearCategories, SP.gearCategoryMeta, gear);
   const have = new Set((list.items||[]).map(it=>normName(it.label)));
@@ -3883,7 +3904,7 @@ function gearPickModal(listId, src){
   };
   openModal(`
     <h3>장비에서 불러오기</h3>
-    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">'${esc(list.title)}'에 고른 장비를 항목으로 넣어요. 장비 카테고리가 소분류가 되고, 이미 있는 이름은 건너뛰어요.${grp ? (src==='me' ? ' 내 장비는 내가 담당자가 돼요.' : ' 주인이 있는 장비는 그 사람이 담당자가 돼요.') : ''}</p>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;line-height:1.6;">'${esc(list.title)}'${isTpl ? ' 템플릿' : ''}에 고른 장비를 항목으로 넣어요. 장비 카테고리가 소분류가 되고, 이미 있는 이름은 건너뛰어요.${grp && !isTpl ? (src==='me' ? ' 내 장비는 내가 담당자가 돼요.' : ' 주인이 있는 장비는 그 사람이 담당자가 돼요.') : ''}</p>
     ${grp ? `<div class="seg-group seg-sm gpk-src" role="group" aria-label="불러올 장비">
       <div class="seg-btn ${src==='space'?'active':''}" data-action="gpk-src" data-src="space">그룹 장비 <span class="num" style="opacity:.65;">${SP.gear.length}</span></div>
       <div class="seg-btn ${src==='me'?'active':''}" data-action="gpk-src" data-src="me">내 장비 <span class="num" style="opacity:.65;">${state.gear.length}</span></div>
@@ -3929,9 +3950,27 @@ function gpkSync(changed){
   if(go){ go.disabled = !n; go.innerHTML = `${icon('checklist')} ${n ? n + '개 ' : ''}불러오기`; }
 }
 function gearPickGo(){
+  const ids = Array.from(document.querySelectorAll('.gpk-item:checked')).map(el=>el.value);
+  if(_gpk.kind==='tpl'){
+    const t = SP.templates.find(x=>x.id===_gpk.listId);
+    if(!t || !tplCanEdit(t)){ closeModal(); return; }
+    if(!ids.length){ toast('불러올 장비를 골라주세요.'); return; }
+    const src = _gpk.src==='me' ? state.gear : SP.gear;
+    t.items = Array.isArray(t.items) ? t.items : [];
+    const have = new Set(t.items.map(it=>normName(it.label)));
+    let added = 0, skipped = 0;
+    src.filter(g=>ids.includes(g.id)).forEach(g=>{
+      const k = normName(g.name);
+      if(!k || have.has(k)){ skipped++; return; }
+      have.add(k); t.items.push({ label: g.name, group: String(g.category||'').trim() || '기타' }); added++;
+    });
+    if(added) persistTemplate(t);
+    closeModal(); renderView();
+    toast(`'${t.title}' 템플릿에 ${added}개 넣었어요` + (skipped ? ` (${skipped}개는 이미 있음)` : '') + '.', added ? 'ok' : '');
+    return;
+  }
   const list = SP.checklists.find(l=>l.id===_gpk.listId);
   if(!list){ closeModal(); return; }
-  const ids = Array.from(document.querySelectorAll('.gpk-item:checked')).map(el=>el.value);
   if(!ids.length){ toast('불러올 장비를 골라주세요.'); return; }
   const fromMine = _gpk.src==='me';
   const r = addGearItemsToList(list, fromMine ? state.gear : SP.gear, ids, fromMine);
@@ -4554,6 +4593,15 @@ function wireGlobalActions(){
       case 'tpl-add-item-save': saveTplItems(id); break;
       case 'tpl-item-del': deleteTplItemWithUndo(id, Number(a.getAttribute('data-idx'))); break;
       case 'tpl-make-list': makeListFromTemplate(id); break;
+      case 'go-templates': state.currentView = 'templates'; renderNav(); renderView(); break;
+      case 'tpl-gear-import': gearPickModal(id, 'space', 'tpl'); break;
+      case 'tpl-start-pick': {
+        const v = a.getAttribute('data-val');
+        document.querySelectorAll('#tpl-start-method .seg-btn').forEach(el=>el.classList.toggle('active', el.getAttribute('data-val')===v));
+        const box = document.getElementById('tpl-items-box'); if(box) box.style.display = v==='text' ? '' : 'none';
+        const note = document.getElementById('tpl-gear-note'); if(note) note.style.display = v==='gear' ? '' : 'none';
+        break;
+      }
       case 'tpi-group-pick': { const el = document.getElementById('tpi-group'); if(el) el.value = a.getAttribute('data-val') || ''; break; }
       case 'tpl-del': {
         const tpl = SP.templates.find(t=>t.id===id);
@@ -4625,7 +4673,7 @@ function wireGlobalActions(){
       case 'g2c-go': addGearToChecklist(); break;
       case 'cl-gear-import': gearPickModal(id); break;
       case 'trip-gear-import': tripGearImport(a.getAttribute('data-trip')); break;
-      case 'gpk-src': gearPickModal(_gpk.listId, a.getAttribute('data-src')); break;
+      case 'gpk-src': gearPickModal(_gpk.listId, a.getAttribute('data-src'), _gpk.kind); break;
       case 'gpk-go': gearPickGo(); break;
       case 'gear-send-all': document.querySelectorAll('.send-gear').forEach(el=>{ el.checked = true; }); break;
       case 'gear-send-go': sendGear(); break;

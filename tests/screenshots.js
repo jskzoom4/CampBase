@@ -109,7 +109,9 @@ function seed() {
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('.trip-panel .more-btn'); await tryClick('[data-action="trip-edit"]'); await sleep(200); await shot('14-modal-trip-edit');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
-      await tryClick('[data-action="trip-pick"][data-trip="__tpl"]'); await sleep(200); await shot('16-checklist-templates');
+      await tryClick('[data-action="go-templates"]'); await sleep(200); await shot('16-checklist-templates');
+      if (await tryClick('[data-action="tpl-new"]')) { await p.fill('#tpl-title', '오토캠핑 기본').catch(() => {}); await tryClick('[data-action="tpl-save"]'); await sleep(250); await tryClick('#modal-root #gpk-all'); }
+      await shot('18-modal-template-gear'); await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250); await nav('checklist');
       await tryClick('[data-action="trip-pick"][data-trip="all"]'); await tryClick('[data-action="cl-new-list"]'); await sleep(200);
       await p.selectOption('#ncl-tpl', 'tp1').catch(() => {}); await sleep(100); await shot('17-modal-new-list');
       await ctx.close();
