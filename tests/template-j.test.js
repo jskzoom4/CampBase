@@ -75,7 +75,7 @@ const server = {};
   const D = await phone(UA);
   const B = await phone(UB);
   const tplDocs = base => Object.entries(server).filter(([k]) => k.startsWith(base + 'checklistTemplates/')).map(([k, v]) => ({ id: k.split('/').pop(), ...v }));
-  const openTplPage = async p => { await nav(p, 'checklist'); await settle(); await p.click('[data-action="trip-pick"][data-trip="__tpl"]'); await settle(); };
+  const openTplPage = async p => { await nav(p, 'checklist'); await settle(); await p.click('[data-action="go-templates"]'); await settle(); };
 
   // ================= 4. Home·Settings: 보유 장비 통계 없음 =================
   await nav(D, 'home'); await settle();
@@ -108,6 +108,7 @@ const server = {};
   await openTplPage(D);
   check('2 Checklist 일정 줄의 "템플릿" 칩 → 템플릿 페이지(새 템플릿 버튼)', await D.locator('[data-action="tpl-new"]').isVisible() && /아직 템플릿이 없어요/.test(await D.locator('#main').innerText()));
   await D.click('[data-action="tpl-new"]');
+  await D.click('[data-action="tpl-start-pick"][data-val="text"]');
   await D.fill('#tpl-title', '여름 기본');
   await D.fill('#tpl-items', '텐트: 텐트\n텐트: 타프\n랜턴\n랜턴');
   await D.click('[data-action="tpl-save"]'); await settle();
@@ -125,7 +126,7 @@ const server = {};
   check('2 되돌리면 원래 자리로', server['users/uidAlice/checklistTemplates/' + mine.id].items[1].label === '타프');
 
   // ================= 3. 새 리스트에서 템플릿 불러오기 =================
-  await D.click('[data-action="trip-pick"][data-trip="all"]'); await settle();
+  await nav(D, 'checklist'); await settle(); await D.click('[data-action="trip-pick"][data-trip="all"]'); await settle();
   await D.click('[data-action="cl-new-list"]');
   check('3 새 리스트 창에 "템플릿에서 불러오기"(기본은 빈 리스트)', (await D.inputValue('#ncl-tpl')) === '' && (await D.locator('#ncl-tpl option').count()) === 2);
   await D.selectOption('#ncl-tpl', mine.id);
@@ -149,8 +150,9 @@ const server = {};
   await openTplPage(D);
   await D.locator('.space-chip:has-text("캠핑팸")').first().click(); await settle();
   if (await D.locator('[data-action="space-note-ok"]').count()) await D.click('[data-action="space-note-ok"]');
-  await D.click('[data-action="trip-pick"][data-trip="__tpl"]'); await settle();
+  // 템플릿 화면에서도 공간 칩으로 바로 그룹 템플릿을 봄
   await D.click('[data-action="tpl-new"]');
+  await D.click('[data-action="tpl-start-pick"][data-val="text"]');
   await D.fill('#tpl-title', '앨리스 세트');
   await D.fill('#tpl-items', '의자');
   await D.click('[data-action="tpl-save"]'); await settle();
@@ -159,7 +161,7 @@ const server = {};
   await nav(B, 'checklist');
   await B.locator('.space-chip:has-text("캠핑팸")').first().click(); await settle();
   if (await B.locator('[data-action="space-note-ok"]').count()) await B.click('[data-action="space-note-ok"]');
-  await B.click('[data-action="trip-pick"][data-trip="__tpl"]'); await settle();
+  await B.click('[data-action="go-templates"]'); await settle();
   const aCard = B.locator(`.tpl-card[data-tpl="${at.id}"]`);
   const aMenu = await aCard.locator('.more-item').evaluateAll(els => els.map(e => e.dataset.action));
   check('2 다른 멤버(밥): 남의 템플릿은 "보기 전용" + 만든 사람 표시, 항목 추가·빼기·이름·삭제 없음, "새 리스트"만', /보기 전용/.test(await aCard.innerText()) && /앨리스/.test(await aCard.locator('.tpl-owner').innerText())

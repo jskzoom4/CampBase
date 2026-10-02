@@ -57,7 +57,10 @@
   메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
 - 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
 - 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }], createdBy? }`(체크 상태·담당자 없음).
-  **템플릿 페이지**: Checklist 일정 줄 끝의 "템플릿" 칩(`state.tripFilter = TPL_PAGE('__tpl')`, `renderTemplatesPage()`) — 리스트 없이 바로 만들기(`tpl-new`, "소분류: 항목" 줄 입력),
+  **템플릿 화면**(`state.currentView = 'templates'`, `renderTemplatesPage()`, 지금 공간 기준·공간 칩 있음): 데스크톱은 왼쪽 메뉴 Checklist 아래 하위 메뉴(`SUB_NAV`, `.nav-sub`),
+  휴대폰은 탭바 6개 그대로(템플릿 화면에서도 Checklist 탭이 켜짐, `NAV_PARENT`) + Checklist 일정 줄 끝의 "템플릿" 칩(`go-templates`).
+  새 템플릿(`tpl-new`) = **장비에서 고르기**(장비가 있으면 기본: 만들고 바로 `gearPickModal(tplId, 'space', 'tpl')`) / 직접 입력("소분류: 항목" 줄 입력).
+  템플릿 ⋯ "장비에서 불러오기"(`tpl-gear-import`, 만든 사람만). 템플릿 항목은 `{label, group}`만(체크 상태·담당자 없음).
   항목 추가(`tpl-add-item`)·빼기(`tpl-item-del`, 되돌리기)·이름 변경(`tpl-rename`)·삭제(`tpl-del`, 되돌리기)·"이 템플릿으로 새 리스트"(`tpl-make-list`). 리스트 ⋯의 `cl-save-template`도 그대로.
   **그룹 템플릿은 만든 사람(`createdBy`)만 고치기·삭제**(`tplCanEdit()`, 규칙도 같음: 만들기 createdBy==나, 수정은 만든 사람만, 삭제는 만든 사람·그룹장). 다른 멤버는 "보기 전용" + 새 리스트만.
   `createdBy`가 없는 예전 템플릿은 멤버 누구나 고칠 수 있음. 템플릿 저장은 `tplStamp()`로 createdBy를 넣는다. 일정 만들기 창에는 관리 대신 안내만(`refreshTripModalTemplates()`).
@@ -67,7 +70,7 @@
   "전체"를 고르면 예전 구조(리스트 카드들) + 한 줄 설명.
 - 일정 만들기 `tripFormModal()` → `saveTripForm()`: 체크리스트 시작 방법 = **장비에서 고르기**(빈 리스트 "이름 준비물"을 만들고 바로 `gearPickModal`) / 템플릿 복사(새 리스트, 항목 모두 미정) / 기존 리스트 연결 / 빈 리스트.
   기본값: 템플릿이 있으면 템플릿, 없고 장비가 있으면 장비에서 고르기.
-- **장비에서 불러오기**(기본 흐름: 일정 만들기 → 리스트에서 Gear 장비를 골라 불러와 체크): `gearPickModal(listId, src)` → `gearPickGo()`.
+- **장비에서 불러오기**(기본 흐름: 일정 만들기 → 리스트에서 Gear 장비를 골라 불러와 체크): `gearPickModal(listId, src, kind)` → `gearPickGo()`(kind `'tpl'`이면 템플릿에 넣음).
   입구 = 리스트 ⋯ 메뉴 맨 위(`cl-gear-import`), 빈 리스트의 버튼, 리스트 없는 일정 패널의 `trip-gear-import`(리스트를 만들고 엶).
   장비는 카테고리 묶음별(`gearCatTree`), 전체 선택(`#gpk-all`)·묶음 선택(`.gpk-sec-box`)·개별(`.gpk-item`) — 체크 상태는 `gpkSync()`(change 이벤트 `data-action="gpk-toggle"`), 일부만이면 indeterminate.
   리스트에 이미 있는 이름(`normName`)은 "이미 있음"으로 고를 수 없음. 그룹 공간에서는 [그룹 장비 | 내 장비](`gpk-src`) — 그룹 장비는 주인(지금 멤버)이, 내 장비는 내가 담당자.
@@ -202,7 +205,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열세 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열네 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -215,13 +218,14 @@ node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 �
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
                                 # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+node tests/template-k.test.js   # 템플릿 하위 메뉴(데스크톱)·휴대폰 칩·다른 기기 반영, 새 템플릿을 장비에서 고르기(기본)·직접 입력, 템플릿에 장비 더 불러오기, 그룹
 node tests/template-j.test.js   # 템플릿 페이지(리스트 없이 만들기·항목·되돌리기, 그룹은 만든 사람만), 새 리스트에서 템플릿, Gear 카테고리별 +, Home 장비 통계 없음
 node tests/gear-i.test.js       # Gear 수정(I): 장비 X 삭제(맨 아래도 눌림·되돌리기), 카테고리별 전체 선택(mixed), 카테고리 관리 버튼 위치
 node tests/trip-gear-h.test.js  # 일정 → 장비에서 불러오기(전체·묶음 선택, 이미 있는 항목 제외, 그룹/내 장비 담당자), 일정 메모(Description)
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780·8781, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):
