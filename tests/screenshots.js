@@ -42,7 +42,12 @@ function seed() {
   s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', description: '사이트 A-12 (강 바로 앞)\n장작은 현장 구매, 금요일 6시 출발', createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
   s[G] = { name: '캠핑팸', ownerUid: 'uidAlice', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdAt: '1', gearCategories: ['텐트', '타프', '조리용품', '기타'],
     members: { uidAlice: mem('앨리스', 'owner'), uidBob: mem('밥', 'member'), uidCarol: mem('캐롤', 'member') } };
-  s[G + '/trips/gt'] = { title: '10월 팸 캠핑', startDate: ymd(3), endDate: ymd(4), campsiteName: '가평 숲속 야영장', region: '가평', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
+  s[G + '/trips/gt'] = { title: '10월 팸 캠핑', startDate: ymd(3), endDate: ymd(4), campsiteName: '가평 숲속 야영장', region: '가평', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice',
+    mealServings: 4, meals: [
+      { id: 'm1_lunch', day: 1, slot: 'lunch', dishes: [{ id: 'd1', name: '김밥' }] },
+      { id: 'm1_dinner', day: 1, slot: 'dinner', dishes: [{ id: 'd2', recipeId: 'ck1', name: '삼겹살 구이', assigneeUid: 'uidBob' }, { id: 'd3', recipeId: 'ck10', name: '김치찌개' }] },
+      { id: 'm2_breakfast', day: 2, slot: 'breakfast', servings: 3, dishes: [{ id: 'd4', recipeId: 'ck8', name: '짜파구리' }] },
+      { id: 'mx', day: 1, slot: 'extra', label: '야식', dishes: [{ id: 'd5', recipeId: 'ck15', name: '마시멜로 스모어' }] } ] };
   s[G + '/checklists/gl'] = { title: '팸 캠핑 준비물', tripId: 'gt', addedBy: 'uidAlice', items: [
     { id: 'a1', label: '스텔스 5 텐트', status: 'packed', group: '텐트', assigneeUid: 'uidBob' },
     { id: 'a2', label: '렉타 타프', status: 'pending', group: '타프', assigneeUid: 'uidAlice' },
@@ -106,6 +111,16 @@ function seed() {
       await p.evaluate(() => { const m = document.getElementById('main'); m.scrollTop = 420; }); await sleep(300); await shot('7-checklist-trip-scrolled');
       await p.evaluate(() => { document.getElementById('main').scrollTop = 0; });
       await nav('cooking'); await shot('8-cooking');
+      await tryClick('.cook-trip-chip:has-text("홍천 가을 캠핑")'); await shot('23-cooking-plan-empty');
+      await tryClick('.cook-trip-chip:has-text("10월 팸 캠핑")'); await shot('21-cooking-plan-filled');
+      await tryClick('.dish-btn:has-text("김치찌개")'); await shot('21b-cooking-plan-recipe-open');
+      await tryClick('.meal-row[data-meal-row="m2_lunch"] [data-action="meal-add-dish"]'); await sleep(200);
+      await p.locator('#mp-list .mp-pick').nth(3).check().catch(() => {}); await shot('22-modal-meal-picker');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('[data-action="shop-create"]'); await sleep(300);
+      await tryClick('[data-action="shop-open"]'); await sleep(600); await shot('25-checklist-shopping');
+      await nav('cooking'); await tryClick('.cook-switch [data-view="recipes"]'); await tryClick('[data-action="cook-open"]'); await shot('24-cooking-recipes');
+      await tryClick('.cook-switch [data-view="plan"]');
       await nav('checklist'); await tryClick('[data-action="trip-new"]'); await sleep(200); await shot('9-modal-trip-group');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');
