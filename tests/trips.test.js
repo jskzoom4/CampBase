@@ -61,6 +61,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   const put = async (p, d) => { if (d === null) delete server[p]; else server[p] = d; for (const pg of pages) await pg.evaluate(([p2, d2]) => window.__fsApply(p2, d2), [p, d]).catch(() => {}); };
   const settle = () => sleep(350);
   const nav = (p, tab) => p.locator(`[data-nav="${tab}"]:visible`).first().click();
+  const goPast = async p => { await p.locator('.sub-tab[data-view="pastTrips"]:visible, #nav [data-nav="pastTrips"]:visible').first().click(); await settle(); };
   const toastText = p => p.locator('#toast').innerText();
   const confirmYes = async p => { await p.waitForSelector('[data-action="confirm-yes"]', { timeout: 3000 }); await p.click('[data-action="confirm-yes"]'); };
   const pickSpace = async (p, label) => { await p.locator(`.space-chip:has-text("${label}")`).first().click(); await settle(); };
@@ -192,7 +193,7 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await A.click('[data-action="trip-new"]');
   check('일정 만들기 창에는 템플릿 관리 대신 "템플릿 페이지" 안내', (await A.locator('#modal-root .tpl-name-input').count()) === 0 && /템플릿/.test(await A.locator('#tpl-manage').innerText()));
   await A.click('[data-action="modal-close"]'); await settle();
-  await A.click(`[data-action="go-templates"]`); await settle();
+  await A.locator('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible').first().click(); await settle();
   await menuClick(A, `.tpl-card[data-tpl="${tplId}"] [data-action="tpl-rename"]`);
   await A.fill('#tpl-rename-name', '기본 세트');
   await A.click('[data-action="tpl-rename-save"]'); await settle();
@@ -266,9 +267,13 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   check('Home: 끝난 지 7일 이내 + 내 후기 없는 일정 → "후기를 남겨보세요"', /'춘천 캠핑' 후기를 남겨보세요/.test(await A.locator('#main').innerText()) && !/팸 지난 캠핑/.test(await A.locator('#main').innerText()));
   await nav(A, 'checklist');
   await pickSpace(A, '내 공간');
-  check('지난 일정은 "지난 일정 ▾"로 접힘', (await A.locator('.trip-chip:has-text("춘천 캠핑")').count()) === 0 && (await A.locator('[data-action="trip-past-toggle"]').count()) === 1);
-  await A.click('[data-action="trip-past-toggle"]');
-  await A.click('.trip-chip:has-text("춘천 캠핑")');
+  check('지난 일정은 Checklist 일정 줄에서 빠지고(접기 버튼도 없음) "전체" 칩에 전체 리스트 수', (await A.locator('.trip-chip:has-text("춘천 캠핑")').count()) === 0 && (await A.locator('[data-action="trip-past-toggle"]').count()) === 0
+    && new RegExp('전체\\s*' + docsUnder(A_ + 'checklists/').length).test(await A.locator('[data-action="trip-pick"][data-trip="all"]').innerText()));
+  await goPast(A);
+  check('지난 일정 화면(Checklist 하위 메뉴): 끝난 일정 카드(리스트 수·준비·후기 남기기)', (await A.locator('.past-trip-card:has-text("춘천 캠핑")').count()) === 1 && /리스트 0개/.test(await A.locator('.past-trip-card:has-text("춘천 캠핑")').innerText())
+    && (await A.locator('.past-trip-card:has-text("춘천 캠핑") [data-action="trip-review"]').count()) === 1 && (await A.locator('#nav [data-nav="pastTrips"].active').count()) === 1);
+  await A.click('.past-trip-card:has-text("춘천 캠핑")');
+  check('카드를 누르면 같은 화면에서 일정 패널 + "지난 일정 목록" 돌아가기', (await A.locator('.trip-panel').count()) === 1 && (await A.locator('[data-action="past-trip-back"]').count()) === 1 && (await A.locator('#view-title').innerText()) === '지난 일정');
   check('끝난 일정 패널: D-n 자리에 "후기 남기기"(끝난 일정)', (await A.locator('.trip-panel-head [data-action="trip-review"]').count()) === 1 && (await A.locator('.trip-panel-head .trip-phase').count()) === 0);
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
@@ -291,8 +296,8 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   // 그룹 일정 후기는 tripRef.space = gid
   await nav(A, 'checklist');
   await pickSpace(A, '캠핑팸');
-  await A.click('[data-action="trip-past-toggle"]');
-  await A.click('.trip-chip:has-text("팸 지난 캠핑")');
+  await goPast(A);
+  await A.click('.past-trip-card:has-text("팸 지난 캠핑")');
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
   await A.click('[data-action="camp-save"]');
@@ -300,11 +305,13 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   const gReview = docsUnder(A_ + 'campingLogs/').find(c => c.name === '양평 캠핑장');
   check('그룹 일정 후기도 내 개인 기록에 저장 + tripRef.space = 그룹 id', gReview && same(gReview.tripRef, { space: GID, tripId: 'gpast' }) && docsUnder(G + '/campingLogs/').length === 0);
   check('그룹 일정 카드에 "내 후기 작성함"(내 화면 기준)', (await A.locator('.trip-card .trip-reviewed').count()) === 1);
-  await B.click('[data-action="trip-past-toggle"]').catch(() => {});
-  await B.click('.trip-chip:has-text("팸 지난 캠핑")');
+  await goPast(B);
+  await B.click('.past-trip-card:has-text("팸 지난 캠핑")');
   check('B 화면에서는 B의 후기가 없으니 "후기 남기기"', (await B.locator('.trip-card [data-action="trip-review"]').count()) === 1);
 
   // ================= 11. 그룹 일정 삭제(그룹 공간) 되돌리기 + 규칙 =================
+  await nav(A, 'checklist'); await settle();
+  check('지난 일정을 보다가 Checklist로 오면 "전체"(지난 일정 선택은 풀림)', (await A.locator('[data-action="trip-pick"][data-trip="all"].active').count()) === 1);
   await A.click('.trip-chip:has-text("팸 캠핑")');
   const gtBefore = JSON.parse(JSON.stringify(server[G + '/trips/' + gt.id]));
   await menuClick(A, '.trip-card [data-action="trip-del"]');

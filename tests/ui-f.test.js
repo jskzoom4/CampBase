@@ -148,11 +148,12 @@ const server = {};
   const imported = Object.values(server).find(v => v && v.tripId === 'gempty');
   check('2-1 템플릿에서 가져오기: 새 리스트(항목 모두 미정)를 이 일정에 연결', !!imported && imported.title === '기본 세트' && imported.items.length === 2 && imported.items.every(i => i.status === 'pending'), imported);
   // 끝난 일정: D-n 자리에 후기 남기기
-  await M.click('[data-action="trip-past-toggle"]');
-  await M.locator('.trip-chip:has-text("지난 팸 캠핑")').click();
+  await M.click('.sub-tab[data-view="pastTrips"]'); await settle();
+  await M.locator('.past-trip-card:has-text("지난 팸 캠핑")').click();
   await settle();
   check('2-1 끝난 일정은 1줄 오른쪽에 "후기 남기기"', (await M.locator('.trip-panel-head [data-action="trip-review"]').isVisible()) && (await M.locator('.trip-panel-head .trip-phase').count()) === 0);
   // 2-3 전체
+  await M.click('.sub-tab[data-view="checklist"]'); await settle();
   await M.click('[data-action="trip-pick"][data-trip="all"]');
   check('2-3 "전체"일 때는 기존 구조(제목·새 리스트·필터 줄) + 설명 한 줄', (await M.locator('.section-head [data-action="cl-new-list"]').count()) === 1 && (await M.locator('.cl-filter-row').count()) === 1
     && await M.locator('.section-desc.one-line').evaluate(el => getComputedStyle(el).whiteSpace === 'nowrap'));

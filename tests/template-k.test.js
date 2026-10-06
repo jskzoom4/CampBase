@@ -80,14 +80,15 @@ const server = {};
 
   // ================= 1. 왼쪽 메뉴 Checklist 아래 "템플릿" =================
   const navOrder = await D.locator('#nav [data-nav]').evaluateAll(els => els.map(e => e.dataset.nav + (e.classList.contains('nav-sub') ? '*' : '')));
-  check('1 데스크톱 왼쪽 메뉴: Checklist 바로 아래 하위 메뉴 "템플릿"', navOrder.indexOf('templates*') === navOrder.indexOf('checklist') + 1, navOrder);
+  check('1 데스크톱 왼쪽 메뉴: Checklist 바로 아래 하위 메뉴 "지난 일정"·"템플릿"', navOrder.indexOf('pastTrips*') === navOrder.indexOf('checklist') + 1 && navOrder.indexOf('templates*') === navOrder.indexOf('checklist') + 2, navOrder);
+  check('7 Checklist 일정 줄에 템플릿 버튼 없음(데스크톱·휴대폰), 데스크톱은 하위 탭 대신 왼쪽 메뉴', (await D.locator('[data-action="go-templates"], .trip-tpl-chip').count()) === 0 && !(await D.locator('.sub-tabs').first().isVisible().catch(() => false)));
   await D.click('#nav [data-nav="templates"]'); await settle();
   check('1 누르면 템플릿 화면(제목 "템플릿", 하위 메뉴만 켜짐, 공간 칩 있음)', (await D.locator('#view-title').innerText()) === '템플릿' && (await D.locator('#nav [data-nav="templates"].active').count()) === 1
     && (await D.locator('#nav [data-nav="checklist"].active').count()) === 0 && (await D.locator('.space-chip').count()) >= 2 && await D.locator('[data-action="tpl-new"]').isVisible());
   check('1 휴대폰 탭바는 6개 그대로(템플릿 탭 없음)', (await M.locator('#mobile-tabbar [data-nav]').count()) === 6 && (await M.locator('#mobile-tabbar [data-nav="templates"]').count()) === 0);
   await nav(M, 'checklist'); await settle();
-  await M.click('[data-action="go-templates"]'); await settle();
-  check('1 휴대폰: Checklist의 "템플릿" 칩 → 템플릿 화면, 탭바는 Checklist가 켜진 채', await M.locator('[data-action="tpl-new"]').isVisible() && (await M.locator('#mobile-tabbar [data-nav="checklist"].active').count()) === 1);
+  await M.locator('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible').first().click(); await settle();
+  check('1 휴대폰: Checklist 위쪽 하위 탭 "템플릿" → 템플릿 화면, 탭바는 Checklist가 켜진 채', await M.locator('[data-action="tpl-new"]').isVisible() && (await M.locator('#mobile-tabbar [data-nav="checklist"].active').count()) === 1);
 
   // ================= 2. 새 템플릿: 장비에서 고르기 =================
   await D.click('[data-action="tpl-new"]');
@@ -134,7 +135,7 @@ const server = {};
   await nav(B, 'checklist');
   await B.locator('.space-chip:has-text("캠핑팸")').first().click(); await settle();
   if (await B.locator('[data-action="space-note-ok"]').count()) await B.click('[data-action="space-note-ok"]');
-  await B.click('[data-action="go-templates"]'); await settle();
+  await B.locator('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible').first().click(); await settle();
   await B.waitForSelector(`.tpl-card[data-tpl="${gt.id}"]`, { timeout: 3000 }).catch(() => {});
   check('2 다른 멤버 화면에도 바로 보임(보기 전용)', /보기 전용/.test(await B.locator(`.tpl-card[data-tpl="${gt.id}"]`).innerText().catch(() => '')));
 
