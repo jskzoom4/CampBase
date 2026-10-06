@@ -345,13 +345,75 @@
   .recipe-chev{width:16px;height:16px;flex:none;color:var(--text-dim);transition:transform .15s ease;}
   .recipe-card.open .recipe-chev{transform:rotate(90deg);}
   .recipe-body{padding:0 16px 14px;border-top:1px solid var(--border);}
-  .ing-row{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:6px 2px;border:none;border-bottom:1px solid var(--border);
-    background:none;text-align:left;cursor:pointer;font-size:13.5px;color:var(--text);}
-  .ing-row:last-child{border-bottom:none;}
-  .ing-row .label{flex:1;}
-  .ing-row .label.done{text-decoration:line-through;color:var(--text-dim);}
-  .ing-row .cl-status-btn{pointer-events:none;}
-  .ing-row .cl-status-btn{margin:-4px;}
+  .recipe-top{display:flex;align-items:center;gap:6px;padding-right:12px;}
+  .recipe-top .recipe-head{flex:1;min-width:0;}
+  .recipe-plan{flex:none;}
+  .ing-head{font-size:12.5px;font-weight:700;margin:12px 0 4px;}
+  .ing-head .meta{font-weight:400;color:var(--text-dim);margin-left:4px;}
+  .dr-ings{list-style:none;margin:0;padding:0;}
+  .dr-ings li{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid var(--border);font-size:13px;}
+  .dr-ings li:last-child{border-bottom:none;}
+  .dr-ings .num{color:var(--text-dim);flex:none;}
+  /* ---- Cooking 식단표 ---- */
+  .cook-switch{margin-bottom:12px;}
+  .cook-switch .seg-btn{display:inline-flex;align-items:center;gap:5px;min-height:36px;}
+  .cook-switch svg{width:14px;height:14px;}
+  .cook-grp{display:inline-flex;align-items:center;gap:2px;font-size:11px;opacity:.75;margin-left:2px;}
+  .cook-grp svg{width:11px;height:11px;}
+  .meal-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;}
+  .meal-empty > svg{width:28px;height:28px;color:var(--text-dim);}
+  .meal-summary{padding:12px 14px;margin-bottom:12px;}
+  .ms-title{font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .ms-where{font-size:12px;color:var(--text-dim);}
+  .ms-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:13px;color:var(--text-dim);}
+  .ms-row b{color:var(--text);}
+  .ms-row .spacer{flex:1;}
+  .link-btn{background:none;border:0;padding:0;font:inherit;}
+  .ms-base{min-height:32px;text-decoration:underline;text-underline-offset:3px;}
+  .shop-open svg, .shop-create svg{width:15px;height:15px;}
+  .shop-create[disabled]{opacity:.5;cursor:not-allowed;}
+  .meal-day{padding:4px 14px 6px;margin-bottom:12px;}
+  .meal-day-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0 6px;border-bottom:1px solid var(--border);}
+  .meal-day-head h3{margin:0;font-size:14px;flex:1;}
+  .meal-outside .meal-day-head .meta{flex-basis:100%;font-size:12px;color:var(--text-dim);}
+  .meal-row{padding:8px 0;border-bottom:1px solid var(--border);}
+  .meal-row:last-child{border-bottom:none;}
+  .meal-head{display:flex;align-items:center;gap:8px;}
+  .meal-head .spacer{flex:1;}
+  .meal-name{font-weight:700;font-size:13.5px;min-width:34px;}
+  .meal-serv{display:inline-flex;align-items:center;gap:3px;min-height:32px;padding:0 8px;border-radius:99px;border:1px solid var(--border);background:var(--bg);color:var(--text-dim);font:inherit;font-size:12px;cursor:pointer;}
+  .meal-serv svg{width:13px;height:13px;}
+  .meal-serv.diff{border-color:var(--brand);color:var(--brand-text);font-weight:700;}
+  .meal-dishes{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
+  .dish-chip{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:99px;background:var(--surface-2);padding-left:2px;}
+  .dish-chip.open{border-color:var(--brand);}
+  .dish-btn{display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:0 4px 0 10px;border:0;background:none;font:inherit;font-size:13px;color:var(--text);cursor:pointer;}
+  .dish-btn svg{width:14px;height:14px;color:var(--text-dim);}
+  .dish-chip .more-btn{width:36px;height:40px;}
+  .meal-add{min-height:40px;}
+  .meal-row.done .meal-name, .meal-done-line{color:var(--text-dim);}
+  .meal-done-line{font-size:12.5px;margin-top:4px;text-decoration:line-through;}
+  .dish-recipe{margin:8px 0 2px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);}
+  .dr-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:4px;font-size:13.5px;}
+  .dr-head .meta{font-size:12px;color:var(--text-dim);}
+  .dr-steps{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin:8px 0 6px;}
+  .sv-row{display:flex;align-items:center;gap:8px;}
+  .sv-row input{width:90px;text-align:center;}
+  .mp-cats{margin:2px 0 8px;}
+  .mp-list{max-height:300px;}
+  .mp-row .meta{font-size:11.5px;color:var(--text-dim);flex:none;}
+  /* 일정 패널·지난 일정의 식단 링크 */
+  .tp-meal-link{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;padding:8px 0;margin:-8px 0;line-height:1.2;}   /* 누르는 영역은 넓게, 줄 높이는 그대로 */
+  .tp-meal-link svg{width:14px;height:14px;}
+  .tag-btn{border:0;font:inherit;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;}
+  .tag-btn svg{width:12px;height:12px;}
+  /* 장보기 목록(Checklist) */
+  .shop-ico{width:16px;height:16px;vertical-align:-2px;margin-right:5px;color:var(--brand-text);}
+  .shop-note{font-size:12px;color:var(--text-dim);margin:-4px 0 6px;}
+  .shop-qty{font-size:12.5px;color:var(--text-dim);margin-left:4px;font-weight:600;}
+  .shop-uses{display:block;font-size:11.5px;color:var(--text-dim);margin-top:1px;text-decoration:none;}
+  .label.done .shop-uses, .label.done .shop-qty{text-decoration:none;}
+  .tag.shop-gone{margin-left:4px;}
   @media (prefers-reduced-motion: reduce){ .recipe-chev{transition:none;} }
   /* ---- 별점 입력(3-6) ---- */
   .star-input{display:flex;align-items:center;gap:0;flex-wrap:wrap;}
@@ -460,6 +522,9 @@
     .trip-chips::-webkit-scrollbar{display:none;}
     .trip-chips .seg-btn{flex:none;white-space:nowrap;}
     .trip-panel .trip-progress{padding-top:4px;}
+    .trip-panel .trip-progress{flex-wrap:nowrap;gap:8px;}
+    .trip-panel .trip-bar-track{min-width:40px;}
+    .trip-panel .trip-progress-text, .tp-meal-link{white-space:nowrap;}
     .panel-list{padding-top:4px;}
     #main{--main-pt:14px;padding:var(--main-pt) 14px calc(var(--tabbar-h) + var(--safe-bottom) + 32px);}
     body.kbd-open #main{padding-bottom:32px;}
@@ -670,6 +735,7 @@ const ICONS = {
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
   close:'<path d="M6 6l12 12M18 6L6 18"/>',
   refresh:'<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>',
+  cart:'<path d="M3 4h2.2l2.1 10.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.1"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14c2.4.2 4 1.8 4.5 4.5"/>',
   send:'<path d="M4 12l16-8-6 16-2.5-6.5z"/><path d="M11.5 13.5L20 4"/>',
   dots:'<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
@@ -756,23 +822,26 @@ const LOCATIONS = [{"name": "서울", "lat": 37.5665, "lng": 126.978, "nx": 60, 
 function uvLabel(v){ if(v==null) return ''; if(v<3) return '낮음'; if(v<6) return '보통'; if(v<8) return '높음'; if(v<11) return '매우높음'; return '위험'; }
 
 // 캠핑 요리 레시피 스냅샷 (2026-09-23, LifeBase·wtable 캠핑 요리 콘텐츠 참고해 정리 — 실시간 수집 아님)
+// 재료: { name, qty?, unit?, cat(장보기 분류), home?(보통 집에 있는 것) } — qty·unit은 serves(기준 인원, 2명) 기준. qty 없으면 "적당량"
+const SHOP_CATS = ['고기·해산물','채소·과일','가공·면·유제품','양념·소스','음료·기타'];
+function ingr(name, qty, unit, cat, home){ const o = { name, cat }; if(qty){ o.qty = qty; o.unit = unit; } if(home) o.home = true; return o; }
 const COOKING_RECIPES = [
-  {id:'ck1', name:'삼겹살 구이', category:'구이', difficulty:'쉬움', time:'15분', ingredients:['삼겹살','소금','후추','쌈장','상추'], steps:'그릴에 앞뒤로 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck2', name:'모둠 꼬치구이', category:'구이', difficulty:'보통', time:'20분', ingredients:['돼지고기','파프리카','양파','버섯'], steps:'재료를 꼬치에 끼워 소금·후추로 간한 뒤 올리브유를 발라 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck3', name:'닭다리 구이', category:'구이', difficulty:'쉬움', time:'20분(재우기 별도)', ingredients:['닭다리','간장','설탕','마늘','생강'], steps:'양념에 2~3시간 재운 뒤 중불에서 15~20분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck4', name:'옥수수 버터구이', category:'구이', difficulty:'매우쉬움', time:'10분', ingredients:['옥수수','버터','소금'], steps:'버터와 소금을 발라 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck5', name:'소시지 알감자 구이', category:'구이', difficulty:'중급', time:'30분', ingredients:['소시지','알감자','파프리카','케첩','마요네즈'], steps:'꼬치나 팬에 함께 구워 케첩마요 소스에 찍어 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck6', name:'채끝 바비큐 꼬치구이', category:'구이', difficulty:'초급', time:'25분', ingredients:['채끝살','단호박','방울토마토','대파'], steps:'꼬치에 끼워 숯불에 구우면 은은한 단맛이 살아나요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck7', name:'부대찌개 (밀키트)', category:'간편요리', difficulty:'매우쉬움', time:'15분', ingredients:['부대찌개 밀키트','물'], steps:'밀키트에 물을 붓고 끓이기만 하면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck8', name:'짜파구리', category:'간편요리', difficulty:'쉬움', time:'10분', ingredients:['짜파게티','너구리','소고기(선택)'], steps:'두 라면을 함께 끓여 섞고, 구운 소고기를 올려요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck9', name:'대파 닭고기 우동', category:'국물요리', difficulty:'초급', time:'20분', ingredients:['우동면','대파','닭고기'], steps:'끓이기만 하면 되는 맵지 않은 국물 요리라 아이도 잘 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck10', name:'김치찌개', category:'국물요리', difficulty:'보통', time:'25분', ingredients:['신김치','돼지고기','두부','대파'], steps:'김치를 볶다가 물, 고기, 두부를 넣고 끓여요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck11', name:'된장찌개', category:'국물요리', difficulty:'쉬움', time:'20분', ingredients:['된장','감자','애호박','두부','버섯','청양고추'], steps:'모든 재료를 넣고 끓이면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck12', name:'어묵 전골', category:'국물요리', difficulty:'중급', time:'25분', ingredients:['어묵','곤약','채소'], steps:'국물을 오래 끓여내 깊은 맛을 내요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck13', name:'컵피자', category:'아이랑함께', difficulty:'쉬움', time:'10분', ingredients:['식빵','토마토소스','치즈','햄'], steps:'머핀틀에 식빵을 넣고 재료를 올려 약불에서 5~7분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck14', name:'핫도그 말이', category:'아이랑함께', difficulty:'매우쉬움', time:'10분', ingredients:['또띠아','소시지','치즈','케첩','머스타드'], steps:'또띠아에 재료를 올려 말아서 팬에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck15', name:'마시멜로 스모어', category:'디저트', difficulty:'매우쉬움', time:'5분', ingredients:['마시멜로','초콜릿','크래커'], steps:'꼬챙이에 꽂아 불 위에서 노릇하게 구운 뒤 크래커 사이에 끼워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck16', name:'바나나 보트', category:'디저트', difficulty:'쉬움', time:'10분', ingredients:['바나나','초콜릿칩'], steps:'바나나를 반으로 갈라 초콜릿칩을 넣고 호일에 싸서 불 위에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck1', name:'삼겹살 구이', category:'구이', difficulty:'쉬움', time:'15분', serves:2, ingredients:[ingr('삼겹살',400,'g','고기·해산물'), ingr('소금',0,'','양념·소스',1), ingr('후추',0,'','양념·소스',1), ingr('쌈장',0,'','양념·소스'), ingr('상추',150,'g','채소·과일')], steps:'그릴에 앞뒤로 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck2', name:'모둠 꼬치구이', category:'구이', difficulty:'보통', time:'20분', serves:2, ingredients:[ingr('돼지고기',300,'g','고기·해산물'), ingr('파프리카',1,'개','채소·과일'), ingr('양파',1,'개','채소·과일'), ingr('버섯',100,'g','채소·과일')], steps:'재료를 꼬치에 끼워 소금·후추로 간한 뒤 올리브유를 발라 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck3', name:'닭다리 구이', category:'구이', difficulty:'쉬움', time:'20분(재우기 별도)', serves:2, ingredients:[ingr('닭다리',4,'개','고기·해산물'), ingr('간장',0,'','양념·소스',1), ingr('설탕',0,'','양념·소스',1), ingr('마늘',5,'쪽','채소·과일'), ingr('생강',0,'','채소·과일')], steps:'양념에 2~3시간 재운 뒤 중불에서 15~20분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck4', name:'옥수수 버터구이', category:'구이', difficulty:'매우쉬움', time:'10분', serves:2, ingredients:[ingr('옥수수',2,'개','채소·과일'), ingr('버터',20,'g','가공·면·유제품'), ingr('소금',0,'','양념·소스',1)], steps:'버터와 소금을 발라 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck5', name:'소시지 알감자 구이', category:'구이', difficulty:'중급', time:'30분', serves:2, ingredients:[ingr('소시지',200,'g','가공·면·유제품'), ingr('알감자',300,'g','채소·과일'), ingr('파프리카',1,'개','채소·과일'), ingr('케첩',0,'','양념·소스',1), ingr('마요네즈',0,'','양념·소스',1)], steps:'꼬치나 팬에 함께 구워 케첩마요 소스에 찍어 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck6', name:'채끝 바비큐 꼬치구이', category:'구이', difficulty:'초급', time:'25분', serves:2, ingredients:[ingr('채끝살',300,'g','고기·해산물'), ingr('단호박',0.5,'개','채소·과일'), ingr('방울토마토',10,'개','채소·과일'), ingr('대파',1,'대','채소·과일')], steps:'꼬치에 끼워 숯불에 구우면 은은한 단맛이 살아나요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck7', name:'부대찌개 (밀키트)', category:'간편요리', difficulty:'매우쉬움', time:'15분', serves:2, ingredients:[ingr('부대찌개 밀키트',1,'팩','가공·면·유제품'), ingr('물',0,'','음료·기타')], steps:'밀키트에 물을 붓고 끓이기만 하면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck8', name:'짜파구리', category:'간편요리', difficulty:'쉬움', time:'10분', serves:2, ingredients:[ingr('짜파게티',1,'봉','가공·면·유제품'), ingr('너구리',1,'봉','가공·면·유제품'), ingr('소고기(선택)',100,'g','고기·해산물')], steps:'두 라면을 함께 끓여 섞고, 구운 소고기를 올려요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck9', name:'대파 닭고기 우동', category:'국물요리', difficulty:'초급', time:'20분', serves:2, ingredients:[ingr('우동면',2,'봉','가공·면·유제품'), ingr('대파',1,'대','채소·과일'), ingr('닭고기',200,'g','고기·해산물')], steps:'끓이기만 하면 되는 맵지 않은 국물 요리라 아이도 잘 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck10', name:'김치찌개', category:'국물요리', difficulty:'보통', time:'25분', serves:2, ingredients:[ingr('신김치',300,'g','채소·과일'), ingr('돼지고기',200,'g','고기·해산물'), ingr('두부',0.5,'모','가공·면·유제품'), ingr('대파',0.5,'대','채소·과일')], steps:'김치를 볶다가 물, 고기, 두부를 넣고 끓여요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck11', name:'된장찌개', category:'국물요리', difficulty:'쉬움', time:'20분', serves:2, ingredients:[ingr('된장',0,'','양념·소스',1), ingr('감자',1,'개','채소·과일'), ingr('애호박',0.5,'개','채소·과일'), ingr('두부',0.5,'모','가공·면·유제품'), ingr('버섯',50,'g','채소·과일'), ingr('청양고추',1,'개','채소·과일')], steps:'모든 재료를 넣고 끓이면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck12', name:'어묵 전골', category:'국물요리', difficulty:'중급', time:'25분', serves:2, ingredients:[ingr('어묵',300,'g','가공·면·유제품'), ingr('곤약',0.5,'팩','가공·면·유제품'), ingr('채소',200,'g','채소·과일')], steps:'국물을 오래 끓여내 깊은 맛을 내요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck13', name:'컵피자', category:'아이랑함께', difficulty:'쉬움', time:'10분', serves:2, ingredients:[ingr('식빵',4,'장','가공·면·유제품'), ingr('토마토소스',100,'g','양념·소스'), ingr('치즈',80,'g','가공·면·유제품'), ingr('햄',100,'g','가공·면·유제품')], steps:'머핀틀에 식빵을 넣고 재료를 올려 약불에서 5~7분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck14', name:'핫도그 말이', category:'아이랑함께', difficulty:'매우쉬움', time:'10분', serves:2, ingredients:[ingr('또띠아',2,'장','가공·면·유제품'), ingr('소시지',2,'개','가공·면·유제품'), ingr('치즈',2,'장','가공·면·유제품'), ingr('케첩',0,'','양념·소스',1), ingr('머스타드',0,'','양념·소스',1)], steps:'또띠아에 재료를 올려 말아서 팬에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck15', name:'마시멜로 스모어', category:'디저트', difficulty:'매우쉬움', time:'5분', serves:2, ingredients:[ingr('마시멜로',10,'개','가공·면·유제품'), ingr('초콜릿',50,'g','가공·면·유제품'), ingr('크래커',10,'개','가공·면·유제품')], steps:'꼬챙이에 꽂아 불 위에서 노릇하게 구운 뒤 크래커 사이에 끼워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck16', name:'바나나 보트', category:'디저트', difficulty:'쉬움', time:'10분', serves:2, ingredients:[ingr('바나나',2,'개','채소·과일'), ingr('초콜릿칩',30,'g','가공·면·유제품')], steps:'바나나를 반으로 갈라 초콜릿칩을 넣고 호일에 싸서 불 위에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
 ];
 
 /* ============================ STATE ============================ */
@@ -1054,11 +1123,12 @@ function startUserData(){
   }), onErr));
   _unsubs.push(db.collection('checklists').onSnapshot(live(snap=>{
     state.checklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-    if(['home','checklist'].includes(state.currentView)) renderView();
+    if(['home','checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
   }), onErr));
   _unsubs.push(db.collection('trips').onSnapshot(live(snap=>{
     state.trips = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-    if(['home','checklist'].includes(state.currentView)) renderView();
+    replayMealOps('me');
+    if(['home','checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
   }), onErr));
   _unsubs.push(db.collection('checklistTemplates').onSnapshot(live(snap=>{
     state.checklistTemplates = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
@@ -1379,7 +1449,7 @@ function startGroups(){
       toast('그룹에 더 이상 속해 있지 않아서 내 공간으로 돌아왔어요.');
       return;
     }
-    if(['home','camping','checklist','gear','settings','templates'].includes(state.currentView)) renderView();
+    if(['home','camping','checklist','gear','settings','templates','pastTrips','cooking'].includes(state.currentView)) renderView();
   }, e=>{ if(gen===_dataGen) reportDbError(e); });
 }
 // 내가 속한 모든 그룹의 일정·체크리스트를 항상 구독(Home "다음 캠핑" 카드, 그룹 공간의 일정 줄).
@@ -1401,12 +1471,13 @@ function syncGroupBackground(){
       db.collection('trips').onSnapshot(snap=>{
         if(!ok()) return;
         state.groupTrips[gid] = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-        if(['home','checklist'].includes(state.currentView)) renderView();
+        replayMealOps(gid);
+        if(['home','checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
       }, quiet),
       db.collection('checklists').onSnapshot(snap=>{
         if(!ok()) return;
         state.groupTripLists[gid] = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-        if(state.currentView==='home') renderView();
+        if(['home','cooking'].includes(state.currentView)) renderView();
       }, quiet),
       // 내가 공유한 후기 사본: 다른 멤버가 고치면(updatedBy가 남) 내 개인 기록에도 반영
       db.collection('sharedReviews').where('authorUid', '==', state.user.uid).onSnapshot(snap=>{
@@ -1446,7 +1517,7 @@ function startSpaceData(gid){
   _spaceUnsubs.push(db.collection('checklists').onSnapshot(snap=>{
     if(gen !== _spaceGen) return;
     state.groupChecklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-    if(state.currentView==='checklist') renderView();
+    if(['checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
   }, onErr));
   _spaceUnsubs.push(db.collection('gear').onSnapshot(snap=>{
     if(gen !== _spaceGen) return;
@@ -2091,7 +2162,6 @@ function persistGearCategories(){
 function myGearCats(){ return Array.isArray(state.gearCategories) ? state.gearCategories : deriveGearCats(state.gear); }
 function persistAppSettings(){ if(state.dbAvailable) safePersist(()=>state.db.doc(SETTINGS_DOC).set({weatherLocation:state.weatherLocation, gearCategories:myGearCats(), gearCategoryMeta:normCatMeta(state.gearCategoryMeta), homeWidgets:state.homeWidgets})); }
 function persistWeatherLocation(loc){ state.weatherLocation = loc; persistAppSettings(); }
-function persistCookingCheck(id, data){ if(state.dbAvailable) safePersist(()=>state.db.collection('cookingChecks').doc(id).set(data)); }
 function toggleHomeWidget(key){
   state.homeWidgets[key] = !state.homeWidgets[key];
   persistAppSettings();   // 계정에 저장 → 같은 계정으로 로그인한 다른 기기에도 적용
@@ -3312,22 +3382,27 @@ function checklistListHtml(cl, ctx, inPanel){
   const allDone = total>0 && decided===total;
   const visible = allItems.filter(it=> filter==='all' || (filter==='done'&&isDecided(it)) || (filter==='undone'&&!isDecided(it))
     || (filter==='mine' && !!myUid && it.assigneeUid===myUid));
-  const groups = groupChecklistItems(visible);
+  // 장보기 목록(kind:'shopping', 식단에서 자동으로 만든 목록): 같은 화면에 양·쓰이는 메뉴·"샀어요/안 사요"·양 고치기·집에 있어요
+  const shop = cl.kind==='shopping';
+  const groups = shop ? orderShopGroups(groupChecklistItems(visible)) : groupChecklistItems(visible);
+  const okLabel = it => shop ? (it.home ? '챙겼어요' : '샀어요') : '가져감';
+  const tripOk = shop && cl.tripId && SP.trips.some(t=>t.id===cl.tripId);
   return `
-      <div class="${inPanel ? 'panel-list' : 'card'} checklist-group">
+      <div class="${inPanel ? 'panel-list' : 'card'} checklist-group ${shop ? 'shop-list' : ''}" data-cl="${esc(cl.id)}">
         <h3>
-          <span style="flex:1;min-width:0;">${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
+          <span style="flex:1;min-width:0;">${shop ? icon('cart', 'shop-ico') : ''}${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
           ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
           <button class="btn btn-sm cl-add-btn" data-action="cl-add-item" data-id="${cl.id}">${icon('plus')} 항목 추가</button>
           ${moreMenuHtml('cl:' + cl.id, [
-            { action:'cl-gear-import', attrs:{'data-id':cl.id}, icon:'gear', label:'장비에서 불러오기' },
+            shop ? null : { action:'cl-gear-import', attrs:{'data-id':cl.id}, icon:'gear', label:'장비에서 불러오기' },
             { action:'cl-list-rename', attrs:{'data-id':cl.id}, icon:'edit', label:'이름 변경' },
             decided>0 ? { action:'cl-list-reset', attrs:{'data-id':cl.id}, icon:'refresh', label:'전부 미정으로 초기화' } : null,
-            { action:'cl-save-template', attrs:{'data-id':cl.id}, icon:'template', label:'템플릿으로 저장' },
+            shop ? null : { action:'cl-save-template', attrs:{'data-id':cl.id}, icon:'template', label:'템플릿으로 저장' },
             !grp && state.groups.length ? { action:'cl-send', attrs:{'data-id':cl.id}, icon:'send', label:'그룹으로 보내기(복사)' } : null,
             { action:'cl-del-list', attrs:{'data-id':cl.id}, icon:'trash', label:'리스트 삭제', danger:true },
           ], `'${cl.title}' 리스트 메뉴`)}
         </h3>
+        ${shop ? `<div class="shop-note">${tripOk ? `식단에서 자동으로 만든 목록이에요 · <button class="link-btn" data-action="cook-open-trip" data-space="${esc(spaceKey())}" data-trip="${esc(cl.tripId)}">식단표 보기</button>` : '일정이 지워져서 식단과 자동으로 맞추지 않아요.'}</div>` : ''}
         ${groups.length ? groups.map(gr=>{
           const gDecided = gr.items.filter(isDecided).length;
           return `
@@ -3346,18 +3421,20 @@ function checklistListHtml(cl, ctx, inPanel){
               return `
               <div class="check-row">
                 <div class="cl-status-group">
-                  <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="가져감" aria-label="'${esc(it.label)}' 가져감" aria-pressed="${status==='packed'}">${icon('check')}</button>
-                  <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="안 가져감 (일부러 제외)" aria-label="'${esc(it.label)}' 안 가져감" aria-pressed="${status==='skip'}">${icon('close')}</button>
+                  <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="${okLabel(it)}" aria-label="'${esc(it.label)}' ${okLabel(it)}" aria-pressed="${status==='packed'}">${icon('check')}</button>
+                  <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="${shop ? '안 사요' : '안 가져감 (일부러 제외)'}" aria-label="'${esc(it.label)}' ${shop ? '안 사요' : '안 가져감'}" aria-pressed="${status==='skip'}">${icon('close')}</button>
                 </div>
-                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}</span>
+                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${shop && it.qtyText ? ` <span class="shop-qty num">${esc(it.qtyText)}</span>` : ''}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}${shop && it.gone ? ` <span class="tag shop-gone">식단에서 빠짐</span>` : ''}${shop && (it.uses||[]).length ? `<span class="shop-uses">${esc(it.uses.join(' · '))}</span>` : ''}</span>
                 ${grp ? assigneeChipHtml(grp, cl.id, it) : ''}
                 ${moreMenuHtml('cli:' + cl.id + ':' + it.id, [
+                  shop ? { action:'shop-qty', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'edit', label:'양 고치기' } : null,
+                  shop ? { action:'shop-home', attrs:{'data-list':cl.id, 'data-item':it.id}, icon: it.home ? 'cart' : 'home', label: it.home ? '사야 해요' : '집에 있어요' } : null,
                   { action:'cl-del-item', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'trash', label:'항목 삭제', danger:true },
                 ], `'${it.label}' 항목 메뉴`)}
               </div>
             `;}).join('')}
           </div>`;
-        }).join('') : (filter==='all' && !allItems.length
+        }).join('') : (filter==='all' && !allItems.length && !shop
           ? `<div class="empty cl-empty">항목이 없어요.<br><button class="btn btn-sm" data-action="cl-gear-import" data-id="${cl.id}">${icon('gear')} 장비에서 불러오기</button></div>`
           : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`)}
       </div>`;
@@ -3454,6 +3531,7 @@ function renderPastTripsPage(){
           <div class="ptc-tags">
             <span class="tag">리스트 ${nLists}개</span>
             <span class="tag">준비 ${pr.decided}/${pr.total}</span>
+            ${mealStats(t).dishes ? `<button class="tag tag-btn" data-action="cook-open-trip" data-space="${esc(space)}" data-trip="${esc(t.id)}">${icon('cooking')} 해먹은 메뉴 ${mealStats(t).dishes}개</button>` : ''}
             ${reviewed ? `<span class="tag done-tag">${icon('check')} 내 후기 작성함</span>` : ''}
           </div>
         </div>
@@ -3501,6 +3579,7 @@ function tripPanelHtml(trip, space, g, lists, filtersHtml, ctx){
       <div class="trip-progress">
         <div class="trip-bar-track" role="progressbar" aria-label="준비 진행률" aria-valuemin="0" aria-valuemax="${pr.total}" aria-valuenow="${pr.decided}"><span style="width:${pct}%"></span></div>
         <span class="trip-progress-text">준비 <b class="num">${pr.decided}/${pr.total}</b>${g ? ` · 내 담당 <b class="num">${pr.mine}</b>` : ''}</span>
+        ${mealLinkHtml(space, trip)}
       </div>
       <div class="tp-tools">
         ${filtersHtml}
@@ -3516,6 +3595,11 @@ function tripPanelHtml(trip, space, g, lists, filtersHtml, ctx){
           </span>
         </div>`}
     </section>`;
+}
+// 일정 → Cooking 식단표 링크(진행 줄 옆 작은 글자): "식단 3/5끼" 또는 "식단 짜기"
+function mealLinkHtml(space, trip){
+  const st = mealStats(trip);
+  return `<button class="link-btn tp-meal-link" data-action="cook-open-trip" data-space="${esc(space)}" data-trip="${esc(trip.id)}" aria-label="${st.planned ? `식단 ${st.planned}/${st.total}끼 정함, 식단표 열기` : '식단 짜기'}">${icon('cooking')}${st.planned ? `식단 <span class="num">${st.planned}/${st.total}</span>` : '식단 짜기'}</button>`;
 }
 // 템플릿에서 가져오기: 고른 템플릿을 복사한 새 리스트를 이 일정에 연결(항목은 모두 미정)
 function tripTemplateImportModal(tripId){
@@ -3908,6 +3992,8 @@ function nextTripHtml(){
     const pr = tripProgress(t, tripListsOf(next.space), !!next.group);
     const parts = [ph.kind==='ongoing' ? '진행 중' : ph.label, fmtTripDates(t), t.campsiteName || t.region || '', `준비 ${pr.decided}/${pr.total}`];
     if(next.group) parts.push(`내 담당 ${pr.mine}개 남음`);
+    const ms = mealStats(t);
+    if(ms.dishes) parts.push(`식단 ${ms.planned}/${ms.total}끼`);
     main = `
       <div class="card next-trip-card" data-action="home-trip-open" data-space="${esc(next.space)}" data-trip="${esc(t.id)}">
         <div class="next-trip-icon">${icon('calendar')}</div>
@@ -3948,6 +4034,17 @@ function assigneeChipHtml(g, listId, it){
     + (a ? `${memberAvatarHtml(g, a)}<span>${esc(memberName(g, a))}</span>` : `${icon('users')}<span>담당</span>`)
     + `</button>`;
 }
+// 멤버 고르기 목록(담당자 지정 창 공통: 체크리스트 항목·식단 메뉴)
+function memberPickRowsHtml(g, current, attrsOf){
+  return `<div id="assign-list">
+      ${sortedMemberUids(g).map(u=>`
+        <div class="list-row member-pick ${current===u?'active':''}" ${attrsOf(u)} style="align-items:center;cursor:pointer;">
+          ${memberAvatarHtml(g, u)}
+          <div style="flex:1;" class="name">${esc(memberName(g, u))}${state.user && u===state.user.uid ? ' <span class="tag">나</span>' : ''}</div>
+          ${current===u ? icon('check','pick-check') : ''}
+        </div>`).join('')}
+    </div>`;
+}
 function assignModal(listId, itemId){
   const g = currentGroup();
   const list = SP.checklists.find(c=>c.id===listId);
@@ -3957,14 +4054,7 @@ function assignModal(listId, itemId){
     <h3>담당자 지정</h3>
     <p style="margin:0 0 8px;color:var(--text-dim);font-size:13px;">'<b style="color:var(--text);">${esc(it.label)}</b>'을(를) 챙길 사람을 골라주세요.</p>
     ${assignSuggestHtml(g, listId, it)}
-    <div id="assign-list">
-      ${sortedMemberUids(g).map(u=>`
-        <div class="list-row member-pick ${it.assigneeUid===u?'active':''}" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="${esc(u)}" style="align-items:center;cursor:pointer;">
-          ${memberAvatarHtml(g, u)}
-          <div style="flex:1;" class="name">${esc(memberName(g, u))}${state.user && u===state.user.uid ? ' <span class="tag">나</span>' : ''}</div>
-          ${it.assigneeUid===u ? icon('check','pick-check') : ''}
-        </div>`).join('')}
-    </div>
+    ${memberPickRowsHtml(g, it.assigneeUid, u=>`data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="${esc(u)}"`)}
     ${it.assigneeUid ? `<div class="modal-actions"><button class="btn" data-action="cl-assign-set" data-list="${esc(listId)}" data-item="${esc(itemId)}" data-uid="">담당 해제</button></div>` : ''}`);
 }
 /* ---- 장비 ↔ 준비물 ----
@@ -4297,27 +4387,734 @@ function renameChecklistGroup(listId, oldName, newName){
   closeModal(); renderView(); toast('소분류 이름을 바꿨어요.');
 }
 
-/* ============================ COOKING ============================ */
+/* ============================ 캠핑 식단·장보기 ============================
+ * 식단 = 일정 문서의 선택 필드(개인 users/{uid}/trips, 그룹 groups/{gid}/trips — 규칙 그대로):
+ *   mealServings?: 기본 인원(없으면 그룹 일정 = 참가 멤버 수, 개인 = 2)
+ *   meals?: [{ id, day(1~), slot:'breakfast'|'lunch'|'dinner'|'extra', label?(extra 이름), servings?, done?,
+ *              dishes:[{ id, recipeId?, name, assigneeUid? }] }]
+ *   기본 끼니 칸(첫날 점심·저녁, 중간 아침·점심·저녁, 마지막 아침·점심, 당일치기 점심·저녁)은 저장 전엔 빈 칸(id = m{day}_{slot}).
+ *   저장은 mutateMeals(): 바꾸는 동작(op)을 내 화면에 먼저 적용하고, 저장소의 최신 일정에 같은 op를 다시 적용해 meals만 update
+ *   → 다른 멤버가 다른 끼니를 동시에 고쳐도 지워지지 않음. Cooking은 공간을 바꾸지 않고 일정이 속한 공간에 바로 저장.
+ * 장보기 = 같은 공간의 체크리스트 { title:'장보기', kind:'shopping', tripId } (일정 하나에 1개).
+ *   자동 항목: { src:'meal', key(normName), qtyText, qtyEdited?, uses:[메뉴], home?, gone?(식단에서 빠짐) } — syncShoppingList()가 맞춤.
+ *   직접 추가한 항목(src 없음)은 건드리지 않음. 목록을 지우면 다시 만들지 않음("장보기 목록 만들기"가 다시 보임). */
+const MEAL_SLOTS = ['breakfast','lunch','dinner'];
+const SLOT_LABELS = { breakfast:'아침', lunch:'점심', dinner:'저녁' };
+const EXTRA_PRESETS = ['간식','야식','술안주'];
+const SHOP_HOME_GROUP = '집에서 챙길 것';
+const SHOP_GROUP_ORDER = ['고기·해산물','채소·과일','가공·면·유제품','음료·기타','양념·소스', SHOP_HOME_GROUP];
+const WEEKDAYS = ['일','월','화','수','목','금','토'];
+function recipeById(id){ return COOKING_RECIPES.find(r=>r.id===id) || null; }
+// 예전처럼 재료 이름만 필요할 때(문자열 재료도 받아 줌)
+function ingNames(r){ return ((r && r.ingredients) || []).map(x=> typeof x==='string' ? x : x.name); }
+function ingCatByKey(key){
+  for(const r of COOKING_RECIPES) for(const ing of r.ingredients) if(normName(ing.name)===key) return ing.cat;
+  return '기타';
+}
+function spaceDbOf(space){ return space==='me' ? state.db : groupDb(space); }
+function findTrip(space, id){ return (tripsOf(space) || []).find(t=>t.id===id) || null; }
+function tripGroupOf(space){ return space==='me' ? null : groupById(space); }
+function tripDays(t){ if(!isYmd(t.startDate)) return 1; return Math.max(1, Math.min(14, dayDiff(t.startDate, tripEnd(t)) + 1)); }
+function tripDayDate(t, day){
+  if(!isYmd(t.startDate)) return '';
+  const [y, m, d] = t.startDate.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + day - 1));
+  return `${dt.getUTCMonth() + 1}월 ${dt.getUTCDate()}일(${WEEKDAYS[dt.getUTCDay()]})`;
+}
+function defaultSlots(n, day){
+  if(n===1 || day===1) return ['lunch','dinner'];
+  if(day===n) return ['breakfast','lunch'];
+  return MEAL_SLOTS;
+}
+function tripMeals(t){ return Array.isArray(t && t.meals) ? t.meals : []; }
+function baseServings(t, space){
+  const n = Number(t.mealServings); if(n > 0) return n;
+  const g = tripGroupOf(space);
+  return g ? (tripMembers(t, g).length || 2) : 2;
+}
+function mealServings(m, t, space){ const n = Number(m.servings); return n > 0 ? n : baseServings(t, space); }
+function mealLabel(m){ return m.slot==='extra' || !SLOT_LABELS[m.slot] ? (m.label || '간식') : SLOT_LABELS[m.slot]; }
+// 화면 배치: 날짜별 끼니(저장된 끼니 + 저장 전 기본 칸) + 날짜 밖 끼니
+function mealLayout(t){
+  const n = tripDays(t), meals = tripMeals(t);
+  const days = [];
+  for(let d = 1; d <= n; d++){
+    const rows = [], slots = defaultSlots(n, d);
+    MEAL_SLOTS.forEach(sl=>{
+      const saved = meals.filter(m=>m.day===d && m.slot===sl);
+      if(saved.length) rows.push(...saved);
+      else if(slots.includes(sl)) rows.push({ id: 'm' + d + '_' + sl, day: d, slot: sl, dishes: [], virtual: true });
+    });
+    rows.push(...meals.filter(m=>m.day===d && !MEAL_SLOTS.includes(m.slot)));
+    days.push({ day: d, rows });
+  }
+  return { days, outside: meals.filter(m=>!(m.day >= 1 && m.day <= n)) };
+}
+function mealStats(t){
+  const rows = mealLayout(t).days.flatMap(d=>d.rows);
+  return { planned: rows.filter(m=>(m.dishes||[]).length).length, total: rows.length,
+    dishes: tripMeals(t).reduce((s, m)=>s + (m.dishes||[]).length, 0) };
+}
+// 끼니 찾기(저장 전 기본 칸 포함): 저장할 때 없으면 이 모양으로 만든다
+function mealProto(t, mealId){
+  const saved = tripMeals(t).find(m=>m.id===mealId);
+  if(saved) return saved;
+  const mm = /^m(\d+)_(breakfast|lunch|dinner)$/.exec(mealId || '');
+  return mm ? { id: mealId, day: Number(mm[1]), slot: mm[2], dishes: [] } : null;
+}
+function mealTitle(t, m){ return `${m.day >= 1 && m.day <= tripDays(t) ? m.day + '일차' : '날짜 밖'} ${mealLabel(m)}`; }
+
+/* ---- 끼니 바꾸기: op(meals 배열)를 내 화면 → 저장소 최신 일정 순서로 적용하고 meals만 저장 ---- */
+function ensureMeal(meals, proto){
+  let m = meals.find(x=>x.id===proto.id);
+  if(!m){
+    m = { id: proto.id, day: proto.day, slot: proto.slot, dishes: [] };
+    if(proto.label) m.label = proto.label;
+    meals.push(m);
+  }
+  if(!Array.isArray(m.dishes)) m.dishes = [];
+  return m;
+}
+// 비어 있고 따로 정한 것도 없는 기본 칸은 저장하지 않음
+function pruneMeals(meals){
+  for(let i = meals.length - 1; i >= 0; i--){
+    const m = meals[i];
+    if(MEAL_SLOTS.includes(m.slot) && /^m\d+_/.test(m.id) && !(m.dishes||[]).length && !m.servings && !m.done) meals.splice(i, 1);
+  }
+}
+function mutateMeals(space, tripId, op, extra){
+  const t = findTrip(space, tripId);
+  if(!t){ toast('일정을 찾지 못했어요.'); return false; }
+  const local = unfreeze(tripMeals(t));
+  op(local); pruneMeals(local);
+  t.meals = local;
+  if(extra) Object.assign(t, extra);
+  if(state.user) t.updatedBy = state.user.uid;
+  renderView();
+  if(!state.dbAvailable || !state.user){ syncShoppingList(space, tripId); return true; }
+  const ref = spaceDbOf(space).collection('trips').doc(tripId);
+  const write = meals=>{
+    const cur = findTrip(space, tripId);
+    if(cur) cur.meals = meals;
+    const p = ref.update({ meals, updatedBy: state.user.uid, ...(extra || {}) });
+    syncShoppingList(space, tripId);
+    return p;
+  };
+  rememberMealOp(space, tripId, op, extra);
+  safePersist(()=>ref.get().then(snap=>{
+    if(!snap.exists) return;   // 그 사이 일정이 지워짐
+    const latest = unfreeze(tripMeals(snap.data()));
+    op(latest); pruneMeals(latest);
+    return write(latest);
+  }, ()=>write(local)));
+  return true;
+}
+// 거의 동시에 다른 기기가 예전 식단으로 덮어쓴 경우: 최근(8초) 내가 한 변경을 새로 받은 일정에 다시 적용해 빠졌으면 다시 저장.
+// op는 몇 번 다시 적용해도 결과가 같게 만들어져 있음(같은 id면 건너뜀). 같은 칸을 서로 다르게 고치면 마지막에 다시 적용한 쪽이 남음(최대 3번).
+const _mealPending = {};
+function rememberMealOp(space, tripId, op, extra){
+  const k = space + '|' + tripId;
+  (_mealPending[k] = _mealPending[k] || []).push({ op, extra, until: Date.now() + 8000, tries: 0 });
+}
+function replayMealOps(space){
+  if(!state.dbAvailable || !state.user) return;
+  const now = Date.now();
+  Object.keys(_mealPending).forEach(k=>{
+    const [sp, tripId] = k.split('|');
+    if(sp!==space) return;
+    const list = _mealPending[k].filter(p=>p.until > now && p.tries < 3);
+    const t = findTrip(sp, tripId);
+    if(!list.length || !t){ delete _mealPending[k]; return; }
+    _mealPending[k] = list;
+    const next = unfreeze(tripMeals(t)), extra = {};
+    list.forEach(p=>{ p.op(next); Object.assign(extra, p.extra || {}); });
+    pruneMeals(next);
+    const extraDiff = Object.keys(extra).some(f=>t[f]!==extra[f]);
+    if(!extraDiff && JSON.stringify(next)===JSON.stringify(tripMeals(t))) return;
+    list.forEach(p=>{ p.tries++; });
+    t.meals = next; Object.assign(t, extra);
+    const ref = spaceDbOf(sp).collection('trips').doc(tripId);
+    safePersist(()=>ref.update({ meals: next, updatedBy: state.user.uid, ...extra }));
+    syncShoppingList(sp, tripId);
+  });
+}
+const mealOps = {
+  addDishes: (proto, dishes)=>meals=>{ const m = ensureMeal(meals, proto); dishes.forEach(d=>{ if(!m.dishes.some(x=>x.id===d.id)) m.dishes.push(unfreeze(d)); }); },
+  removeDish: (mealId, dishId)=>meals=>{ const m = meals.find(x=>x.id===mealId); if(m) m.dishes = (m.dishes||[]).filter(d=>d.id!==dishId); },
+  moveDish: (fromId, dish, toProto)=>meals=>{
+    const from = meals.find(x=>x.id===fromId); if(from) from.dishes = (from.dishes||[]).filter(d=>d.id!==dish.id);
+    const to = ensureMeal(meals, toProto); if(!to.dishes.some(d=>d.id===dish.id)) to.dishes.push(unfreeze(dish));
+  },
+  setDish: (mealId, dishId, fields)=>meals=>{
+    const m = meals.find(x=>x.id===mealId); const d = m && (m.dishes||[]).find(x=>x.id===dishId);
+    if(!d) return;
+    Object.entries(fields).forEach(([k, v])=>{ if(v===null || v===undefined || v==='') delete d[k]; else d[k] = v; });
+  },
+  setMeal: (proto, fields)=>meals=>{
+    const m = ensureMeal(meals, proto);
+    Object.entries(fields).forEach(([k, v])=>{ if(v===null || v===undefined || v==='' || v===false) delete m[k]; else m[k] = v; });
+  },
+  removeMeal: mealId=>meals=>{ const i = meals.findIndex(x=>x.id===mealId); if(i >= 0) meals.splice(i, 1); },
+  putMeal: meal=>meals=>{ const i = meals.findIndex(x=>x.id===meal.id); if(i >= 0) meals[i] = unfreeze(meal); else meals.push(unfreeze(meal)); },
+  moveMeal: (mealId, day)=>meals=>{
+    const m = meals.find(x=>x.id===mealId); if(!m) return;
+    const same = MEAL_SLOTS.includes(m.slot) ? meals.find(x=>x!==m && x.day===day && x.slot===m.slot) : null;
+    if(same){ (m.dishes||[]).forEach(d=>{ if(!(same.dishes||[]).some(x=>x.id===d.id)) (same.dishes = same.dishes||[]).push(d); }); meals.splice(meals.indexOf(m), 1); return; }
+    m.day = day;
+    if(MEAL_SLOTS.includes(m.slot)) m.id = 'm' + day + '_' + m.slot;   // 기본 칸 id 규칙 유지(같은 칸을 두 사람이 만들어도 한 끼니)
+  },
+};
+
+/* ---- 양 계산 ---- */
+function roundQty(q, unit){ return (unit==='g' || unit==='ml') ? Math.ceil(q / 50 - 1e-9) * 50 : Math.ceil(q * 2 - 1e-9) / 2; }
+function fmtNum(n){ return String(Math.round(n * 10) / 10); }
+function fmtQty(q, unit){ return fmtNum(roundQty(q, unit)) + unit; }
+function scaledIng(ing, servings, serves){ return ing.qty ? fmtQty(ing.qty * servings / (serves || 2), ing.unit) : '적당량'; }
+// 일정의 다 먹지 않은 끼니의 레시피 메뉴 재료를 모아 이름(normName)별로 합침
+function shoppingNeeds(t, space){
+  const by = {}, order = [];
+  tripMeals(t).forEach(m=>{
+    if(m.done) return;
+    const sv = mealServings(m, t, space);
+    (m.dishes||[]).forEach(d=>{
+      const r = d.recipeId && recipeById(d.recipeId);
+      if(!r) return;
+      r.ingredients.forEach(ing=>{
+        const k = normName(ing.name);
+        let e = by[k];
+        if(!e){ e = by[k] = { key: k, label: ing.name, cat: ing.cat, home: !!ing.home, qty: {}, uses: [], who: new Set(), anyFree: false }; order.push(k); }
+        if(ing.qty) e.qty[ing.unit] = (e.qty[ing.unit] || 0) + ing.qty * sv / (r.serves || 2);
+        if(!e.uses.includes(d.name)) e.uses.push(d.name);
+        if(d.assigneeUid) e.who.add(d.assigneeUid); else e.anyFree = true;
+      });
+    });
+  });
+  return order.map(k=>{
+    const e = by[k];
+    const parts = Object.entries(e.qty).map(([u, q])=>fmtQty(q, u));
+    return { ...e, qtyText: parts.length ? parts.join(' + ') : '적당량', assignee: (!e.anyFree && e.who.size===1) ? [...e.who][0] : null };
+  });
+}
+function shoppingListOf(space, tripId){ return (tripListsOf(space) || []).find(l=>l.tripId===tripId && l.kind==='shopping') || null; }
+const itemKey = it => it.key || normName(it.label);
+// 장보기 목록을 식단에 맞춤(바뀌었으면 true). 체크·담당자·home·고친 양·옮긴 소분류는 그대로, 직접 추가한 항목은 건드리지 않음
+function mergeShopping(list, needs, g){
+  const want = new Map(needs.map(n=>[n.key, n]));
+  const kept = new Map(), out = [];
+  let changed = false;
+  (Array.isArray(list.items) ? list.items : []).forEach(it=>{
+    if(it.src!=='meal'){ out.push(it); return; }
+    const k = itemKey(it);
+    if(kept.has(k)){   // 여러 기기가 동시에 만든 중복 → 하나로(체크된 쪽 상태를 살림)
+      const a = kept.get(k);
+      if(!isDecided(a) && isDecided(it)) a.status = itemStatus(it);
+      if(!a.assigneeUid && it.assigneeUid) a.assigneeUid = it.assigneeUid;
+      changed = true; return;
+    }
+    const n = want.get(k);
+    if(!n){
+      if(!isDecided(it)){ changed = true; return; }   // 아직 안 산 건 지움
+      if(!it.gone){ it.gone = true; changed = true; }  // 이미 체크한 건 남기고 "식단에서 빠짐"
+      kept.set(k, it); out.push(it); return;
+    }
+    if(it.gone){ delete it.gone; changed = true; }
+    if(!it.qtyEdited && it.qtyText!==n.qtyText){ it.qtyText = n.qtyText; changed = true; }
+    if(JSON.stringify(it.uses || [])!==JSON.stringify(n.uses)){ it.uses = n.uses.slice(); changed = true; }
+    if(!it.key){ it.key = k; changed = true; }
+    kept.set(k, it); out.push(it);
+  });
+  needs.forEach(n=>{
+    if(kept.has(n.key)) return;
+    const item = { id: uid('i'), label: n.label, status: 'pending', group: n.home ? SHOP_HOME_GROUP : n.cat, src: 'meal', key: n.key, qtyText: n.qtyText, uses: n.uses.slice() };
+    if(n.home) item.home = true;
+    if(g){
+      if(n.assignee && (g.memberUids||[]).includes(n.assignee)) item.assigneeUid = n.assignee;
+      if(state.user) item.addedBy = state.user.uid;
+    }
+    out.push(item); kept.set(n.key, item); changed = true;
+  });
+  list.items = out;
+  return changed;
+}
+// 식단이 바뀌면 그 일정의 장보기 목록을 맞춤: 내 화면에 먼저, 그다음 저장소의 최신 목록 기준으로(다른 멤버가 방금 한 체크를 덮어쓰지 않게)
+function syncShoppingList(space, tripId){
+  const t = findTrip(space, tripId), list = shoppingListOf(space, tripId);
+  if(!t || !list) return;
+  const g = tripGroupOf(space), needs = shoppingNeeds(t, space);
+  const changedLocal = mergeShopping(list, needs, g);
+  if(changedLocal && ['checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
+  if(!state.dbAvailable) return;
+  const ref = spaceDbOf(space).collection('checklists').doc(list.id);
+  const stamp = l=>{ if(g && state.user) l.updatedBy = state.user.uid; return stripId(l); };
+  safePersist(()=>ref.get().then(snap=>{
+    if(!snap.exists) return;   // 목록을 지웠으면 다시 만들지 않음
+    const latest = { id: list.id, ...unfreeze(snap.data()) };
+    if(latest.tripId!==tripId || latest.kind!=='shopping') return;
+    if(!mergeShopping(latest, needs, g)) return;
+    return ref.set(stamp(latest));
+  }, ()=>{ if(changedLocal) return ref.set(stamp(unfreeze(list))); }));
+}
+function createShoppingList(space, tripId){
+  const t = findTrip(space, tripId);
+  if(!t) return;
+  if(shoppingListOf(space, tripId)){ openShoppingList(space, tripId); return; }
+  const g = tripGroupOf(space);
+  const list = { id: uid('cl'), title: '장보기', kind: 'shopping', tripId, items: [] };
+  if(g && state.user){ list.addedBy = state.user.uid; list.updatedBy = state.user.uid; }
+  mergeShopping(list, shoppingNeeds(t, space), g);
+  if(space==='me') state.checklists.push(list);
+  else if(state.space===space) state.groupChecklists.push(list);
+  else (state.groupTripLists[space] = state.groupTripLists[space] || []).push(list);
+  if(state.dbAvailable){ const db = spaceDbOf(space); safePersist(()=>db.collection('checklists').doc(list.id).set(stripId(list))); }
+  renderView();
+  toast(`장보기 목록을 만들었어요(${list.items.length}개). 식단을 바꾸면 자동으로 맞춰져요.`, 'ok');
+}
+// 그 일정의 Checklist 화면(지난 일정이면 지난 일정 화면)으로 가서 장보기 목록이 보이게
+function openShoppingList(space, tripId){
+  if(space!=='me' && !groupById(space)){ toast('그 그룹에 더 이상 속해 있지 않아요.'); return; }
+  if(space!==state.space) selectSpace(space);
+  const t = findTrip(space, tripId);
+  state.tripFilter = tripId; state.checklistFilter = 'all';
+  state.currentView = t && tripPhase(t).kind==='past' ? 'pastTrips' : 'checklist';
+  if(state.gearSelecting) setGearSelecting(false);
+  renderNav(); renderView();
+  let tries = 0;
+  const go = ()=>{
+    const l = shoppingListOf(space, tripId);
+    const el = l && document.querySelector(`[data-cl="${CSS.escape(l.id)}"]`);
+    if(el){
+      el.scrollIntoView({ block: 'start' });
+      const main = document.getElementById('main'), head = document.querySelector('.trip-panel-head');
+      if(main && head) main.scrollTop -= head.offsetHeight + 8;   // 위에 붙는 일정 머리에 가리지 않게
+      updateStickyHeads();
+      return;
+    }
+    if(++tries < 10) setTimeout(go, 150);
+  };
+  setTimeout(go, 0);
+}
+function shoppingProgress(list){ const items = list.items || []; return { decided: items.filter(isDecided).length, total: items.length }; }
+// 장보기 소분류 순서: 고기·해산물 → 채소·과일 → 가공·면·유제품 → 음료·기타 → 양념·소스 → 집에서 챙길 것 → 그 밖
+function orderShopGroups(groups){
+  const rank = g=>{ const i = SHOP_GROUP_ORDER.indexOf(g.group); return i < 0 ? SHOP_GROUP_ORDER.length : i; };
+  return groups.map((g, i)=>({ g, i })).sort((a, b)=>rank(a.g) - rank(b.g) || a.i - b.i).map(x=>x.g);
+}
+function shopFindItem(listId, itemId){
+  const list = SP.checklists.find(c=>c.id===listId);
+  return { list, it: list && (list.items||[]).find(i=>i.id===itemId) };
+}
+function shopQtyModal(listId, itemId){
+  const { it } = shopFindItem(listId, itemId);
+  if(!it) return;
+  openModal(`
+    <h3>양 고치기</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">'<b style="color:var(--text);">${esc(it.label)}</b>' — 고친 양은 식단이 바뀌어도 그대로 둬요. 비우면 식단 기준으로 다시 계산해요.</p>
+    <div class="field"><label for="sq-qty">양</label><input id="sq-qty" maxlength="30" value="${esc(it.qtyText || '')}" placeholder="예: 1kg, 2팩"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="shop-qty-save" data-list="${esc(listId)}" data-item="${esc(itemId)}">${icon('save')} 저장</button>
+    </div>`);
+}
+function saveShopQty(listId, itemId){
+  const { list, it } = shopFindItem(listId, itemId);
+  const el = document.getElementById('sq-qty');
+  if(!it || !el) return;
+  const v = el.value.trim();
+  if(v){ it.qtyText = v; it.qtyEdited = true; } else delete it.qtyEdited;
+  persistChecklist(list);
+  closeModal(); renderView();
+  if(!v && list.tripId) syncShoppingList(spaceKey(), list.tripId);
+  toast(v ? '양을 고쳤어요.' : '식단 기준 양으로 돌렸어요.');
+}
+function toggleShopHome(listId, itemId){
+  const { list, it } = shopFindItem(listId, itemId);
+  if(!it) return;
+  if(it.home){
+    delete it.home;
+    it.group = it.homeFrom || (it.src==='meal' ? ingCatByKey(itemKey(it)) : '기타');
+    if(it.group===SHOP_HOME_GROUP) it.group = '기타';
+    delete it.homeFrom;
+  }else{
+    it.home = true;
+    if(it.group && it.group!==SHOP_HOME_GROUP) it.homeFrom = it.group;
+    it.group = SHOP_HOME_GROUP;
+  }
+  persistChecklist(list); renderView();
+  toast(it.home ? `'${it.label}'은(는) 집에서 챙길게요.` : `'${it.label}'을(를) 사야 할 것으로 옮겼어요.`);
+}
+
+/* ============================ COOKING ============================
+ * 맨 위 [식단표 | 레시피](기기에 기억, 처음엔 다가오는 일정이 있으면 식단표). 식단표는 내 일정 + 내가 참가하는 그룹 일정에서 고름(공간 전환과 따로). */
+const COOK_VIEW_KEY = 'campbase.cookView';
+state.cookSel = null;          // { space, tripId } — 식단표에서 고른 일정
+state.cookShowPast = false;
+state.cookOpenDish = null;     // 펼친 메뉴(dish id)
+function cookUpcoming(){
+  const today = todayStr();
+  return allMyTrips().filter(x=>tripPhase(x.trip, today).kind!=='past')
+    .sort((a, b)=>String(a.trip.startDate || '9999').localeCompare(String(b.trip.startDate || '9999')) || (a.space==='me' ? -1 : b.space==='me' ? 1 : 0));
+}
+function cookPast(){
+  const today = todayStr();
+  return allMyTrips().filter(x=>tripPhase(x.trip, today).kind==='past').sort((a, b)=>String(tripEnd(b.trip)).localeCompare(String(tripEnd(a.trip))));
+}
+function cookView(){
+  let v = null; try{ v = localStorage.getItem(COOK_VIEW_KEY); }catch(e){}
+  if(v==='plan' || v==='recipes') return v;
+  return cookUpcoming().length ? 'plan' : 'recipes';
+}
+function setCookView(v){ try{ localStorage.setItem(COOK_VIEW_KEY, v); }catch(e){} }
+function cookSelected(){
+  const s = state.cookSel;
+  if(s){ const t = findTrip(s.space, s.tripId); if(t && (s.space==='me' || groupById(s.space))) return { space: s.space, group: tripGroupOf(s.space), trip: t }; }
+  return cookUpcoming()[0] || null;
+}
+function openTripMeals(space, tripId){
+  if(space!=='me' && !groupById(space)){ toast('그 그룹에 더 이상 속해 있지 않아요.'); return; }
+  state.cookSel = { space, tripId }; state.cookOpenDish = null;
+  setCookView('plan');
+  const t = findTrip(space, tripId);
+  if(t && tripPhase(t).kind==='past') state.cookShowPast = true;
+  goView('cooking');
+}
 function renderCooking(){
+  const v = cookView();
+  return `
+    <div class="seg-group cook-switch" role="group" aria-label="Cooking 보기">
+      <div class="seg-btn ${v==='plan'?'active':''}" data-action="cook-view" data-view="plan" aria-pressed="${v==='plan'}">${icon('calendar')} 식단표</div>
+      <div class="seg-btn ${v==='recipes'?'active':''}" data-action="cook-view" data-view="recipes" aria-pressed="${v==='recipes'}">${icon('cooking')} 레시피</div>
+    </div>
+    ${v==='plan' ? renderMealPlan() : renderRecipes()}`;
+}
+function cookTripChip(x, sel){
+  const active = sel && sel.space===x.space && sel.trip.id===x.trip.id;
+  return `<div class="seg-btn trip-chip cook-trip-chip ${active?'active':''}" data-action="cook-trip" data-space="${esc(x.space)}" data-trip="${esc(x.trip.id)}">${esc(x.trip.title)} <span class="num" style="opacity:.7;">${esc(tripPhase(x.trip).label)}</span>${x.group ? `<span class="cook-grp">${icon('users')}${esc(x.group.name)}</span>` : ''}</div>`;
+}
+function renderMealPlan(){
+  if(!state.user && state.bootMode!=='preview') return '';
+  const sel = cookSelected();
+  const up = cookUpcoming(), past = cookPast();
+  if(!up.length && !past.length && !sel){
+    return `<div class="card empty meal-empty">${icon('calendar')}<div>캠핑 일정을 만들면 식단을 짤 수 있어요.</div>
+      <button class="btn btn-accent" data-action="trip-new">${icon('plus')} 일정 만들기</button></div>`;
+  }
+  const selIsPast = sel && tripPhase(sel.trip).kind==='past';
+  const inLists = sel && [...up, ...past].some(x=>x.space===sel.space && x.trip.id===sel.trip.id);
+  const showPast = state.cookShowPast || selIsPast;
+  const chips = `
+    <div class="trip-bar cook-trip-bar"><div class="seg-group trip-chips">
+      ${up.map(x=>cookTripChip(x, sel)).join('')}
+      ${sel && !inLists ? cookTripChip(sel, sel) : ''}
+      ${past.length ? `<div class="seg-btn trip-past-toggle" data-action="cook-past-toggle" aria-expanded="${showPast}">지난 일정 ${showPast ? '▴' : '▾'} <span class="num" style="opacity:.7;">${past.length}</span></div>` : ''}
+      ${showPast ? past.map(x=>cookTripChip(x, sel)).join('') : ''}
+    </div></div>`;
+  if(!sel) return chips + `<div class="card empty">다가오는 일정이 없어요. 지난 일정을 고르거나 Checklist에서 일정을 만들어 보세요.</div>`;
+  return chips + mealPlanBody(sel.space, sel.trip, sel.group);
+}
+function mealPlanBody(space, t, g){
+  const st = mealStats(t);
+  const base = baseServings(t, space);
+  const list = shoppingListOf(space, t.id);
+  const hasRecipe = tripMeals(t).some(m=>!m.done && (m.dishes||[]).some(d=>d.recipeId && recipeById(d.recipeId)));
+  const sp = list ? shoppingProgress(list) : null;
+  const L = mealLayout(t);
+  const where = [fmtTripDates(t), t.campsiteName || t.region].filter(Boolean).map(esc).join(' · ');
+  return `
+    <section class="card meal-summary" aria-label="${esc(t.title)} 식단 요약">
+      <div class="ms-title"><b>${esc(t.title)}</b>${g ? ` <span class="tag">${icon('users','chev-mini')} ${esc(g.name)}</span>` : ''}${where ? ` <span class="ms-where">${where}</span>` : ''}</div>
+      <div class="ms-row">
+        <span class="ms-count">식단 <b class="num">${st.planned}/${st.total}</b>끼 정함 ·</span>
+        <button class="link-btn ms-base" data-action="meal-servings" data-space="${esc(space)}" data-trip="${esc(t.id)}" data-meal="" aria-label="기본 인원 ${base}명, 바꾸기">기본 ${base}명</button>
+        <span class="spacer"></span>
+        ${list
+          ? `<button class="btn btn-sm shop-open" data-action="shop-open" data-space="${esc(space)}" data-trip="${esc(t.id)}">${icon('cart')} 장보기 <span class="num">${sp.decided}/${sp.total}</span> · 열기</button>`
+          : `<button class="btn btn-sm btn-accent shop-create" data-action="shop-create" data-space="${esc(space)}" data-trip="${esc(t.id)}" ${hasRecipe ? '' : 'disabled title="레시피 메뉴를 하나 이상 넣으면 만들 수 있어요"'}>${icon('cart')} 장보기 목록 만들기</button>`}
+      </div>
+    </section>
+    ${L.days.map(d=>`
+      <section class="card meal-day" aria-label="${d.day}일차">
+        <div class="meal-day-head">
+          <h3>${d.day}일차${tripDayDate(t, d.day) ? ` · ${esc(tripDayDate(t, d.day))}` : ''}</h3>
+          <button class="btn btn-sm" data-action="meal-extra-add" data-space="${esc(space)}" data-trip="${esc(t.id)}" data-day="${d.day}">${icon('plus')} 끼니 추가</button>
+        </div>
+        ${d.rows.map(m=>mealRowHtml(space, t, g, m, base)).join('')}
+      </section>`).join('')}
+    ${L.outside.length ? `
+      <section class="card meal-day meal-outside" aria-label="날짜 밖">
+        <div class="meal-day-head"><h3>날짜 밖</h3><span class="meta">일정 날짜를 줄여서 범위를 벗어난 끼니예요. 다른 날로 옮기거나 지울 수 있어요.</span></div>
+        ${L.outside.map(m=>mealRowHtml(space, t, g, m, base)).join('')}
+      </section>` : ''}`;
+}
+function mealRowHtml(space, t, g, m, base){
+  const sv = mealServings(m, t, space);
+  const dishes = m.dishes || [];
+  const ds = { 'data-space': space, 'data-trip': t.id, 'data-meal': m.id };
+  const attrs = o => Object.entries(o).map(([k, v])=>`${k}="${esc(v)}"`).join(' ');
+  const inRange = m.day >= 1 && m.day <= tripDays(t);
+  const open = dishes.find(d=>d.id===state.cookOpenDish);
+  const addBtn = `<button class="btn btn-sm meal-add" data-action="meal-add-dish" ${attrs(ds)} aria-label="${esc(mealTitle(t, m))}에 메뉴 넣기">${icon('plus')} 메뉴</button>`;
+  return `
+    <div class="meal-row ${m.done ? 'done' : ''}" data-meal-row="${esc(m.id)}">
+      <div class="meal-head">
+        <span class="meal-name">${esc(mealLabel(m))}</span>
+        <button class="meal-serv ${Number(m.servings) > 0 && sv!==base ? 'diff' : ''}" data-action="meal-servings" ${attrs(ds)} aria-label="${esc(mealLabel(m))} 인원 ${sv}명, 바꾸기" title="이 끼니 인원">${icon('users')}<span class="num">${sv}명</span></button>
+        ${m.done ? `<span class="tag done-tag">${icon('check')} 다 먹음</span>` : ''}
+        ${!m.done && !dishes.length ? addBtn : ''}
+        <span class="spacer"></span>
+        ${moreMenuHtml('meal:' + t.id + ':' + m.id, [
+          { action:'meal-done', attrs: ds, icon: m.done ? 'refresh' : 'check', label: m.done ? '다시 열기' : '다 먹었어요' },
+          !m.virtual ? { action:'meal-move', attrs: ds, icon:'calendar', label: inRange ? '다른 날로 옮기기' : '날짜 안으로 옮기기' } : null,
+          dishes.length ? { action:'meal-clear', attrs: ds, icon:'refresh', label:'끼니 비우기' } : null,
+          (!m.virtual && (!MEAL_SLOTS.includes(m.slot) || !inRange)) ? { action:'meal-del', attrs: ds, icon:'trash', label:'끼니 지우기', danger:true } : null,
+        ], `${mealTitle(t, m)} 끼니 메뉴`)}
+      </div>
+      ${m.done ? (dishes.length ? `<div class="meal-done-line">${dishes.map(d=>esc(d.name)).join(' · ')}</div>` : '') : !dishes.length ? '' : `
+      <div class="meal-dishes">
+        ${dishes.map(d=>`
+          <span class="dish-chip ${open && open.id===d.id ? 'open' : ''}">
+            <button class="dish-btn" data-action="dish-open" ${attrs({ ...ds, 'data-dish': d.id })} aria-expanded="${!!(open && open.id===d.id)}">${d.recipeId ? icon('cooking') : ''}<span>${esc(d.name)}</span>${g && d.assigneeUid ? memberAvatarHtml(g, d.assigneeUid) : ''}</button>
+            ${moreMenuHtml('dish:' + d.id, [
+              g ? { action:'dish-assign', attrs: { ...ds, 'data-dish': d.id }, icon:'users', label: d.assigneeUid ? '담당자 바꾸기' : '담당자 지정' } : null,
+              { action:'dish-move', attrs: { ...ds, 'data-dish': d.id }, icon:'calendar', label:'다른 끼니로 옮기기' },
+              { action:'dish-del', attrs: { ...ds, 'data-dish': d.id }, icon:'trash', label:'빼기', danger:true },
+            ], `'${d.name}' 메뉴`)}
+          </span>`).join('')}
+        ${addBtn}
+      </div>
+      ${open ? dishRecipeHtml(open, sv, g) : ''}`}
+    </div>`;
+}
+function dishRecipeHtml(d, sv, g){
+  const r = d.recipeId && recipeById(d.recipeId);
+  const who = g && d.assigneeUid ? ` · 담당 ${esc(memberName(g, d.assigneeUid))}` : '';
+  if(!r) return `<div class="dish-recipe"><div class="dr-head"><b>${esc(d.name)}</b><span class="meta">직접 넣은 메뉴${who}</span></div></div>`;
+  return `
+    <div class="dish-recipe">
+      <div class="dr-head"><b>${esc(r.name)}</b><span class="meta">${sv}명 기준 · ${esc(r.time)}${who}</span></div>
+      <ul class="dr-ings">${r.ingredients.map(ing=>`<li><span>${esc(ing.name)}</span><span class="num">${esc(scaledIng(ing, sv, r.serves))}</span></li>`).join('')}</ul>
+      <div class="dr-steps">${esc(r.steps)}</div>
+      <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
+    </div>`;
+}
+
+/* ---- 식단 동작 ---- */
+function mealCtx(a){
+  const space = a.getAttribute('data-space'), tripId = a.getAttribute('data-trip');
+  const t = findTrip(space, tripId);
+  const mealId = a.getAttribute('data-meal');
+  const m = t && mealId ? mealProto(t, mealId) : null;
+  const dishId = a.getAttribute('data-dish');
+  const d = m && dishId ? (m.dishes||[]).find(x=>x.id===dishId) : null;
+  return { space, tripId, t, m, d, g: tripGroupOf(space) };
+}
+function ctxAttrs(c, extra){ return `data-space="${esc(c.space)}" data-trip="${esc(c.tripId)}" data-meal="${esc(c.m ? c.m.id : '')}"${c.d ? ` data-dish="${esc(c.d.id)}"` : ''}${extra || ''}`; }
+function mealPickerModal(a){
+  const c = mealCtx(a);
+  if(!c.t || !c.m) return;
+  const cats = Array.from(new Set(COOKING_RECIPES.map(r=>r.category)));
+  openModal(`
+    <h3>메뉴 넣기 · ${esc(mealTitle(c.t, c.m))}</h3>
+    <div class="field"><label for="mp-custom">직접 입력</label><input id="mp-custom" maxlength="40" placeholder="예: 라면, 치킨 포장 (여러 개는 쉼표로)"></div>
+    <div class="field"><label for="mp-search">레시피에서 고르기</label><input id="mp-search" type="search" placeholder="이름·재료로 찾기" autocomplete="off"></div>
+    <div class="seg-group mp-cats" role="group" aria-label="레시피 종류">
+      <div class="seg-btn active" data-action="mp-cat" data-cat="all">전체</div>
+      ${cats.map(x=>`<div class="seg-btn" data-action="mp-cat" data-cat="${esc(x)}">${esc(x)}</div>`).join('')}
+    </div>
+    <div class="send-list mp-list" id="mp-list">
+      ${COOKING_RECIPES.map(r=>`<label class="send-row mp-row" data-cat="${esc(r.category)}" data-text="${esc(normName(r.name + ingNames(r).join('')))}"><input type="checkbox" class="mp-pick" value="${esc(r.id)}"> <span class="sr-name">${esc(r.name)}</span> <span class="meta">${esc(r.category)} · ${esc(r.time)}</span></label>`).join('')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="mp-go" ${ctxAttrs(c)}>${icon('plus')} 넣기</button>
+    </div>`);
+}
+function mpFilter(){
+  const q = normName((document.getElementById('mp-search') || {}).value || '');
+  const catEl = document.querySelector('[data-action="mp-cat"].active');
+  const cat = catEl ? catEl.getAttribute('data-cat') : 'all';
+  document.querySelectorAll('#mp-list .mp-row').forEach(r=>{
+    const ok = (cat==='all' || r.getAttribute('data-cat')===cat) && (!q || r.getAttribute('data-text').includes(q));
+    r.style.display = ok ? '' : 'none';
+  });
+}
+function mealPickerGo(a){
+  const c = mealCtx(a);
+  if(!c.t || !c.m) return;
+  const dishes = [];
+  const custom = ((document.getElementById('mp-custom') || {}).value || '').split(/[,，]/).map(x=>x.trim()).filter(Boolean);
+  custom.forEach(name=>dishes.push({ id: uid('d'), name: name.slice(0, 40) }));
+  document.querySelectorAll('#mp-list .mp-pick:checked').forEach(cb=>{ const r = recipeById(cb.value); if(r) dishes.push({ id: uid('d'), recipeId: r.id, name: r.name }); });
+  if(!dishes.length){ toast('메뉴를 고르거나 이름을 입력해주세요.'); return; }
+  closeModal();
+  mutateMeals(c.space, c.tripId, mealOps.addDishes(c.m, dishes));
+  toast(`${mealTitle(c.t, c.m)}에 메뉴 ${dishes.length}개를 넣었어요.`, 'ok');
+}
+function servingsModal(a){
+  const c = mealCtx(a);
+  if(!c.t) return;
+  const base = baseServings(c.t, c.space);
+  const cur = c.m ? mealServings(c.m, c.t, c.space) : base;
+  openModal(`
+    <h3>${c.m ? esc(mealTitle(c.t, c.m)) + ' 인원' : '기본 인원'}</h3>
+    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">${c.m ? `이 끼니만 다르게 정해요. 기본 인원은 ${base}명이에요.` : '끼니마다 따로 정하지 않으면 이 인원으로 재료 양을 계산해요.'}</p>
+    <div class="field"><label for="sv-n">인원(명)</label>
+      <div class="sv-row">
+        <button type="button" class="icon-btn" data-action="sv-step" data-d="-1" aria-label="한 명 줄이기">−</button>
+        <input id="sv-n" type="number" inputmode="numeric" min="1" max="50" value="${cur}">
+        <button type="button" class="icon-btn" data-action="sv-step" data-d="1" aria-label="한 명 늘리기">${icon('plus')}</button>
+      </div></div>
+    <div class="modal-actions">
+      ${c.m && Number(c.m.servings) > 0 ? `<button class="btn" data-action="sv-save" ${ctxAttrs(c, ' data-reset="1"')}>기본 인원으로</button>` : `<button class="btn" data-action="modal-close">취소</button>`}
+      <button class="btn btn-primary" data-action="sv-save" ${ctxAttrs(c)}>${icon('save')} 저장</button>
+    </div>`);
+}
+function servingsSave(a){
+  const c = mealCtx(a);
+  if(!c.t) return;
+  const reset = a.getAttribute('data-reset')==='1';
+  const n = Math.round(Number((document.getElementById('sv-n') || {}).value));
+  if(!reset && !(n >= 1 && n <= 50)){ toast('인원은 1~50명으로 정해주세요.'); return; }
+  closeModal();
+  if(c.m){
+    const v = reset || n===baseServings(c.t, c.space) ? null : n;
+    mutateMeals(c.space, c.tripId, mealOps.setMeal(c.m, { servings: v }));
+    toast(v ? `${mealTitle(c.t, c.m)}은(는) ${v}명이에요.` : '기본 인원으로 맞췄어요.');
+  }else{
+    mutateMeals(c.space, c.tripId, ()=>{}, { mealServings: n });
+    toast(`기본 인원을 ${n}명으로 바꿨어요.`);
+  }
+}
+function mealTargetsHtml(t, exceptId, action, c){
+  const L = mealLayout(t);
+  const rows = [...L.days.flatMap(d=>d.rows), ...L.outside].filter(m=>m.id!==exceptId);
+  return `<div class="send-list">${rows.map(m=>`<button type="button" class="list-row member-pick" data-action="${action}" ${ctxAttrs(c)} data-to="${esc(m.id)}" style="width:100%;">
+    <span class="name" style="flex:1;text-align:left;">${esc(mealTitle(t, m))}${tripDayDate(t, m.day) ? ` <span class="meta">${esc(tripDayDate(t, m.day))}</span>` : ''}</span>
+    <span class="meta">${(m.dishes||[]).length ? esc((m.dishes||[]).map(d=>d.name).join(', ')) : '비어 있음'}</span></button>`).join('')}</div>`;
+}
+function dishMoveModal(a){
+  const c = mealCtx(a);
+  if(!c.d) return;
+  openModal(`<h3>'${esc(c.d.name)}' 옮기기</h3><p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">옮길 끼니를 골라주세요.</p>${mealTargetsHtml(c.t, c.m.id, 'dish-move-go', c)}`);
+}
+function dishMoveGo(a){
+  const c = mealCtx(a);
+  if(!c.d) return;
+  const to = mealProto(c.t, a.getAttribute('data-to'));
+  if(!to) return;
+  closeModal();
+  mutateMeals(c.space, c.tripId, mealOps.moveDish(c.m.id, c.d, to));
+  toast(`'${c.d.name}'을(를) ${mealTitle(c.t, to)}(으)로 옮겼어요.`);
+}
+function dishDelete(a){
+  const c = mealCtx(a);
+  if(!c.d) return;
+  const dish = unfreeze(c.d), proto = { id: c.m.id, day: c.m.day, slot: c.m.slot, label: c.m.label };
+  const idx = (c.m.dishes||[]).findIndex(x=>x.id===dish.id);
+  if(state.cookOpenDish===dish.id) state.cookOpenDish = null;
+  mutateMeals(c.space, c.tripId, mealOps.removeDish(c.m.id, dish.id));
+  undoToast(`'${dish.name}'을(를) 식단에서 뺐어요.`, ()=>{
+    mutateMeals(c.space, c.tripId, meals=>{
+      const m = ensureMeal(meals, proto);
+      if(!m.dishes.some(x=>x.id===dish.id)) m.dishes.splice(Math.min(Math.max(idx, 0), m.dishes.length), 0, dish);
+    });
+    toast('되돌렸어요.', 'ok');
+  });
+}
+function dishAssignModal(a){
+  const c = mealCtx(a);
+  if(!c.d || !c.g) return;
+  openModal(`
+    <h3>담당자 지정</h3>
+    <p style="margin:0 0 8px;color:var(--text-dim);font-size:13px;">'<b style="color:var(--text);">${esc(c.d.name)}</b>'을(를) 맡을 사람을 골라주세요. 장보기 목록을 만들 때 이 메뉴 재료의 담당자로 들어가요.</p>
+    ${memberPickRowsHtml(c.g, c.d.assigneeUid, u=>`data-action="dish-assign-set" ${ctxAttrs(c)} data-uid="${esc(u)}"`)}
+    ${c.d.assigneeUid ? `<div class="modal-actions"><button class="btn" data-action="dish-assign-set" ${ctxAttrs(c)} data-uid="">담당 해제</button></div>` : ''}`);
+}
+function dishAssignSet(a){
+  const c = mealCtx(a);
+  if(!c.d) return;
+  const u = a.getAttribute('data-uid') || null;
+  closeModal();
+  mutateMeals(c.space, c.tripId, mealOps.setDish(c.m.id, c.d.id, { assigneeUid: u }));
+  toast(u ? `${memberName(c.g, u)} 님이 '${c.d.name}' 담당이에요.` : '담당자를 해제했어요.');
+}
+function mealDoneToggle(a){
+  const c = mealCtx(a);
+  if(!c.m) return;
+  const done = !c.m.done;
+  mutateMeals(c.space, c.tripId, mealOps.setMeal(c.m, { done }));
+  toast(done ? `${mealTitle(c.t, c.m)} 다 먹었어요. 장보기 목록에서도 빠져요.` : '다시 열었어요.');
+}
+function mealClear(a, remove){
+  const c = mealCtx(a);
+  if(!c.m || c.m.virtual && remove) return;
+  const snapshot = unfreeze(c.m);
+  mutateMeals(c.space, c.tripId, remove ? mealOps.removeMeal(c.m.id) : mealOps.setMeal(c.m, { dishes: [] }));
+  undoToast(remove ? `${mealTitle(c.t, snapshot)} 끼니를 지웠어요.` : `${mealTitle(c.t, snapshot)}을(를) 비웠어요.`, ()=>{
+    mutateMeals(c.space, c.tripId, mealOps.putMeal(snapshot));
+    toast('되돌렸어요.', 'ok');
+  });
+}
+function mealMoveModal(a){
+  const c = mealCtx(a);
+  if(!c.m) return;
+  const n = tripDays(c.t);
+  openModal(`<h3>${esc(mealTitle(c.t, c.m))} 옮기기</h3><p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">옮길 날을 골라주세요. 같은 날에 같은 끼니가 있으면 메뉴를 합쳐요.</p>
+    <div class="send-list">${Array.from({ length: n }, (_, i)=>i + 1).filter(d=>d!==c.m.day).map(d=>`<button type="button" class="list-row member-pick" data-action="meal-move-go" ${ctxAttrs(c)} data-day="${d}" style="width:100%;"><span class="name" style="flex:1;text-align:left;">${d}일차</span><span class="meta">${esc(tripDayDate(c.t, d))}</span></button>`).join('')}</div>`);
+}
+function mealMoveGo(a){
+  const c = mealCtx(a);
+  if(!c.m) return;
+  const day = Number(a.getAttribute('data-day'));
+  closeModal();
+  mutateMeals(c.space, c.tripId, mealOps.moveMeal(c.m.id, day));
+  toast(`${day}일차로 옮겼어요.`);
+}
+function extraMealModal(a){
+  const space = a.getAttribute('data-space'), tripId = a.getAttribute('data-trip'), day = Number(a.getAttribute('data-day'));
+  openModal(`
+    <h3>${day}일차 끼니 추가</h3>
+    <div class="seg-group" id="em-presets">${EXTRA_PRESETS.map(x=>`<div class="seg-btn" data-action="em-preset" data-val="${esc(x)}">${esc(x)}</div>`).join('')}</div>
+    <div class="field" style="margin-top:10px;"><label for="em-label">끼니 이름</label><input id="em-label" maxlength="20" placeholder="예: 간식, 야식, 술안주"></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="em-save" data-space="${esc(space)}" data-trip="${esc(tripId)}" data-day="${day}">${icon('plus')} 추가</button>
+    </div>`);
+}
+function extraMealSave(a){
+  const space = a.getAttribute('data-space'), tripId = a.getAttribute('data-trip'), day = Number(a.getAttribute('data-day'));
+  const label = ((document.getElementById('em-label') || {}).value || '').trim();
+  if(!label){ toast('끼니 이름을 입력하거나 골라주세요.'); return; }
+  closeModal();
+  const meal = { id: uid('m'), day, slot: 'extra', label: label.slice(0, 20), dishes: [] };
+  mutateMeals(space, tripId, mealOps.putMeal(meal));
+  toast(`${day}일차에 '${meal.label}'을(를) 추가했어요.`);
+}
+function toggleDishOpen(a){
+  const id = a.getAttribute('data-dish');
+  state.cookOpenDish = state.cookOpenDish===id ? null : id;
+  renderView();
+  const b = document.querySelector(`[data-action="dish-open"][data-dish="${CSS.escape(id)}"]`);
+  if(b) b.focus({ preventScroll: true });
+}
+
+/* ---- 레시피 보기(읽기 전용 재료 + "식단에 추가") ---- */
+function renderRecipes(){
   const cats = ['all', ...Array.from(new Set(COOKING_RECIPES.map(r=>r.category)))];
-  const catLabels = {all:'전체'};
   const activeCat = state.cookingCategory || 'all';
   const list = COOKING_RECIPES.filter(r=> activeCat==='all' || r.category===activeCat);
+  const open = cookOpenSet();
   return `
     <div class="section-head">
-      <div><h1>캠핑 요리</h1><div class="section-desc">캠핑 요리 블로그에서 모은 레시피예요. 재료를 체크하며 장보기·준비를 챙겨보세요.</div></div>
+      <div><h1>캠핑 요리</h1><div class="section-desc">캠핑 요리 블로그(LifeBase, 우리의식탁)에서 모은 레시피예요. "식단에 추가"로 일정 끼니에 넣으면 장보기 목록까지 만들어져요.</div></div>
     </div>
-    <div class="banner">${icon('info')}<div>캠핑 요리 블로그(LifeBase, 우리의식탁)에서 모은 대표 레시피 모음이에요. 실시간으로 갱신되진 않아요.</div></div>
     <div class="seg-group" style="margin-bottom:16px;">
-      ${cats.map(c=>`<div class="seg-btn ${c===activeCat?'active':''}" data-action="cook-filter" data-cat="${c}">${esc(catLabels[c]||c)}</div>`).join('')}
+      ${cats.map(c=>`<div class="seg-btn ${c===activeCat?'active':''}" data-action="cook-filter" data-cat="${esc(c)}">${c==='all' ? '전체' : esc(c)} <span class="num" style="opacity:.65;">${c==='all' ? COOKING_RECIPES.length : COOKING_RECIPES.filter(r=>r.category===c).length}</span></div>`).join('')}
     </div>
     <div class="grid recipe-grid">
-      ${list.length ? (()=>{ const open = cookOpenSet(); return list.map(r=>recipeCardHtml(r, open.has(r.id))).join(''); })() : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
-    </div>
-  `;
+      ${list.length ? list.map(r=>recipeCardHtml(r, open.has(r.id))).join('') : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
+    </div>`;
 }
-// 3-4: 레시피 카드는 접힌 상태(이름·종류·난이도·시간·재료 n/m)로, 눌러서 펼침(여러 개 가능, 기기에 기억).
-//      재료는 줄 전체가 체크 버튼(40px 이상), 체크 모양은 체크리스트의 "가져감"과 같은 스타일.
+// 레시피 카드: 접힌 상태(이름·종류·난이도·시간), 눌러서 펼침(여러 개, 기기에 기억). 펼치면 2인 기준 재료(읽기 전용)·순서·출처
 const COOK_OPEN_KEY = 'campbase.cookOpen';
 function cookOpenSet(){ try{ const v = JSON.parse(localStorage.getItem(COOK_OPEN_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(e){ return new Set(); } }
 function toggleCookOpen(rid){
@@ -4328,41 +5125,64 @@ function toggleCookOpen(rid){
   const b = document.querySelector(`[data-action="cook-open"][data-recipe="${CSS.escape(rid)}"]`);
   if(b) b.focus({ preventScroll: true });
 }
-function toggleCookIngredient(rid, idx){
-  const cur = new Set((state.cookingChecks[rid] && state.cookingChecks[rid].checked) || []);
-  if(cur.has(idx)) cur.delete(idx); else cur.add(idx);
-  state.cookingChecks[rid] = { checked: [...cur] };
-  persistCookingCheck(rid, state.cookingChecks[rid]);
-  renderView();
-  const b = document.querySelector(`[data-action="cook-toggle"][data-recipe="${CSS.escape(rid)}"][data-idx="${idx}"]`);
-  if(b) b.focus({ preventScroll: true });
-}
 function recipeCardHtml(r, open){
-  const checked = new Set((state.cookingChecks[r.id] && state.cookingChecks[r.id].checked) || []);
-  const doneCount = [...checked].filter(i=>i < r.ingredients.length).length, total = r.ingredients.length;
   return `
     <div class="card recipe-card ${open ? 'open' : ''}">
-      <button type="button" class="recipe-head" data-action="cook-open" data-recipe="${r.id}" aria-expanded="${open}" aria-controls="recipe-${r.id}">
-        <span class="recipe-main">
-          <span class="name">${esc(r.name)}</span>
-          <span class="recipe-meta">${esc(r.category)} · ${esc(r.difficulty)} · ${esc(r.time)}</span>
-        </span>
-        <span class="tag ${total && doneCount===total ? 'done-tag' : ''}">재료 ${doneCount}/${total}</span>
-        ${icon('chev', 'recipe-chev')}
-      </button>
+      <div class="recipe-top">
+        <button type="button" class="recipe-head" data-action="cook-open" data-recipe="${r.id}" aria-expanded="${open}" aria-controls="recipe-${r.id}">
+          <span class="recipe-main">
+            <span class="name">${esc(r.name)}</span>
+            <span class="recipe-meta">${esc(r.category)} · ${esc(r.difficulty)} · ${esc(r.time)}</span>
+          </span>
+          ${icon('chev', 'recipe-chev')}
+        </button>
+        <button type="button" class="btn btn-sm recipe-plan" data-action="recipe-to-plan" data-recipe="${r.id}" aria-label="'${esc(r.name)}' 식단에 추가">${icon('plus')} 식단에 추가</button>
+      </div>
       ${open ? `<div class="recipe-body" id="recipe-${r.id}">
-        <div class="ing-list">
-          ${r.ingredients.map((ing,i)=>`
-            <button type="button" class="ing-row" role="checkbox" aria-checked="${checked.has(i)}" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}">
-              <span class="cl-status-btn packed ${checked.has(i)?'active':''}" aria-hidden="true">${icon('check')}</span>
-              <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
-            </button>`).join('')}
-        </div>
+        <div class="ing-head">재료 <span class="meta">${r.serves || 2}인 기준</span></div>
+        <ul class="dr-ings">${r.ingredients.map(ing=>`<li><span>${esc(ing.name)}</span><span class="num">${esc(scaledIng(ing, r.serves || 2, r.serves))}</span></li>`).join('')}</ul>
         <div class="section-desc" style="margin:10px 0;line-height:1.5;">${esc(r.steps)}</div>
         <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
       </div>` : ''}
-    </div>
-  `;
+    </div>`;
+}
+// 레시피 → 식단: 일정·끼니 고르기(지금 식단표에서 고른 일정이 기본)
+function recipeToPlanModal(rid){
+  const r = recipeById(rid);
+  if(!r) return;
+  const trips = [...cookUpcoming(), ...cookPast()];
+  const sel = cookSelected();
+  if(sel && !trips.some(x=>x.space===sel.space && x.trip.id===sel.trip.id)) trips.unshift(sel);
+  if(!trips.length){
+    openModal(`<h3>식단에 추가</h3><p style="margin:0 0 12px;color:var(--text-dim);font-size:13px;">캠핑 일정을 만들면 끼니마다 메뉴를 넣을 수 있어요.</p>
+      <div class="modal-actions"><button class="btn btn-accent" data-action="trip-new">${icon('plus')} 일정 만들기</button></div>`);
+    return;
+  }
+  const cur = sel || trips[0];
+  openModal(`
+    <h3>'${esc(r.name)}' 식단에 추가</h3>
+    <div class="field"><label for="rp-trip">일정</label><select id="rp-trip" data-recipe="${esc(r.id)}">${trips.map(x=>`<option value="${esc(x.space + '|' + x.trip.id)}" ${x.space===cur.space && x.trip.id===cur.trip.id ? 'selected' : ''}>${esc(x.trip.title)}${x.group ? ' · ' + esc(x.group.name) : ''} (${esc(tripPhase(x.trip).label)})</option>`).join('')}</select></div>
+    <div class="field"><label for="rp-meal">끼니</label><select id="rp-meal">${rpMealOptions(cur.space, cur.trip)}</select></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="rp-go" data-recipe="${esc(r.id)}">${icon('plus')} 넣기</button>
+    </div>`);
+}
+function rpMealOptions(space, t){
+  const L = mealLayout(t);
+  const firstEmpty = L.days.flatMap(d=>d.rows).find(m=>!(m.dishes||[]).length && !m.done);
+  return L.days.flatMap(d=>d.rows).map(m=>`<option value="${esc(m.id)}" ${firstEmpty && m.id===firstEmpty.id ? 'selected' : ''}>${esc(mealTitle(t, m))}${tripDayDate(t, m.day) ? ' · ' + esc(tripDayDate(t, m.day)) : ''}${(m.dishes||[]).length ? ' (' + esc(m.dishes.map(d=>d.name).join(', ')) + ')' : ''}</option>`).join('');
+}
+function rpGo(rid){
+  const r = recipeById(rid);
+  const [space, tripId] = String((document.getElementById('rp-trip') || {}).value || '').split('|');
+  const t = findTrip(space, tripId);
+  const m = t && mealProto(t, (document.getElementById('rp-meal') || {}).value);
+  if(!r || !t || !m){ toast('일정과 끼니를 골라주세요.'); return; }
+  closeModal();
+  state.cookSel = { space, tripId };
+  mutateMeals(space, tripId, mealOps.addDishes(m, [{ id: uid('d'), recipeId: r.id, name: r.name }]));
+  toast(`'${r.name}'을(를) ${t.title} ${mealTitle(t, m)}에 넣었어요.`, 'ok');
 }
 
 /* ============================ MODAL / TOAST ============================ */
@@ -4710,7 +5530,37 @@ function wireGlobalActions(){
         break;
 
       case 'cook-open': toggleCookOpen(a.getAttribute('data-recipe')); break;
-      case 'cook-toggle': toggleCookIngredient(a.getAttribute('data-recipe'), Number(a.getAttribute('data-idx'))); break;
+      case 'cook-view': setCookView(a.getAttribute('data-view')==='recipes' ? 'recipes' : 'plan'); renderView(); break;
+      case 'cook-trip': state.cookSel = { space: a.getAttribute('data-space'), tripId: a.getAttribute('data-trip') }; state.cookOpenDish = null; renderView(); break;
+      case 'cook-past-toggle': state.cookShowPast = !state.cookShowPast; renderView(); break;
+      case 'cook-open-trip': openTripMeals(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
+      case 'meal-add-dish': mealPickerModal(a); break;
+      case 'mp-cat': document.querySelectorAll('[data-action="mp-cat"]').forEach(x=>x.classList.toggle('active', x===a)); mpFilter(); break;
+      case 'mp-go': mealPickerGo(a); break;
+      case 'meal-servings': servingsModal(a); break;
+      case 'sv-step': { const inp = document.getElementById('sv-n'); if(inp) inp.value = String(Math.max(1, Math.min(50, (Math.round(Number(inp.value)) || 0) + Number(a.getAttribute('data-d'))))); break; }
+      case 'sv-save': servingsSave(a); break;
+      case 'dish-open': toggleDishOpen(a); break;
+      case 'dish-move': dishMoveModal(a); break;
+      case 'dish-move-go': dishMoveGo(a); break;
+      case 'dish-del': dishDelete(a); break;
+      case 'dish-assign': dishAssignModal(a); break;
+      case 'dish-assign-set': dishAssignSet(a); break;
+      case 'meal-done': mealDoneToggle(a); break;
+      case 'meal-clear': mealClear(a, false); break;
+      case 'meal-del': mealClear(a, true); break;
+      case 'meal-move': mealMoveModal(a); break;
+      case 'meal-move-go': mealMoveGo(a); break;
+      case 'meal-extra-add': extraMealModal(a); break;
+      case 'em-preset': { const inp = document.getElementById('em-label'); if(inp) inp.value = a.getAttribute('data-val'); document.querySelectorAll('[data-action="em-preset"]').forEach(x=>x.classList.toggle('active', x===a)); break; }
+      case 'em-save': extraMealSave(a); break;
+      case 'recipe-to-plan': recipeToPlanModal(a.getAttribute('data-recipe')); break;
+      case 'rp-go': rpGo(a.getAttribute('data-recipe')); break;
+      case 'shop-create': createShoppingList(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
+      case 'shop-open': openShoppingList(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
+      case 'shop-qty': shopQtyModal(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
+      case 'shop-qty-save': saveShopQty(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
+      case 'shop-home': toggleShopHome(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
       case 'cook-filter':
         state.cookingCategory = a.getAttribute('data-cat');
         renderView();
@@ -4970,6 +5820,7 @@ function wireGlobalActions(){
   window.addEventListener('resize', ()=>{ if(state.currentView==='camping') markCampClamps(); });
   if(window.visualViewport) window.visualViewport.addEventListener('scroll', kbdCheck);
   kbdCheck();
+  document.addEventListener('input', (e)=>{ if(e.target && e.target.id==='mp-search') mpFilter(); });
   document.addEventListener('change', (e)=>{
    try{
     if(e.target && (e.target.id === 'backup-file' || e.target.id === 'group-backup-file')){
@@ -4987,6 +5838,11 @@ function wireGlobalActions(){
       return;
     }
     if(e.target.matches && e.target.matches('[data-action="gpk-toggle"]')){ gpkSync(e.target); return; }
+    if(e.target.id==='rp-trip'){   // 레시피 → 식단: 일정을 바꾸면 끼니 목록도
+      const [sp, tid] = String(e.target.value).split('|'); const t = findTrip(sp, tid), m = document.getElementById('rp-meal');
+      if(t && m) m.innerHTML = rpMealOptions(sp, t);
+      return;
+    }
     if(e.target.id==='ncl-tpl'){   // 새 리스트: 템플릿을 고르면 비어 있는 이름 칸에 템플릿 이름
       const t = SP.templates.find(x=>x.id===e.target.value), inp = document.getElementById('ncl-title');
       if(t && inp && !inp.value.trim()) inp.value = t.title || '';

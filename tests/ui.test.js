@@ -242,7 +242,7 @@ function seed() {
       sample('그룹 만들기', '[data-action="group-new"]');
       sample('그룹 역할 태그', '.group-row .tag');
       await go('cooking');
-      sample('재료 배지', '.card .tag');
+      sample('레시피 보조 글자', '.recipe-meta');
       const accentEls = [...document.querySelectorAll('.btn-accent, .trip-new-chip')].map(e => e.dataset.action);
       await go('checklist');
       accentEls.push(...[...document.querySelectorAll('.btn-accent, .trip-new-chip')].map(e => e.dataset.action));
@@ -254,7 +254,7 @@ function seed() {
     });
     const low = Object.entries(info.pairs).filter(([, v]) => v < 4.5);
     check(`${scheme === 'light' ? '밝은' : '어두운'} 모드: 글자/배경 대비 WCAG AA(4.5:1) 이상`, low.length === 0 && Object.keys(info.pairs).length >= 8, info.pairs);
-    check(`${scheme === 'light' ? '밝은' : '어두운'} 모드: 앰버는 만들기/추가 버튼에만`, info.accentEls.every(a => ['group-new', 'cl-new-list', 'trip-new', 'gear-new', 'camp-new'].includes(a)) && info.accentEls.length >= 4 && !info.accentInTags, info);
+    check(`${scheme === 'light' ? '밝은' : '어두운'} 모드: 앰버는 만들기/추가 버튼에만`, info.accentEls.every(a => ['group-new', 'cl-new-list', 'trip-new', 'gear-new', 'camp-new', 'camp-new-group', 'shop-create'].includes(a)) && info.accentEls.length >= 4 && !info.accentInTags, info);
   }
 
   const errs = pages.flatMap(p => p.__errors);

@@ -162,6 +162,14 @@ async function check(name, p) {
     await assertFails(updateDoc(doc(bob, 'groups/fam/checklistTemplates/old'), { createdBy: 'alice' }));
     await assertSucceeds(deleteDoc(doc(bob, 'groups/fam/checklistTemplates/old')));
   })());
+  await check('식단(규칙 그대로): 그룹 멤버는 일정 문서의 meals·mealServings 저장, 비멤버는 거부', (async () => {
+    await env.withSecurityRulesDisabled(ctx => setDoc(doc(ctx.firestore(), 'groups/fam/trips/meal'), { title: '팸 캠핑', startDate: '2026-10-10', createdBy: 'alice' }));
+    const meals = [{ id: 'm1_dinner', day: 1, slot: 'dinner', dishes: [{ id: 'd1', recipeId: 'ck1', name: '삼겹살 구이', assigneeUid: 'bob' }] }];
+    await assertSucceeds(updateDoc(doc(bob, 'groups/fam/trips/meal'), { meals, mealServings: 4, updatedBy: 'bob' }));
+    await assertFails(updateDoc(doc(carol, 'groups/fam/trips/meal'), { meals: [], updatedBy: 'carol' }));
+    await assertSucceeds(setDoc(doc(bob, 'groups/fam/checklists/shop'), { title: '장보기', kind: 'shopping', tripId: 'meal', items: [{ id: 'i1', label: '삼겹살', status: 'pending', group: '고기·해산물', src: 'meal', key: '삼겹살', qtyText: '800g', uses: ['삼겹살 구이'] }] }));
+    await assertFails(setDoc(doc(carol, 'groups/fam/checklists/shop2'), { title: '장보기', kind: 'shopping', items: [] }));
+  })());
   await check('그룹: 허용 목록에 없는 하위 컬렉션은 멤버도 거부', (async () => {
     await assertFails(setDoc(doc(bob, 'groups/fam/secretStuff/x'), { v: 1 }));
     await assertFails(getDocs(collection(bob, 'groups/fam/secretStuff')));

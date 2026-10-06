@@ -9,6 +9,7 @@
 1. 캠핑 갈 때 준비할 것 챙기기 — Checklist 탭
 2. 내가 가진 캠핑 장비 조회 — Gear 탭
 3. 다녀온 캠핑장 후기 남기기(사이트 크기, 화장실·매점 상태, 체크인/아웃 시간 등) — Camping 탭
+   (+ 캠핑 식단 짜기·장보기 — Cooking 탭, 1번 "챙기기"의 일부)
 
 ## 구조
 - `docs/index.html` — 앱 전체(HTML+CSS+JS 한 파일, 바닐라 JS, 빌드 도구 없음). 로그인 화면(`#login-screen`) + 탭: Home / Camping / Gear / Checklist / Cooking / Settings.
@@ -89,6 +90,39 @@
   저장하면 캠핑 기록에 선택 필드 `tripRef: { space: 'me'|gid, tripId }`. `hasMyReview()`로 "내 후기 작성함" 표시. 기록 수정(`saveCampForm`)은 기존 필드(tripRef 등)를 유지.
 - 개인 백업에 `trips`, `checklistTemplates` 포함(필드가 없는 예전 백업을 가져오면 지금 일정·템플릿은 그대로 둔다).
 
+## 캠핑 식단·장보기 (Cooking 탭, 새 탭·새 컬렉션 없음, 규칙 그대로)
+- 흐름: 일정 고르기 → 끼니마다 메뉴 → 장보기 목록 자동 생성(일정의 체크리스트) → 마트에서 체크 → 캠핑장에서 식단표로 레시피 보기.
+- 레시피 `COOKING_RECIPES`: `serves`(기준 인원 2) + 재료 `{ name, qty?, unit?, cat, home? }`(`ingr()`로 정의). qty·unit은 serves 기준, qty 없으면 "적당량".
+  cat = `SHOP_CATS`('고기·해산물'|'채소·과일'|'가공·면·유제품'|'양념·소스'|'음료·기타'), home = 보통 집에 있는 것(→ "집에서 챙길 것"). 재료 이름 배열이 필요하면 `ingNames(r)`.
+- 식단 = **일정 문서의 선택 필드**(개인 `users/{uid}/trips`, 그룹 `groups/{gid}/trips`): `mealServings?`(기본 인원, 없으면 그룹 = 참가 멤버 수, 개인 = 2),
+  `meals?: [{ id, day(1~), slot('breakfast'|'lunch'|'dinner'|'extra'), label?(extra 이름), servings?, done?, dishes:[{ id, recipeId?, name, assigneeUid?(그룹) }] }]`.
+  - 기본 끼니 칸(`defaultSlots`: 첫날 점심·저녁, 중간 아침·점심·저녁, 마지막 아침·점심, 당일치기 점심·저녁)은 저장 전엔 빈 칸(id `m{day}_{slot}`, 같은 칸은 늘 같은 id).
+    비어 있고 따로 정한 게 없는 기본 칸은 저장하지 않는다(`pruneMeals`). 화면 배치는 `mealLayout(t)`(날짜별 + 날짜 밖), 요약은 `mealStats(t)`(planned/total/dishes).
+  - 범위를 벗어난 끼니(일정 날짜를 줄임)는 지우지 않고 "날짜 밖" 묶음 → 옮기기(`meal-move`, 같은 칸이면 합침)·지우기.
+  - 저장은 **`mutateMeals(space, tripId, op, extra?)` 하나로**: op(meals 배열을 고치는 함수, 여러 번 적용해도 같은 결과 — `mealOps.*`)를 내 화면에 먼저,
+    그다음 저장소의 최신 일정에 다시 적용해 `update({ meals, updatedBy, ...extra })`(다른 필드는 그대로). 최근 8초 op는 `replayMealOps()`가 일정 스냅샷마다
+    다시 적용해 빠졌으면 다시 저장(거의 동시에 다른 기기가 예전 식단으로 덮어쓴 경우). **Cooking은 공간을 바꾸지 않고** 일정이 속한 공간(`spaceDbOf(space)`)에 바로 저장.
+- 장보기 = 같은 공간의 체크리스트 `{ title:'장보기', kind:'shopping', tripId }`(일정 하나에 1개, 진행률에 포함). 자동 항목은 기존 항목 구조 + `src:'meal'`, `key`(normName),
+  `qtyText`, `qtyEdited?`, `uses:[메뉴]`, `home?`, `homeFrom?`(집에 있어요 전 소분류), `gone?`(식단에서 빠짐). 직접 추가한 항목엔 src 없음.
+  - **자동 맞춤 `syncShoppingList(space, tripId)`**(식단이 바뀔 때마다, 목록이 있을 때만): done 아닌 끼니의 레시피 재료를 이름별로 합침(`shoppingNeeds`),
+    양 = 기준 양 × 끼니 인원 ÷ serves를 단위별 합산 후 올림(`roundQty`: g·ml 50 단위, 그 밖 0.5 단위), 단위가 다르면 "400g + 4개".
+    `mergeShopping`: 기존 자동 항목은 체크·담당자·home·qtyEdited 양·소분류 유지, qtyText(안 고쳤을 때)·uses만 갱신. 빠진 재료는 pending이면 삭제, 체크했으면 `gone`.
+    직접 추가 항목은 안 건드림. key 중복(동시 생성)은 하나로. 새 항목 담당자 = 그 재료를 쓰는 메뉴 담당자가 한 사람으로 같을 때만. 저장소 최신 목록을 받아 맞춘 뒤 저장.
+  - 목록을 지우면 다시 만들지 않는다("장보기 목록 만들기"가 다시 보임). 일정을 지우면 다른 리스트처럼 tripId만 풀리고 kind는 그대로(자동 맞춤 멈춤, 안내 문구).
+  - Checklist 화면은 `checklistListHtml` 그대로 + kind shopping일 때만: 장바구니 아이콘·"식단에서 자동으로 만든 목록이에요 · 식단표 보기", 이름 옆 양·아래 쓰이는 메뉴,
+    체크 버튼 이름만 "샀어요/챙겼어요"·"안 사요"(상태 값은 packed/skip 그대로), 항목 ⋯ "양 고치기"(`shop-qty`)·"집에 있어요/사야 해요"(`shop-home`),
+    소분류 순서 `SHOP_GROUP_ORDER`(`orderShopGroups`), "템플릿으로 저장"·"장비에서 불러오기" 숨김.
+- Cooking 탭: 맨 위 [식단표 | 레시피](`cook-view`, `localStorage` `campbase.cookView`, 저장한 적 없으면 다가오는 일정이 있을 때 식단표).
+  - 식단표: 일정 칩 = `allMyTrips()`의 다가오는·진행 중 일정(그룹 이름 작게) + "지난 일정" 접기(`cook-past-toggle`). 고른 일정 `state.cookSel`({space, tripId}), 없으면 가장 가까운 것.
+    요약 카드(식단 n/m끼 정함 · 기본 n명(`meal-servings`) · 장보기 만들기(`shop-create`, 레시피 메뉴가 있을 때만)/열기(`shop-open` → `openShoppingList`)),
+    날짜 카드(`.meal-day`) 안 끼니 줄(`.meal-row[data-meal-row]`: 이름 · 인원 칩(다르면 `.diff`) · 메뉴 칩(누르면 그 끼니 인원 기준 레시피 펼침, ⋯ 담당자(그룹)·옮기기·빼기(되돌리기)) · "+ 메뉴"),
+    끼니 ⋯ 다 먹었어요(done)·옮기기·비우기(되돌리기)·지우기(추가 끼니·날짜 밖), 날짜마다 "+ 끼니 추가"(간식·야식·술안주·직접).
+    메뉴 고르기 창 `mealPickerModal`: 직접 입력(쉼표로 여러 개) + 레시피 검색(`#mp-search`, input 이벤트)·종류 칩 + 여러 개 선택.
+  - 레시피: 종류 필터·접는 카드(기기에 기억) + 읽기 전용 재료(2인 기준 양) + 카드마다 "식단에 추가"(`recipe-to-plan` → 일정·끼니 고르기, 일정 없으면 일정 만들기 안내).
+  - 연결: 일정 패널 진행 줄 옆 `mealLinkHtml()`("식단 n/m"·"식단 짜기" → `openTripMeals`), Home 다음 캠핑 카드 " · 식단 n/m끼"(메뉴가 있을 때만),
+    지난 일정 카드 "해먹은 메뉴 n개". 식단 없는 일정은 예전과 똑같이 보인다.
+- 예전 레시피별 재료 체크 `cookingChecks`는 **화면에서만 뺐다**. 구독·legacy 가져오기·개인 백업 내보내기/가져오기 형식은 그대로(되돌려도 데이터 그대로).
+
 ## 그룹 후기 공유 (Camping 탭, 멤버 누구나 수정)
 - 개인 캠핑 기록의 선택 필드 `sharedGroupIds: [gid, ...]`(없으면 공유 안 함). 공유한 그룹마다 사본
   `groups/{gid}/sharedReviews/{내uid}_{기록id}` = 후기 필드(`REVIEW_FIELDS`: name, date, region, siteType, siteSize, rating, checkinTime, checkoutTime, toiletCondition, showerCondition, storeCondition, notes, tripRef) + `{ authorUid, sourceLogId, updatedBy, updatedAt }`.
@@ -123,7 +157,8 @@
 - 참여: `groups/{gid}`에 `update({ memberUids: arrayUnion(나), 'members.나': {...role:'member'}, joinCode: 코드 })` — 규칙이 `joinCode`로 초대 코드(같은 gid, 만료 전)를 `get()`해서 확인한다.
   나가기/내보내기는 `arrayRemove` + `deleteField()`. 그룹장은 나갈 수 없고 삭제만(하위 데이터(`GROUP_SUBCOLLECTIONS` 전부) → 초대 코드 → 그룹 문서 순서로 삭제).
 - **공간 전환은 Checklist·Gear 탭에만**(일정·템플릿도 Checklist 탭의 지금 공간 기준) (`spaceChipsHtml()`, `state.space` = `'me'` 또는 gid, 기기별 `localStorage` `campbase.space.<uid>`).
-  Home·Camping(내 기록)·Cooking·Settings·백업·legacy 가져오기는 항상 개인 공간(`state.db`, `state.checklists`, `state.gear`). Camping의 그룹 후기 보기는 위 "그룹 후기 공유"(따로 전환).
+  Home·Camping(내 기록)·Settings·백업·legacy 가져오기는 항상 개인 공간(`state.db`, `state.checklists`, `state.gear`). Camping의 그룹 후기 보기는 위 "그룹 후기 공유"(따로 전환).
+  Cooking 식단표는 공간 전환 없이 고른 일정의 공간에 바로 저장(위 "캠핑 식단·장보기").
 - Checklist·Gear 코드는 `SP.checklists / SP.gear / SP.gearCategories`(지금 공간)와 `spaceDb()`로 읽고 쓴다. 이 두 탭에서 `state.checklists`/`state.gear`를 직접 쓰지 말 것.
   카테고리 저장은 `persistGearCategories()`(그룹이면 그룹 문서, 아니면 개인 설정).
 - 그룹 데이터 구독은 `selectSpace()` → `startSpaceData()`/`stopSpaceData()`. 권한이 없어지면(내보내짐·삭제) 조용히 내 공간으로 돌아온다.
@@ -166,7 +201,8 @@
 - **⋯ 메뉴(공통 컴포넌트)**: 한 줄·카드에 버튼이 여러 개면 가장 자주 쓰는 동작 1개만 보이게 두고 나머지는 `moreMenuHtml(key, items, label)`로.
   `items = [{ action, attrs:{'data-id':…}, icon, label, danger }]` — 항목도 **같은 data-action**으로 `wireGlobalActions()`에서 처리된다.
   위험한 항목(`danger:true`, 삭제·나가기)은 빨간색으로 맨 아래. 바깥 클릭·Esc로 닫힘, 화살표/Home/End/Tab/Enter 지원, 한 번에 하나만 열림(`closeAllMenus`).
-  지금 메뉴에 있는 것: 리스트(장비에서 불러오기·이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제), 캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기).
+  지금 메뉴에 있는 것: 리스트(장비에서 불러오기·이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(삭제, 장보기면 양 고치기·집에 있어요), 캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기),
+  식단 끼니(다 먹었어요·옮기기·비우기·지우기), 식단 메뉴(담당자·옮기기·빼기).
   **Gear는 예외**: 장비 줄은 연필(수정) + X(삭제, `gear-del`, 확인 후 되돌리기) 버튼, 카테고리 관리는 "장비 추가" 옆에 바로 보이는 버튼(사용자 요청).
   메뉴 위치는 `placeMenu()`: 아래로 펼쳐서 하단 탭바(위쪽 끝)를 넘으면 위로, 위도 모자라면 화면 안에 `position:fixed`로(넘치면 메뉴 안 스크롤). #main을 스크롤하면 닫힌다.
   테스트에서 메뉴 안 버튼은 `tests/ui-helpers.js`의 `menuClick(page, selector)`로 누른다(메뉴를 열고 누름). Gear 선택 모드 동작은 `gearAction(page, action, ids)`(선택 모드로 고르고 액션 바 버튼을 누름).
@@ -220,7 +256,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열네 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열다섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드
@@ -233,15 +269,18 @@ node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 �
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤,
                                 # 멤버 함께 고치기(작성자 기록·다른 그룹 반영), 그룹 화면 기록 추가, 샤워장, 후기 펼치기, "전체" 개수
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
-                                # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+                                # Gear 선택 모드·0개 칩, Cooking 레시피 접기(재료 체크 없음), 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
 node tests/template-k.test.js   # 템플릿 하위 메뉴(데스크톱)·휴대폰 칩·다른 기기 반영, 새 템플릿을 장비에서 고르기(기본)·직접 입력, 템플릿에 장비 더 불러오기, 그룹
 node tests/template-j.test.js   # 템플릿 페이지(리스트 없이 만들기·항목·되돌리기, 그룹은 만든 사람만), 새 리스트에서 템플릿, Gear 카테고리별 +, Home 장비 통계 없음
 node tests/gear-i.test.js       # Gear 수정(I): 장비 X 삭제(맨 아래도 눌림·되돌리기), 카테고리별 전체 선택(mixed), 카테고리 관리 버튼 위치
 node tests/trip-gear-h.test.js  # 일정 → 장비에서 불러오기(전체·묶음 선택, 이미 있는 항목 제외, 그룹/내 장비 담당자), 일정 메모(Description)
+node tests/meals.test.js        # 식단·장보기: 끼니 칸(2박·1박·당일), 메뉴 넣기·옮기기·빼기(되돌리기)·끼니 추가·인원·다 먹었어요·날짜 밖, 양 계산(배수·끼니별·합산·올림·단위·적당량),
+                                # 장보기 만들기·Checklist 표시·자동 맞춤(체크·담당·고친 양·집에 있음·직접 추가 유지, 빠진 재료), 그룹(실시간·담당·동시 수정·공간과 무관 저장),
+                                # 일정 패널·Home·지난 일정 연결, 레시피 보기·식단에 추가, 일정 삭제 되돌리기·백업 왕복·예전 백업, 일정 없음 안내
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780·8781, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780~8782, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):
