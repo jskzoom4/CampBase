@@ -756,23 +756,26 @@ const LOCATIONS = [{"name": "서울", "lat": 37.5665, "lng": 126.978, "nx": 60, 
 function uvLabel(v){ if(v==null) return ''; if(v<3) return '낮음'; if(v<6) return '보통'; if(v<8) return '높음'; if(v<11) return '매우높음'; return '위험'; }
 
 // 캠핑 요리 레시피 스냅샷 (2026-09-23, LifeBase·wtable 캠핑 요리 콘텐츠 참고해 정리 — 실시간 수집 아님)
+// 재료: { name, qty?, unit?, cat(장보기 분류), home?(보통 집에 있는 것) } — qty·unit은 serves(기준 인원, 2명) 기준. qty 없으면 "적당량"
+const SHOP_CATS = ['고기·해산물','채소·과일','가공·면·유제품','양념·소스','음료·기타'];
+function ingr(name, qty, unit, cat, home){ const o = { name, cat }; if(qty){ o.qty = qty; o.unit = unit; } if(home) o.home = true; return o; }
 const COOKING_RECIPES = [
-  {id:'ck1', name:'삼겹살 구이', category:'구이', difficulty:'쉬움', time:'15분', ingredients:['삼겹살','소금','후추','쌈장','상추'], steps:'그릴에 앞뒤로 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck2', name:'모둠 꼬치구이', category:'구이', difficulty:'보통', time:'20분', ingredients:['돼지고기','파프리카','양파','버섯'], steps:'재료를 꼬치에 끼워 소금·후추로 간한 뒤 올리브유를 발라 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck3', name:'닭다리 구이', category:'구이', difficulty:'쉬움', time:'20분(재우기 별도)', ingredients:['닭다리','간장','설탕','마늘','생강'], steps:'양념에 2~3시간 재운 뒤 중불에서 15~20분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck4', name:'옥수수 버터구이', category:'구이', difficulty:'매우쉬움', time:'10분', ingredients:['옥수수','버터','소금'], steps:'버터와 소금을 발라 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck5', name:'소시지 알감자 구이', category:'구이', difficulty:'중급', time:'30분', ingredients:['소시지','알감자','파프리카','케첩','마요네즈'], steps:'꼬치나 팬에 함께 구워 케첩마요 소스에 찍어 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck6', name:'채끝 바비큐 꼬치구이', category:'구이', difficulty:'초급', time:'25분', ingredients:['채끝살','단호박','방울토마토','대파'], steps:'꼬치에 끼워 숯불에 구우면 은은한 단맛이 살아나요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck7', name:'부대찌개 (밀키트)', category:'간편요리', difficulty:'매우쉬움', time:'15분', ingredients:['부대찌개 밀키트','물'], steps:'밀키트에 물을 붓고 끓이기만 하면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck8', name:'짜파구리', category:'간편요리', difficulty:'쉬움', time:'10분', ingredients:['짜파게티','너구리','소고기(선택)'], steps:'두 라면을 함께 끓여 섞고, 구운 소고기를 올려요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck9', name:'대파 닭고기 우동', category:'국물요리', difficulty:'초급', time:'20분', ingredients:['우동면','대파','닭고기'], steps:'끓이기만 하면 되는 맵지 않은 국물 요리라 아이도 잘 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck10', name:'김치찌개', category:'국물요리', difficulty:'보통', time:'25분', ingredients:['신김치','돼지고기','두부','대파'], steps:'김치를 볶다가 물, 고기, 두부를 넣고 끓여요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck11', name:'된장찌개', category:'국물요리', difficulty:'쉬움', time:'20분', ingredients:['된장','감자','애호박','두부','버섯','청양고추'], steps:'모든 재료를 넣고 끓이면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck12', name:'어묵 전골', category:'국물요리', difficulty:'중급', time:'25분', ingredients:['어묵','곤약','채소'], steps:'국물을 오래 끓여내 깊은 맛을 내요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
-  {id:'ck13', name:'컵피자', category:'아이랑함께', difficulty:'쉬움', time:'10분', ingredients:['식빵','토마토소스','치즈','햄'], steps:'머핀틀에 식빵을 넣고 재료를 올려 약불에서 5~7분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck14', name:'핫도그 말이', category:'아이랑함께', difficulty:'매우쉬움', time:'10분', ingredients:['또띠아','소시지','치즈','케첩','머스타드'], steps:'또띠아에 재료를 올려 말아서 팬에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck15', name:'마시멜로 스모어', category:'디저트', difficulty:'매우쉬움', time:'5분', ingredients:['마시멜로','초콜릿','크래커'], steps:'꼬챙이에 꽂아 불 위에서 노릇하게 구운 뒤 크래커 사이에 끼워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
-  {id:'ck16', name:'바나나 보트', category:'디저트', difficulty:'쉬움', time:'10분', ingredients:['바나나','초콜릿칩'], steps:'바나나를 반으로 갈라 초콜릿칩을 넣고 호일에 싸서 불 위에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck1', name:'삼겹살 구이', category:'구이', difficulty:'쉬움', time:'15분', serves:2, ingredients:[ingr('삼겹살',400,'g','고기·해산물'), ingr('소금',0,'','양념·소스',1), ingr('후추',0,'','양념·소스',1), ingr('쌈장',0,'','양념·소스'), ingr('상추',150,'g','채소·과일')], steps:'그릴에 앞뒤로 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck2', name:'모둠 꼬치구이', category:'구이', difficulty:'보통', time:'20분', serves:2, ingredients:[ingr('돼지고기',300,'g','고기·해산물'), ingr('파프리카',1,'개','채소·과일'), ingr('양파',1,'개','채소·과일'), ingr('버섯',100,'g','채소·과일')], steps:'재료를 꼬치에 끼워 소금·후추로 간한 뒤 올리브유를 발라 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck3', name:'닭다리 구이', category:'구이', difficulty:'쉬움', time:'20분(재우기 별도)', serves:2, ingredients:[ingr('닭다리',4,'개','고기·해산물'), ingr('간장',0,'','양념·소스',1), ingr('설탕',0,'','양념·소스',1), ingr('마늘',5,'쪽','채소·과일'), ingr('생강',0,'','채소·과일')], steps:'양념에 2~3시간 재운 뒤 중불에서 15~20분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck4', name:'옥수수 버터구이', category:'구이', difficulty:'매우쉬움', time:'10분', serves:2, ingredients:[ingr('옥수수',2,'개','채소·과일'), ingr('버터',20,'g','가공·면·유제품'), ingr('소금',0,'','양념·소스',1)], steps:'버터와 소금을 발라 노릇하게 구우면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck5', name:'소시지 알감자 구이', category:'구이', difficulty:'중급', time:'30분', serves:2, ingredients:[ingr('소시지',200,'g','가공·면·유제품'), ingr('알감자',300,'g','채소·과일'), ingr('파프리카',1,'개','채소·과일'), ingr('케첩',0,'','양념·소스',1), ingr('마요네즈',0,'','양념·소스',1)], steps:'꼬치나 팬에 함께 구워 케첩마요 소스에 찍어 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck6', name:'채끝 바비큐 꼬치구이', category:'구이', difficulty:'초급', time:'25분', serves:2, ingredients:[ingr('채끝살',300,'g','고기·해산물'), ingr('단호박',0.5,'개','채소·과일'), ingr('방울토마토',10,'개','채소·과일'), ingr('대파',1,'대','채소·과일')], steps:'꼬치에 끼워 숯불에 구우면 은은한 단맛이 살아나요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck7', name:'부대찌개 (밀키트)', category:'간편요리', difficulty:'매우쉬움', time:'15분', serves:2, ingredients:[ingr('부대찌개 밀키트',1,'팩','가공·면·유제품'), ingr('물',0,'','음료·기타')], steps:'밀키트에 물을 붓고 끓이기만 하면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck8', name:'짜파구리', category:'간편요리', difficulty:'쉬움', time:'10분', serves:2, ingredients:[ingr('짜파게티',1,'봉','가공·면·유제품'), ingr('너구리',1,'봉','가공·면·유제품'), ingr('소고기(선택)',100,'g','고기·해산물')], steps:'두 라면을 함께 끓여 섞고, 구운 소고기를 올려요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck9', name:'대파 닭고기 우동', category:'국물요리', difficulty:'초급', time:'20분', serves:2, ingredients:[ingr('우동면',2,'봉','가공·면·유제품'), ingr('대파',1,'대','채소·과일'), ingr('닭고기',200,'g','고기·해산물')], steps:'끓이기만 하면 되는 맵지 않은 국물 요리라 아이도 잘 먹어요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck10', name:'김치찌개', category:'국물요리', difficulty:'보통', time:'25분', serves:2, ingredients:[ingr('신김치',300,'g','채소·과일'), ingr('돼지고기',200,'g','고기·해산물'), ingr('두부',0.5,'모','가공·면·유제품'), ingr('대파',0.5,'대','채소·과일')], steps:'김치를 볶다가 물, 고기, 두부를 넣고 끓여요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck11', name:'된장찌개', category:'국물요리', difficulty:'쉬움', time:'20분', serves:2, ingredients:[ingr('된장',0,'','양념·소스',1), ingr('감자',1,'개','채소·과일'), ingr('애호박',0.5,'개','채소·과일'), ingr('두부',0.5,'모','가공·면·유제품'), ingr('버섯',50,'g','채소·과일'), ingr('청양고추',1,'개','채소·과일')], steps:'모든 재료를 넣고 끓이면 완성.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck12', name:'어묵 전골', category:'국물요리', difficulty:'중급', time:'25분', serves:2, ingredients:[ingr('어묵',300,'g','가공·면·유제품'), ingr('곤약',0.5,'팩','가공·면·유제품'), ingr('채소',200,'g','채소·과일')], steps:'국물을 오래 끓여내 깊은 맛을 내요.', source:{name:'우리의식탁(wtable)', url:'https://wtable.co.kr/curations/988'}},
+  {id:'ck13', name:'컵피자', category:'아이랑함께', difficulty:'쉬움', time:'10분', serves:2, ingredients:[ingr('식빵',4,'장','가공·면·유제품'), ingr('토마토소스',100,'g','양념·소스'), ingr('치즈',80,'g','가공·면·유제품'), ingr('햄',100,'g','가공·면·유제품')], steps:'머핀틀에 식빵을 넣고 재료를 올려 약불에서 5~7분 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck14', name:'핫도그 말이', category:'아이랑함께', difficulty:'매우쉬움', time:'10분', serves:2, ingredients:[ingr('또띠아',2,'장','가공·면·유제품'), ingr('소시지',2,'개','가공·면·유제품'), ingr('치즈',2,'장','가공·면·유제품'), ingr('케첩',0,'','양념·소스',1), ingr('머스타드',0,'','양념·소스',1)], steps:'또띠아에 재료를 올려 말아서 팬에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck15', name:'마시멜로 스모어', category:'디저트', difficulty:'매우쉬움', time:'5분', serves:2, ingredients:[ingr('마시멜로',10,'개','가공·면·유제품'), ingr('초콜릿',50,'g','가공·면·유제품'), ingr('크래커',10,'개','가공·면·유제품')], steps:'꼬챙이에 꽂아 불 위에서 노릇하게 구운 뒤 크래커 사이에 끼워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
+  {id:'ck16', name:'바나나 보트', category:'디저트', difficulty:'쉬움', time:'10분', serves:2, ingredients:[ingr('바나나',2,'개','채소·과일'), ingr('초콜릿칩',30,'g','가공·면·유제품')], steps:'바나나를 반으로 갈라 초콜릿칩을 넣고 호일에 싸서 불 위에 구워요.', source:{name:'LifeBase', url:'https://lifebase.kr/blog/0033-camping-cooking-easy-recipes/'}},
 ];
 
 /* ============================ STATE ============================ */
@@ -4337,9 +4340,12 @@ function toggleCookIngredient(rid, idx){
   const b = document.querySelector(`[data-action="cook-toggle"][data-recipe="${CSS.escape(rid)}"][data-idx="${idx}"]`);
   if(b) b.focus({ preventScroll: true });
 }
+// 재료 이름만 필요할 때(문자열 재료도 받아 줌)
+function ingNames(r){ return ((r && r.ingredients) || []).map(x=> typeof x==='string' ? x : x.name); }
 function recipeCardHtml(r, open){
   const checked = new Set((state.cookingChecks[r.id] && state.cookingChecks[r.id].checked) || []);
-  const doneCount = [...checked].filter(i=>i < r.ingredients.length).length, total = r.ingredients.length;
+  const names = ingNames(r);
+  const doneCount = [...checked].filter(i=>i < names.length).length, total = names.length;
   return `
     <div class="card recipe-card ${open ? 'open' : ''}">
       <button type="button" class="recipe-head" data-action="cook-open" data-recipe="${r.id}" aria-expanded="${open}" aria-controls="recipe-${r.id}">
@@ -4352,7 +4358,7 @@ function recipeCardHtml(r, open){
       </button>
       ${open ? `<div class="recipe-body" id="recipe-${r.id}">
         <div class="ing-list">
-          ${r.ingredients.map((ing,i)=>`
+          ${names.map((ing,i)=>`
             <button type="button" class="ing-row" role="checkbox" aria-checked="${checked.has(i)}" data-action="cook-toggle" data-recipe="${r.id}" data-idx="${i}">
               <span class="cl-status-btn packed ${checked.has(i)?'active':''}" aria-hidden="true">${icon('check')}</span>
               <span class="label ${checked.has(i)?'done':''}">${esc(ing)}</span>
