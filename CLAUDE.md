@@ -1,8 +1,8 @@
 # 캠프베이스 (CampBase) — 작업 안내
 
 구글 계정으로 로그인해서 쓰는 캠핑 앱. 사람마다 개인 공간에 저장되고, 같은 계정으로 로그인한 기기끼리는 바로 동기화된다.
-**그룹**을 만들면 멤버끼리 Checklist·Gear를 함께 보고 고치고, Camping 탭에서는 멤버가 공유한 후기를 **읽기 전용**으로 본다(초대 코드로 참여).
-원칙: **그룹은 Checklist·Gear(함께 편집) + Camping 읽기 전용 후기.** 후기 작성·수정·삭제는 항상 내 개인 기록에서만.
+**그룹**을 만들면 멤버끼리 Checklist·Gear를 함께 보고 고치고, Camping 탭에서는 멤버가 공유한 후기를 보고 **함께 고친다**(초대 코드로 참여).
+원칙: **그룹은 Checklist·Gear(함께 편집) + Camping 공유 후기(멤버 누구나 수정).** 후기의 원본은 항상 작성자의 개인 기록이고, 삭제는 내 기록에서만(그룹장은 "내리기").
 사용자는 비개발자에 가깝다. **한국어로, 쉬운 말로** 설명하고, 바뀐 점과 설치 방법을 짧게 알려줄 것.
 
 ## 앱의 목적 (새 기능은 이 세 가지에 도움이 되는지로 판단)
@@ -31,7 +31,7 @@
   - 로그아웃: APK면 네이티브 `signOut()`도 호출 후 웹 SDK `signOut`.
 - 저장 경로(로그인한 사람의 개인 공간):
   - `users/{uid}` — `{ name, email, photoURL, updatedAt }` (로그인할 때마다 갱신)
-  - `users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}`
+  - `users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}` — 캠핑 기록 상태 필드: `toiletCondition`, `showerCondition`(샤워장, `SHOWER_LEVELS`, 선택), `storeCondition`
   - `users/{uid}/trips/{id}`, `users/{uid}/checklistTemplates/{id}` — 캠핑 일정·체크리스트 템플릿(아래 "캠핑 일정")
   - `users/{uid}/settings/app` — `{ gearCategories, gearCategoryMeta?, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준. `weatherLocation`은 지금 화면에서 안 씀 — 날씨 기능용으로 남겨 둠)
 - 최상위 `campingLogs/gear/checklists/cookingChecks`, `app/settings`는 **예전 공유 저장소(legacy)**. 새 앱은
@@ -57,15 +57,19 @@
   메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
 - 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
 - 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }], createdBy? }`(체크 상태·담당자 없음).
-  **템플릿 화면**(`state.currentView = 'templates'`, `renderTemplatesPage()`, 지금 공간 기준·공간 칩 있음): 데스크톱은 왼쪽 메뉴 Checklist 아래 하위 메뉴(`SUB_NAV`, `.nav-sub`),
-  휴대폰은 탭바 6개 그대로(템플릿 화면에서도 Checklist 탭이 켜짐, `NAV_PARENT`) + Checklist 일정 줄 끝의 "템플릿" 칩(`go-templates`).
+  **Checklist 하위 화면**: 지난 일정(`pastTrips`)·템플릿(`templates`). 데스크톱은 왼쪽 메뉴 Checklist 아래 하위 메뉴(`SUB_NAV`, `.nav-sub`),
+  휴대폰은 탭바 6개 그대로(하위 화면에서도 Checklist 탭이 켜짐, `NAV_PARENT`) + 세 화면 맨 위의 하위 탭 `subTabsHtml()`(체크리스트 | 지난 일정 n | 템플릿 n, `sub-nav`, 휴대폰에서만 보임).
+  화면 이동은 `goView()` 하나로(지난 일정은 목록부터, Checklist로 오면 지난 일정 선택은 풂). Checklist 일정 줄에는 템플릿 버튼이 없다(사용자 요청: 템플릿 메뉴에서만).
+  **템플릿 화면**(`renderTemplatesPage()`, 지금 공간 기준·공간 칩 있음).
+  **지난 일정 화면**(`renderPastTripsPage()`, 지금 공간 기준): 끝난 일정을 최근 순·연도별 카드(`.past-trip-card`: 날짜·캠핑장, 리스트 수, 준비 n/m, 후기 남기기/내 후기 작성함).
+  카드(`past-trip-open`) → 같은 화면에서 `tripPanelHtml()` + "지난 일정 목록"(`past-trip-back`). 선택은 `state.tripFilter`를 같이 쓴다.
   새 템플릿(`tpl-new`) = **장비에서 고르기**(장비가 있으면 기본: 만들고 바로 `gearPickModal(tplId, 'space', 'tpl')`) / 직접 입력("소분류: 항목" 줄 입력).
   템플릿 ⋯ "장비에서 불러오기"(`tpl-gear-import`, 만든 사람만). 템플릿 항목은 `{label, group}`만(체크 상태·담당자 없음).
   항목 추가(`tpl-add-item`)·빼기(`tpl-item-del`, 되돌리기)·이름 변경(`tpl-rename`)·삭제(`tpl-del`, 되돌리기)·"이 템플릿으로 새 리스트"(`tpl-make-list`). 리스트 ⋯의 `cl-save-template`도 그대로.
   **그룹 템플릿은 만든 사람(`createdBy`)만 고치기·삭제**(`tplCanEdit()`, 규칙도 같음: 만들기 createdBy==나, 수정은 만든 사람만, 삭제는 만든 사람·그룹장). 다른 멤버는 "보기 전용" + 새 리스트만.
   `createdBy`가 없는 예전 템플릿은 멤버 누구나 고칠 수 있음. 템플릿 저장은 `tplStamp()`로 createdBy를 넣는다. 일정 만들기 창에는 관리 대신 안내만(`refreshTripModalTemplates()`).
 - 새 리스트(`newChecklistModal`)에서 템플릿 불러오기(`#ncl-tpl`, 고르면 빈 이름 칸에 템플릿 이름) → 항목 모두 미정으로 복사. 일정을 보는 중이면 그 일정에 연결.
-- Checklist 탭: `spaceChipsHtml()` 아래 `tripBarHtml()`(전체 | 일정… | 지난 일정 ▾ | + 일정 만들기). `state.tripFilter`('all' 또는 일정 id), `state.showPastTrips`. 공간을 바꾸면 둘 다 초기화.
+- Checklist 탭: `subTabsHtml()`·`spaceChipsHtml()` 아래 `tripBarHtml()`(전체 n | 다가오는·진행 중 일정… | + 일정 만들기 — 지난 일정은 하위 메뉴로, 휴대폰은 한 줄 가로 스크롤). `state.tripFilter`('all' 또는 일정 id). 공간을 바꾸면 초기화.
   일정을 고르면 **일정 패널** `tripPanelHtml()` 하나(아래 "화면 규칙"): 날짜·D-n/진행 중/끝남, 캠핑장·지역, 참가 멤버, 진행률 `tripProgress()`(연결된 리스트 항목 중 결정된 것/전체, 그룹이면 내 담당 남은 개수), 필터, 연결된 리스트(`checklistListHtml(cl, ctx, true)`).
   "전체"를 고르면 예전 구조(리스트 카드들) + 한 줄 설명.
 - 일정 만들기 `tripFormModal()` → `saveTripForm()`: 체크리스트 시작 방법 = **장비에서 고르기**(빈 리스트 "이름 준비물"을 만들고 바로 `gearPickModal`) / 템플릿 복사(새 리스트, 항목 모두 미정) / 기존 리스트 연결 / 빈 리스트.
@@ -85,19 +89,29 @@
   저장하면 캠핑 기록에 선택 필드 `tripRef: { space: 'me'|gid, tripId }`. `hasMyReview()`로 "내 후기 작성함" 표시. 기록 수정(`saveCampForm`)은 기존 필드(tripRef 등)를 유지.
 - 개인 백업에 `trips`, `checklistTemplates` 포함(필드가 없는 예전 백업을 가져오면 지금 일정·템플릿은 그대로 둔다).
 
-## 그룹 후기 공유 (Camping 탭, 읽기 전용)
+## 그룹 후기 공유 (Camping 탭, 멤버 누구나 수정)
 - 개인 캠핑 기록의 선택 필드 `sharedGroupIds: [gid, ...]`(없으면 공유 안 함). 공유한 그룹마다 사본
-  `groups/{gid}/sharedReviews/{내uid}_{기록id}` = 후기 필드(`REVIEW_FIELDS`: name, date, region, siteType, siteSize, rating, checkinTime, checkoutTime, toiletCondition, storeCondition, notes, tripRef) + `{ authorUid, sourceLogId, updatedAt }`.
+  `groups/{gid}/sharedReviews/{내uid}_{기록id}` = 후기 필드(`REVIEW_FIELDS`: name, date, region, siteType, siteSize, rating, checkinTime, checkoutTime, toiletCondition, showerCondition, storeCondition, notes, tripRef) + `{ authorUid, sourceLogId, updatedBy, updatedAt }`.
 - 동기화는 **`syncReviewCopies(prev, next)`** 하나로(켠 그룹 저장·갱신, 끈 그룹 삭제, next=null이면 모두 삭제): 기록 저장(`saveCampForm`), 삭제(+되돌리기 때 다시 만들기), 개인 백업 가져오기 후.
   개인 기록을 바꾸는 새 코드를 만들면 이 함수도 불러야 한다.
+- **함께 고치기**: 그룹 후기 창의 "수정"(`review-edit` → `editGroupReview()`). 내 후기면 내 기록 폼(`campFormModal(logId)`, 그룹 보기 그대로),
+  남의 후기면 `campFormModal(null, null, {gid, rid})` → `saveGroupReviewEdit()`가 **그룹 사본만** 고친다(`updatedBy` = 나, authorUid·sourceLogId 그대로, 공유 칩 없음).
+  작성자 앱은 `syncGroupBackground()`에서 내 모든 그룹의 `sharedReviews where authorUid==나`를 구독(`state.myReviewCopies`)하고, `updatedBy`가 남인 사본을
+  `applyReviewEdits()`로 내 기록에 반영(`editedBy: {uid, gid, at}` → 목록에 "○○ 님이 고침") + `syncReviewCopies`로 다른 그룹 사본도 맞춤(updatedBy가 다시 나 → 반복 없음).
+  작성자가 내 기록을 저장하면 `editedBy`는 지운다. 반영은 작성자가 앱을 열었을 때 일어난다(그 전에는 그룹 사본만 바뀐 상태).
+- **그룹 화면에서 기록 추가**: 그룹 후기 보기의 "기록 추가"(`camp-new-group` → `campFormModal(null, { shareGid })`) = 내 개인 기록에 저장 + 그 그룹 공유 칩이 켜진 채.
 - 없어진 그룹(삭제·나감)의 gid는 `cleanupSharedGroupIds()`가 내 기록에서 조용히 지운다 — 그룹 목록을 **서버에서** 받은 뒤에만(`state.groupsServerLoaded`, 어댑터 `wrapQuery`의 `fromCache`).
   그룹을 나가도 내가 올린 사본은 그룹에 남는다(작성자는 나간 뒤에도 규칙상 자기 사본 삭제 가능). 그룹 삭제 시 `sharedReviews`도 함께 삭제. 그룹 백업에는 넣지 않음.
-- 규칙(`firestore.rules`의 `sharedReviews` 블록): 읽기 = 멤버, 만들기·수정 = 멤버 + `authorUid == 나` + 문서 id `== 나_sourceLogId`(작성자 변경 불가), 삭제 = 작성자 본인 또는 그룹장.
+- 규칙(`firestore.rules`의 `sharedReviews` 블록): 읽기 = 멤버, 만들기 = 멤버 + `authorUid == 나` + 문서 id `== 나_sourceLogId`,
+  수정 = 멤버 + authorUid·sourceLogId 변경 불가 + (작성자면 위 조건, 다른 멤버면 `updatedBy == 나`), 삭제 = 작성자 본인 또는 그룹장.
   `sharedReviews`는 일반 하위 컬렉션 허용 목록(`GROUP_SUBCOLLECTIONS`)에 **넣지 않는다**(넣으면 아무 멤버나 쓸 수 있게 됨).
-- 기록 폼의 "그룹에 공유" 칩(`_campShare`, `cf-share-toggle`): 기본 꺼짐, 그룹 일정에서 "후기 남기기"로 온 새 기록은 그 그룹이 켜짐. 목록에 "○○ 공유" 태그.
+- 기록 폼의 "그룹에 공유" 칩(`_campShare`, `cf-share-toggle`): 기본 꺼짐, 그룹 일정에서 "후기 남기기"로 온 새 기록·그룹 화면 "기록 추가"는 그 그룹이 켜짐. 목록에 "○○ 공유" 태그.
+- 내 기록 목록의 후기 줄(`.camp-line3`)은 2줄 말줄임. 줄이나 "더보기"(`.camp-more`)를 누르면 펼침/접힘(`camp-expand`, `state.campExpanded`, 화면 상태만).
+  실제로 넘칠 때만 `markCampClamps()`가 `.can-expand`와 "더보기"를 켠다(renderView 뒤·창 크기 변경 때).
+- "전체" 칩에는 전체 개수(내 기록 수, 그룹 후기 캠핑장 수, Gear 장비 수, Checklist 일정 줄의 "전체" = 지금 공간의 리스트 수).
 - Camping 탭 위쪽 보기 전환 `[내 기록 | 그룹A 후기 | …]`: `state.campView`('me' 또는 gid, 기기별 `localStorage` `campbase.campView.<uid>`, Checklist·Gear 공간과 따로).
   그룹 보기는 `startReviewData()`로 그 그룹의 `sharedReviews`만 구독 → `renderGroupReviews()`: 캠핑장별 카드(`groupReviewCards`, `normName`으로 묶음 — 후기 수, 평균 평점, 최근 방문일, 작성자 사진, 화장실·매점 최빈값),
-  지역 필터·정렬(최신순·평점순). 카드 → `reviewDetailModal()`(멤버별 후기, 내 것엔 "내 기록에서 수정", 그룹장에겐 남의 후기 "그룹에서 내리기"(confirmModal, 되돌리기 없음 — 그룹장은 남의 사본을 다시 만들 수 없음)). 나간 멤버는 "나간 멤버".
+  지역 필터·정렬(최신순·평점순). 카드 → `reviewDetailModal()`(멤버별 후기, 모두에게 "수정", 남이 고쳤으면 "○○ 님이 고침", 그룹장에겐 남의 후기 "그룹에서 내리기"(confirmModal, 되돌리기 없음 — 그룹장은 남의 사본을 다시 만들 수 없음)). 나간 멤버는 "나간 멤버".
 - Home 통계는 개인 기록만.
 
 ## 그룹
@@ -163,6 +177,7 @@
   아래쪽 "닫기" 버튼은 만들지 않는다(X로 충분). 버튼이 "닫기"뿐이면 `.modal-actions`를 넣지 말 것.
   **휴대폰(820px 이하)에서는 시트형**: 화면 아래에 붙고 폭 전체, 위쪽만 둥글게, 아래에서 올라오는 효과(`cb-sheet-in`). 높이는 보이는 화면(`--vvh`, visualViewport)의 90% 이하라
   키보드가 올라와도 버튼 바가 보이고, 초점이 간 입력칸은 `.modal-body` 안에서 보이게 스크롤된다.
+- **Checklist 하위 탭**(휴대폰): 하위 탭 줄이 생긴 만큼 일정 칩은 한 줄 가로 스크롤(`.trip-chips` nowrap), 공간 칩 아래 여백 8px — "첫 준비물 위쪽 절반" 테스트 여유가 4px뿐이니 위쪽에 줄을 더하면 확인.
 - **누르는 영역** 최소 40×40(`.icon-btn`), 아이콘만 있는 버튼에는 `aria-label` 필수(테스트가 검사).
 - **초점 표시**: 키보드로 움직일 때만 `:focus-visible` 브랜드 초록 2px 테두리(+2px 간격). `outline:none`을 따로 쓰지 말 것.
 - **색**: 앰버(`--accent`, 글자는 `--on-accent`)는 **만들기/추가 버튼에만**(`.btn-accent`: 기록 추가·장비 추가·새 리스트·그룹 만들기·일정 만들기 칩).
@@ -212,10 +227,11 @@ node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃
 node tests/smoke.test.js        # 로그인 후 모든 탭의 주요 동작 클릭 스모크 테스트 + 로그아웃
 node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·담당자·장비 주인·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
 node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
-node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 후기 남기기(tripRef)
+node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 지난 일정 화면, 후기 남기기(tripRef)
 node tests/gear-checklist.test.js  # 장비↔준비물: 담당자 추천(일치·불일치·주인 없음), 장비→체크리스트(개인/그룹, 중복 건너뛰기, 주인 자동 담당)
 node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 안 가림·키보드, ⋯ 메뉴(열기·바깥/Esc 닫기·키보드), 모달(X·Esc·배경·초점), 초점 표시, 앰버·대비
-node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤
+node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤,
+                                # 멤버 함께 고치기(작성자 기록·다른 그룹 반영), 그룹 화면 기록 추가, 샤워장, 후기 펼치기, "전체" 개수
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
                                 # Gear 선택 모드·0개 칩, Cooking 접기·줄 체크, 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
 node tests/template-k.test.js   # 템플릿 하위 메뉴(데스크톱)·휴대폰 칩·다른 기기 반영, 새 템플릿을 장비에서 고르기(기본)·직접 입력, 템플릿에 장비 더 불러오기, 그룹

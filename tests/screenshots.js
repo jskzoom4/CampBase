@@ -22,7 +22,7 @@ const UA = { uid: 'uidAlice', displayName: '앨리스', email: 'alice@example.co
 function seed() {
   const s = {}, A = 'users/uidAlice/', G = 'groups/grpFam';
   const mem = (n, r) => ({ name: n, photoURL: '', role: r });
-  s[A + 'campingLogs/c1'] = { name: '홍천 강변 캠핑장', date: '2026-08-16', region: '홍천', siteType: '데크', siteSize: '5x5m', rating: 4, checkinTime: '14:00', checkoutTime: '11:00', toiletCondition: '좋음', storeCondition: '적당함', notes: '계곡 바로 옆이라 시원했어요.', sharedGroupIds: ['grpFam'] };
+  s[A + 'campingLogs/c1'] = { name: '홍천 강변 캠핑장', date: '2026-08-16', region: '홍천', siteType: '데크', siteSize: '5x5m', rating: 4, checkinTime: '14:00', checkoutTime: '11:00', toiletCondition: '좋음', storeCondition: '적당함', notes: '계곡 바로 옆이라 시원했어요. 데크가 넓어서 텐트와 타프를 다 쳐도 여유가 있었고, 밤에는 강바람 때문에 꽤 추워서 침낭을 두꺼운 걸로 챙기길 잘했어요. 샤워장은 온수가 잘 나왔고 매점에서 장작도 팔아요.', showerCondition: '좋음', sharedGroupIds: ['grpFam'] };
   s[A + 'campingLogs/c2'] = { name: '가평 숲속 야영장', date: '2026-05-02', region: '가평', siteType: '흙', siteSize: '6x6m', rating: 5, toiletCondition: '보통', storeCondition: '없음', notes: '' };
   s[A + 'settings/app'] = { gearCategories: ['텐트', '타프', '침낭', '매트', '체어/테이블', '조리용품', '조명'], homeWidgets: { nextTrip: true, camping: true, gear: true, checklist: true },
     gearCategoryMeta: { majors: [{ name: '쉘터', desc: '집 짓기 — 텐트·타프' }, { name: '잠자리', desc: '' }, { name: '키친', desc: '요리·식사 도구' }],
@@ -54,7 +54,9 @@ function seed() {
   s[G + '/gear/gg1'] = { name: '렉타 타프', brand: 'DOD', category: '타프', ownerUid: 'uidBob', addedBy: 'uidBob' };
   const rv = (uid, id, o) => ({ authorUid: uid, sourceLogId: id, updatedAt: 'x', siteType: '데크', ...o });
   s[G + '/sharedReviews/uidAlice_c1'] = rv('uidAlice', 'c1', { name: '홍천 강변 캠핑장', date: '2026-08-16', region: '홍천', rating: 4, toiletCondition: '좋음', storeCondition: '적당함', notes: '계곡 옆' });
-  s[G + '/sharedReviews/uidBob_b1'] = rv('uidBob', 'b1', { name: '홍천강변캠핑장', date: '2026-09-20', region: '홍천', rating: 5, toiletCondition: '좋음', storeCondition: '없음', notes: '사람 많음' });
+  s[G + '/sharedReviews/uidBob_b1'] = rv('uidBob', 'b1', { name: '홍천강변캠핑장', date: '2026-09-20', region: '홍천', rating: 5, toiletCondition: '좋음', showerCondition: '보통', storeCondition: '없음', notes: '사람 많음', updatedBy: 'uidCarol' });
+  s[A + 'trips/tp'] = { title: '여름 춘천 캠핑', startDate: ymd(-40), endDate: ymd(-38), campsiteName: '춘천 호수 캠핑장', region: '춘천', createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
+  s[A + 'checklists/clp'] = { title: '춘천 준비물', tripId: 'tp', items: [{ id: 'p1', label: '텐트', status: 'packed', group: '텐트' }, { id: 'p2', label: '버너', status: 'skip', group: '조리' }] };
   s[G + '/sharedReviews/uidCarol_x'] = rv('uidCarol', 'x', { name: '양양 바다 캠핑장', date: '2026-07-01', region: '양양', rating: 3, toiletCondition: '보통', storeCondition: '적당함' });
   return s;
 }
@@ -84,7 +86,16 @@ function seed() {
       const tryClick = async sel => { const l = p.locator(sel).first(); if (await l.count() && await l.isVisible()) { await l.click(); await sleep(250); return true; } return false; };
       await nav('home'); await shot('1-home');
       await nav('camping'); await tryClick('.camp-view-chip:has-text("내 기록")'); await shot('2-camping-mine');
+      await tryClick('.list-row:has-text("홍천 강변") .camp-line3'); await shot('2b-camping-mine-expanded');
+      await tryClick('[data-action="camp-new"]'); await sleep(200); await shot('2c-modal-camp-form');
+      await p.evaluate(() => { const b = document.querySelector('.modal-body'); if (b) b.scrollTop = 400; }); await shot('2d-modal-camp-form-scrolled');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('.camp-view-chip:has-text("캠핑팸")'); await sleep(200); await shot('3-camping-group-reviews');
+      await tryClick('.review-card:has-text("홍천")'); await sleep(200); await shot('3b-modal-review-detail');
+      await tryClick('.review-row:has-text("밥") [data-action="review-edit"]'); await sleep(300); await shot('3c-modal-review-edit');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('[data-action="camp-new-group"]'); await sleep(200); await shot('3d-modal-group-add');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');
       await shot('4-gear');
       if (await tryClick('[data-action="gear-select"]')) { await tryClick('.gear-sec-top [data-action="gear-pick-many"]'); await tryClick('[data-action="gear-pick"]'); }
@@ -109,7 +120,9 @@ function seed() {
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('.trip-panel .more-btn'); await tryClick('[data-action="trip-edit"]'); await sleep(200); await shot('14-modal-trip-edit');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
-      await tryClick('[data-action="go-templates"]'); await sleep(200); await shot('16-checklist-templates');
+      await tryClick('.sub-tab[data-view="pastTrips"]:visible, #nav [data-nav="pastTrips"]:visible'); await sleep(200); await shot('19-checklist-past-trips');
+      await tryClick('.past-trip-card'); await sleep(200); await shot('20-checklist-past-trip-panel');
+      await tryClick('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible'); await sleep(200); await shot('16-checklist-templates');
       if (await tryClick('[data-action="tpl-new"]')) { await p.fill('#tpl-title', '오토캠핑 기본').catch(() => {}); await tryClick('[data-action="tpl-save"]'); await sleep(250); await tryClick('#modal-root #gpk-all'); }
       await shot('18-modal-template-gear'); await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250); await nav('checklist');
       await tryClick('[data-action="trip-pick"][data-trip="all"]'); await tryClick('[data-action="cl-new-list"]'); await sleep(200);

@@ -75,7 +75,7 @@ const server = {};
   const D = await phone(UA);
   const B = await phone(UB);
   const tplDocs = base => Object.entries(server).filter(([k]) => k.startsWith(base + 'checklistTemplates/')).map(([k, v]) => ({ id: k.split('/').pop(), ...v }));
-  const openTplPage = async p => { await nav(p, 'checklist'); await settle(); await p.click('[data-action="go-templates"]'); await settle(); };
+  const openTplPage = async p => { await nav(p, 'checklist'); await settle(); await p.locator('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible').first().click(); await settle(); };
 
   // ================= 4. Home·Settings: 보유 장비 통계 없음 =================
   await nav(D, 'home'); await settle();
@@ -161,7 +161,7 @@ const server = {};
   await nav(B, 'checklist');
   await B.locator('.space-chip:has-text("캠핑팸")').first().click(); await settle();
   if (await B.locator('[data-action="space-note-ok"]').count()) await B.click('[data-action="space-note-ok"]');
-  await B.click('[data-action="go-templates"]'); await settle();
+  await B.locator('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible').first().click(); await settle();
   const aCard = B.locator(`.tpl-card[data-tpl="${at.id}"]`);
   const aMenu = await aCard.locator('.more-item').evaluateAll(els => els.map(e => e.dataset.action));
   check('2 다른 멤버(밥): 남의 템플릿은 "보기 전용" + 만든 사람 표시, 항목 추가·빼기·이름·삭제 없음, "새 리스트"만', /보기 전용/.test(await aCard.innerText()) && /앨리스/.test(await aCard.locator('.tpl-owner').innerText())

@@ -1,7 +1,8 @@
 // 그룹 후기 공유 테스트 (가짜 Firestore/Auth):
 //  공유 켜기 → B 멤버에게 그룹 후기로 보임, 수정 시 사본 갱신, 공유 끄기·기록 삭제 시 사본 삭제, 되돌리기 시 사본 복구,
 //  여러 그룹 공유, 캠핑장별 묶음·평균 평점·요약, 지역 필터·정렬, 그룹 일정 후기 남기기 시 기본 공유 켜짐,
-//  그룹장 "그룹에서 내리기", 나간 멤버 표시·공유 정리, 비멤버에게는 안 보임, 백업 가져오기 후 사본 맞춤, 보기 기억.
+//  그룹장 "그룹에서 내리기", 나간 멤버 표시·공유 정리, 비멤버에게는 안 보임, 백업 가져오기 후 사본 맞춤, 보기 기억,
+//  멤버가 남의 후기 함께 고치기(작성자 기록·다른 그룹 사본 반영), 그룹 화면 기록 추가, 샤워장, 내 기록 후기 펼치기.
 // 실행: node tests/reviews.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
 const { menuClick } = require('./ui-helpers');
@@ -62,6 +63,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   const nav = (p, tab) => p.locator(`[data-nav="${tab}"]:visible`).first().click();
   const toastText = p => p.locator('#toast').innerText();
   const confirmYes = async p => { await p.waitForSelector('[data-action="confirm-yes"]', { timeout: 3000 }); await p.click('[data-action="confirm-yes"]'); };
+  const goPast = async p => { await p.locator('.sub-tab[data-view="pastTrips"]:visible, #nav [data-nav="pastTrips"]:visible').first().click(); await settle(); };
   const view = async (p, label) => { await p.locator(`.camp-view-chip:has-text("${label}")`).first().click(); await settle(); };
   const editLog = async (p, name) => { await p.click(`.list-row:has(.name:has-text("${name}")) [data-action="camp-edit"]`); await p.waitForSelector('#cf-name', { timeout: 3000 }); };
   const shareChip = (p, gname) => p.locator(`.share-chip:has-text("${gname}")`);
@@ -111,12 +113,13 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   check('B에게 그룹 후기로 보임: 캠핑장별로 묶음(이름 공백·대소문자 무시) 2개 후기', (await B.locator('.review-card').count()) === 2 && /후기 2개/.test(hc), hc);
   check('카드 요약: 지역·평균 평점(5,3→4.0)·최근 방문일·화장실(최빈값)', /홍천/.test(hc) && /4\.0/.test(hc) && /최근 방문 2026-09-20/.test(hc) && /화장실 좋음/.test(hc), hc);
   check('카드에 작성자 사진 2명', (await hongCard.locator('.review-authors .mini-avatar').count()) === 2);
-  check('그룹 후기는 읽기 전용(추가 버튼 없음)', (await B.locator('[data-action="camp-new"]').count()) === 0);
+  check('그룹 후기 화면에 "기록 추가"(그룹용) 버튼, 내 기록용 추가 버튼은 없음', (await B.locator('[data-action="camp-new-group"]').count()) === 1 && (await B.locator('[data-action="camp-new"]').count()) === 0);
+  check('"전체" 칩에도 전체 개수(캠핑장 2곳)', /전체\s*2/.test(await B.locator('[data-action="group-review-filter"][data-cat="all"]').innerText()));
   await hongCard.click();
   const det = await B.locator('#review-detail').innerText();
   check('카드를 누르면 멤버별 후기 전체(사이트·체크인/아웃·화장실·매점·메모·작성자·방문일)', /앨리스/.test(det) && /밥/.test(det) && /데크/.test(det) && /5x5m/.test(det) && /14:00~11:00/.test(det) && /매점 적당함/.test(det) && /계곡 옆/.test(det) && /2026-08-16 방문/.test(det), det);
-  check('내가 쓴 후기에만 "내 기록에서 수정", 그룹장이 아니면 "내리기" 없음', (await B.locator('.review-row:has-text("밥") [data-action="review-edit-mine"]').count()) === 1
-    && (await B.locator('.review-row:has-text("앨리스") [data-action="review-edit-mine"]').count()) === 0 && (await B.locator('[data-action="review-remove"]').count()) === 0);
+  check('멤버 누구나 모든 후기에 "수정", 그룹장이 아니면 "내리기" 없음', (await B.locator('.review-row:has-text("밥") [data-action="review-edit"]').count()) === 1
+    && (await B.locator('.review-row:has-text("앨리스") [data-action="review-edit"]').count()) === 1 && (await B.locator('[data-action="review-remove"]').count()) === 0);
 
   // ================= 2. 수정 → 사본 갱신 / 여러 그룹 / 끄기 =================
   await editLog(A, '홍천 강변 캠핑장');
@@ -165,8 +168,9 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await nav(A, 'checklist');
   await A.locator('.space-chip:has-text("캠핑팸")').click();
   await settle();
-  await A.click('[data-action="trip-past-toggle"]');
-  await A.click('.trip-chip:has-text("팸 지난 캠핑")');
+  await goPast(A);
+  check('지난 일정 화면(Checklist 하위 메뉴)에 그룹의 끝난 일정', (await A.locator('.past-trip-card:has-text("팸 지난 캠핑")').count()) === 1);
+  await A.click('.past-trip-card:has-text("팸 지난 캠핑")');
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
   check('그룹 일정에서 "후기 남기기" → 그 그룹 공유가 기본으로 켜짐', (await shareChip(A, '캠핑팸').getAttribute('class')).includes('active') && !(await shareChip(A, '회사캠핑').getAttribute('class')).includes('active'));
@@ -180,8 +184,8 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await A.locator('.space-chip:has-text("내 공간")').click();
   await put(A_ + 'trips/pt', { title: '개인 지난 캠핑', startDate: ymd(-3), endDate: ymd(-3), campsiteName: '춘천', region: '춘천', createdBy: UA.uid, createdAt: 'x', updatedBy: UA.uid });
   await settle();
-  await A.click('[data-action="trip-past-toggle"]');
-  await A.click('.trip-chip:has-text("개인 지난 캠핑")');
+  await goPast(A);
+  await A.click('.past-trip-card:has-text("개인 지난 캠핑")');
   await A.click('.trip-card [data-action="trip-review"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
   check('개인 일정·새 기록에서는 공유 기본 꺼짐', (await A.locator('.share-chip.active').count()) === 0);
@@ -199,11 +203,11 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   check('그룹장이 내리면 사본만 삭제(작성자 개인 기록은 그대로)', !server[`groups/${G1}/sharedReviews/${UB.uid}_b2`] && !!server[B_ + 'campingLogs/b2']);
   check('A 화면에서 양양 카드가 사라짐', (await A.locator('.review-card:has-text("양양")').count()) === 0);
 
-  // ================= 7. "내 기록에서 수정" =================
+  // ================= 7. 내 후기 "수정" → 그룹 보기 그대로 내 기록 수정 폼 =================
   await A.click('.review-card:has-text("홍천")');
-  await A.click('.review-row:has-text("앨리스") [data-action="review-edit-mine"]');
+  await A.click('.review-row:has-text("앨리스") [data-action="review-edit"]');
   await A.waitForSelector('#cf-name', { timeout: 3000 });
-  check('"내 기록에서 수정" → 내 기록 보기로 바뀌고 그 기록 수정 폼', (await A.inputValue('#cf-name')) === '홍천 강변 캠핑장' && (await A.locator('.camp-view-chip.active:has-text("내 기록")').count()) === 1);
+  check('내 후기 "수정" → 그룹 후기 보기 그대로 내 기록 수정 폼(공유 칩 있음)', (await A.inputValue('#cf-name')) === '홍천 강변 캠핑장' && (await A.locator('.camp-view-chip.active:has-text("캠핑팸")').count()) === 1 && (await A.locator('.share-chip').count()) === 2);
   await A.click('[data-action="modal-close"]');
 
   // ================= 8. 나간 멤버 + 공유 정리 + 자기 사본 삭제 권한 =================
@@ -275,6 +279,72 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await nav(B, 'home');
   const bCamp = await B.locator('.stat-card:has-text("캠핑 기록") .big-num').innerText();
   check('Home 캠핑 통계는 개인 기록만(밥 2개, 그룹 후기 미포함)', bCamp.trim() === '2', bCamp);
+
+  // ================= 13. 그룹 후기 함께 고치기(멤버) → 작성자 기록·다른 그룹 사본에도 반영 =================
+  // 앨리스 c1을 회사캠핑에도 공유해 둠(두 그룹)
+  await nav(A, 'camping'); await view(A, '내 기록');
+  await editLog(A, '홍천 강변 캠핑장');
+  await shareChip(A, '회사캠핑').click();
+  await A.click('[data-action="camp-save"]'); await settle();
+  check('(준비) 앨리스 c1이 두 그룹에 공유', !!server[k1] && !!server[k2] && server[k1].updatedBy === UA.uid);
+  await nav(B, 'camping'); await view(B, '캠핑팸 후기');
+  await B.click('.review-card:has-text("홍천")');
+  await B.click('.review-row:has-text("앨리스") [data-action="review-edit"]');
+  await B.waitForSelector('#cf-name', { timeout: 3000 });
+  check('다른 멤버 후기 수정 폼: 제목 "그룹 후기 수정", 작성자 안내, 공유 칩 없음, 기존 값 채움', /그룹 후기 수정/.test(await B.locator('#modal-root h3').innerText()) && /앨리스/.test(await B.locator('#modal-root .cf-note').innerText())
+    && (await B.locator('.share-chip').count()) === 0 && (await B.inputValue('#cf-name')) === '홍천 강변 캠핑장');
+  await B.fill('#cf-notes', '밥이 보탬: 모기 많음');
+  await B.locator('#cf-shower .seg-btn[data-val="좋음"]').click();
+  await B.click('[data-action="camp-save"]'); await settle(); await settle();
+  const k1Now = server[k1] || {};
+  check('멤버가 고치면 그룹 사본에 저장(작성자·원본 id 그대로, updatedBy=고친 사람 → 작성자 앱이 받아서 다시 나로)', k1Now.notes === '밥이 보탬: 모기 많음' && k1Now.showerCondition === '좋음' && k1Now.authorUid === UA.uid && k1Now.sourceLogId === 'c1', k1Now);
+  const aLog = server[A_ + 'campingLogs/c1'] || {};
+  check('작성자(앨리스) 내 기록에도 반영 + "밥 님이 고침" 기록', aLog.notes === '밥이 보탬: 모기 많음' && aLog.showerCondition === '좋음' && aLog.editedBy && aLog.editedBy.uid === UB.uid && same(aLog.sharedGroupIds, [G1, G2]), aLog);
+  check('작성자가 공유한 다른 그룹(회사캠핑) 사본도 맞춰짐', server[k2] && server[k2].notes === '밥이 보탬: 모기 많음' && server[k2].updatedBy === UA.uid);
+  await view(A, '내 기록');
+  check('앨리스 내 기록 목록에 "밥 님이 고침"', /밥 님이 고침/.test(await A.locator('.list-row:has-text("홍천 강변")').innerText()));
+  await editLog(A, '홍천 강변 캠핑장');
+  check('작성자 폼에도 고친 샤워장 값이 채워짐', (await A.locator('#cf-shower .seg-btn.active').innerText()).trim() === '좋음');
+  await A.click('[data-action="camp-save"]'); await settle();
+  check('작성자가 다시 저장하면 "고침" 표시는 지워짐(내용은 그대로)', !server[A_ + 'campingLogs/c1'].editedBy && server[A_ + 'campingLogs/c1'].notes === '밥이 보탬: 모기 많음' && !/님이 고침/.test(await A.locator('.list-row:has-text("홍천 강변")').innerText()));
+  await view(A, '캠핑팸 후기');
+  await A.click('.review-card:has-text("홍천")');
+  const detA = await A.locator('#review-detail').innerText();
+  check('그룹 후기 창에 샤워장 상태 표시', /샤워장 좋음/.test(detA), detA);
+  await A.click('[data-action="modal-close"]');
+  const tryC = await B.evaluate(async k => { const m = window.__FIREBASE_MODULES__.firestore; try { await m.setDoc(m.doc({}, k), { name: 'x', authorUid: 'uidAlice', sourceLogId: 'c1' }); return 'ok'; } catch (e) { return e.code; } }, k1);
+  check('(가짜 규칙) 멤버가 updatedBy 없이 남의 사본 고치기 거부', tryC === 'permission-denied', tryC);
+
+  // ================= 14. 그룹 후기 화면에서 기록 추가 → 내 기록 + 그룹 공유 =================
+  await B.click('[data-action="camp-new-group"]');
+  await B.waitForSelector('#cf-name', { timeout: 3000 });
+  check('그룹 화면 "기록 추가": 제목 "그룹 후기 추가", 이 그룹 공유가 켜진 채', /그룹 후기 추가/.test(await B.locator('#modal-root h3').innerText()) && (await shareChip(B, '캠핑팸').getAttribute('class')).includes('active') && !(await shareChip(B, '회사캠핑').getAttribute('class')).includes('active'));
+  await B.fill('#cf-name', '연천 별빛 캠핑장');
+  await B.fill('#cf-region', '연천');
+  await B.locator('#cf-shower .seg-btn[data-val="보통"]').click();
+  await B.click('[data-action="camp-save"]'); await settle();
+  const bNew = Object.entries(server).find(([k, v]) => k.startsWith(B_ + 'campingLogs/') && v.name === '연천 별빛 캠핑장');
+  const bNewId = bNew && bNew[0].split('/').pop();
+  check('내 기록(밥 개인 공간)에 생성 + sharedGroupIds=[캠핑팸] + 샤워장 저장', !!bNew && same(bNew[1].sharedGroupIds, [G1]) && bNew[1].showerCondition === '보통', bNew && bNew[1]);
+  check('그룹 사본도 생성', !!server[`groups/${G1}/sharedReviews/${UB.uid}_${bNewId}`]);
+  await B.waitForSelector('.review-card:has-text("연천")', { timeout: 3000 }).catch(() => {});
+  check('그룹 후기 화면에 바로 보임(보기는 그대로)', (await B.locator('.review-card:has-text("연천")').count()) === 1 && (await B.locator('.camp-view-chip.active:has-text("캠핑팸")').count()) === 1);
+
+  // ================= 15. 내 기록: 말줄임 후기 펼치기 =================
+  const longNote = '아주 긴 후기 '.repeat(40) + '끝문장';
+  await put(B_ + 'campingLogs/blong', { name: '긴후기 캠핑장', date: '2026-01-01', region: '홍천', siteType: '데크', rating: 3, notes: longNote });
+  await view(B, '내 기록');
+  const row = B.locator('.list-row:has-text("긴후기 캠핑장")');
+  const h0 = await row.locator('.camp-line3').evaluate(el => el.clientHeight);
+  check('긴 후기는 2줄 말줄임 + "더보기" 보임', await row.locator('.camp-more').isVisible() && (await row.locator('.camp-line3').evaluate(el => el.scrollHeight > el.clientHeight + 2)));
+  await row.locator('.camp-line3').click();
+  const h1 = await row.locator('.camp-line3').evaluate(el => el.clientHeight);
+  check('후기를 누르면 전체 펼침(높이 늘어남, "접기")', h1 > h0 + 10 && /접기/.test(await row.locator('.camp-more').innerText()) && (await row.locator('.camp-more').getAttribute('aria-expanded')) === 'true', [h0, h1]);
+  await row.locator('.camp-more').click();
+  check('"접기"를 누르면 다시 2줄', (await row.locator('.camp-line3').evaluate(el => el.clientHeight)) === h0);
+  check('짧은 후기에는 "더보기" 없음', !(await B.locator('.list-row:has-text("양양 바다") .camp-more').isVisible()));
+  check('내 기록 "전체" 칩에 전체 개수', new RegExp('전체\\s*' + (await B.locator('.list-row.camp-row').count())).test(await B.locator('[data-action="camp-filter"][data-cat="all"]').innerText()));
+  await put(B_ + 'campingLogs/blong', null);
 
   // ================= 12. 그룹 삭제 시 후기 사본도 삭제 =================
   await nav(A, 'settings');

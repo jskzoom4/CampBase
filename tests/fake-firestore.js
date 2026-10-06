@@ -152,7 +152,9 @@
     if (seg[0] === 'groups' && seg[2] === 'sharedReviews' && seg.length === 4) {   // 그룹 후기 사본
       if (!after) return !!before && (before.authorUid === me() || (store['groups/' + seg[1]] || {}).ownerUid === me());
       const own = after.authorUid === me() && typeof after.sourceLogId === 'string' && seg[3] === me() + '_' + after.sourceLogId;
-      return isMemberOf(seg[1]) && own && (!before || before.authorUid === me());
+      if (!before) return isMemberOf(seg[1]) && own;
+      if (!isMemberOf(seg[1]) || after.authorUid !== before.authorUid || after.sourceLogId !== before.sourceLogId) return false;
+      return before.authorUid === me() ? own : after.updatedBy === me();   // 다른 멤버도 함께 고치기(updatedBy = 나)
     }
     if (seg[0] === 'groups') return groupSubOk(seg) && isMemberOf(seg[1]);
     if (seg[0] === 'groupInvites') {

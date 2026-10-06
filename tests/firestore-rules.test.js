@@ -213,6 +213,13 @@ async function check(name, p) {
   await check('후기 사본: 작성자 본인 수정 허용', assertSucceeds(setDoc(doc(bob, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1', { notes: '수정' }))));
   await check('후기 사본: 남이 덮어쓰기(작성자 변경) 거부', assertFails(setDoc(doc(alice, 'groups/fam/sharedReviews/bob_l1'), rv('alice', 'l1'))));
   await check('후기 사본: 작성자가 authorUid를 바꾸는 것 거부', assertFails(updateDoc(doc(bob, 'groups/fam/sharedReviews/bob_l1'), { authorUid: 'alice' })));
+  await check('후기 사본: 다른 멤버가 updatedBy=나로 고치기 허용', assertSucceeds(setDoc(doc(carol, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1', { notes: '캐롤이 고침', updatedBy: 'carol' }))));
+  await check('후기 사본: 다른 멤버가 updatedBy 없이(또는 남 이름으로) 고치기 거부', Promise.all([
+    assertFails(setDoc(doc(carol, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1', { notes: 'x' }))),
+    assertFails(setDoc(doc(carol, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1', { notes: 'x', updatedBy: 'bob' }))),
+  ]));
+  await check('후기 사본: 다른 멤버가 원본 기록 id(sourceLogId)를 바꾸기 거부', assertFails(setDoc(doc(carol, 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'zz', { updatedBy: 'carol' }))));
+  await check('후기 사본: 비멤버는 고치기 거부', assertFails(setDoc(doc(env.authenticatedContext('erin').firestore(), 'groups/fam/sharedReviews/bob_l1'), rv('bob', 'l1', { updatedBy: 'erin' }))));
   await check('후기 사본: 일반 멤버가 남의 후기 삭제 거부', assertFails(deleteDoc(doc(carol, 'groups/fam/sharedReviews/bob_l1'))));
   await check('후기 사본: 그룹장은 남의 후기 삭제(내리기) 허용', assertSucceeds(deleteDoc(doc(alice, 'groups/fam/sharedReviews/bob_l1'))));
   await check('후기 사본: 작성자 본인 삭제 허용', (async () => {

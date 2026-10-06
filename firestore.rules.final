@@ -117,9 +117,10 @@ service cloud.firestore {
       allow delete: if isGroupMember(gid) && (tplCreator() == null || tplCreator() == me() || groupDoc(gid).data.ownerUid == me());
     }
     // 그룹 후기 모음(읽기 전용 공유): 작성자 개인 캠핑 기록의 사본
-    //   groups/{gid}/sharedReviews/{작성자uid}_{기록id} = 후기 필드 + { authorUid, sourceLogId, updatedAt }
+    //   groups/{gid}/sharedReviews/{작성자uid}_{기록id} = 후기 필드 + { authorUid, sourceLogId, updatedBy, updatedAt }
     //   읽기: 그룹 멤버
-    //   만들기·수정: 그룹 멤버가 "자기 이름으로"만 — authorUid == 나, 문서 id == 내uid_기록id, 작성자 변경 불가
+    //   만들기: 그룹 멤버가 "자기 이름으로"만 — authorUid == 나, 문서 id == 내uid_기록id
+    //   수정: 작성자는 자기 이름으로, 다른 멤버도 함께 고칠 수 있음(updatedBy == 나) — 작성자·원본 기록 id는 바꿀 수 없음
     //   삭제: 작성자 본인(그룹을 나간 뒤에도) 또는 그룹장(부적절한 글 정리)
     match /groups/{gid}/sharedReviews/{rid} {
       function ownReview() {
@@ -129,7 +130,11 @@ service cloud.firestore {
       }
       allow read: if isGroupMember(gid);
       allow create: if isGroupMember(gid) && ownReview();
-      allow update: if isGroupMember(gid) && ownReview() && resource.data.authorUid == me();
+      allow update: if isGroupMember(gid)
+        && request.resource.data.authorUid == resource.data.authorUid
+        && request.resource.data.sourceLogId == resource.data.sourceLogId
+        && ((resource.data.authorUid == me() && ownReview())
+            || (resource.data.authorUid != me() && request.resource.data.updatedBy == me()));
       allow delete: if signedIn() && (resource.data.authorUid == me() || groupDoc(gid).data.ownerUid == me());
     }
     // 초대 코드: 로그인한 사람은 코드로 한 개 읽기 가능(목록 훑어보기는 그 그룹 멤버만)
