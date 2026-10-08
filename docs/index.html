@@ -409,6 +409,8 @@
   .shop-note{font-size:12px;color:var(--text-dim);margin:-4px 0 6px;}
   .shop-uses{display:block;font-size:11.5px;color:var(--text-dim);margin-top:1px;text-decoration:none;}
   .label.done .shop-uses{text-decoration:none;}
+  .cl-qty{font-size:12.5px;font-weight:600;color:var(--text-dim);margin-left:2px;}
+  .label.done .cl-qty{text-decoration:none;}
   .tag.shop-gone{margin-left:4px;}
   @media (prefers-reduced-motion: reduce){ .recipe-chev{transition:none;} }
   /* ---- 별점 입력(3-6) ---- */
@@ -464,6 +466,14 @@
 
   .checklist-group{margin-bottom:18px;}
   .checklist-group h3{font-size:16.5px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  /* 리스트 접기: 화살표(40×40) + 이름을 눌러도 접힘 */
+  .cl-fold{flex:none;margin-left:-10px;margin-right:-6px;color:var(--text-dim);}
+  .cl-fold svg{width:16px;height:16px;transition:transform .15s ease;transform:rotate(90deg);}
+  .cl-closed .cl-fold svg{transform:none;}
+  .cl-title{cursor:pointer;}
+  .checklist-group.cl-closed h3{margin-bottom:0;}
+  .cl-body[hidden]{display:none;}
+  @media (prefers-reduced-motion: reduce){ .cl-fold svg{transition:none;} }
   .cl-subgroup{margin-bottom:10px;padding-left:14px;border-left:2px solid var(--border);}
   .cl-subgroup.cl-flat{padding-left:0;border-left:none;}
   .cl-subgroup:last-child{margin-bottom:0;}
@@ -3455,6 +3465,17 @@ function renderChecklist(){
       : `<div class="card empty">아직 체크리스트가 없어요. 새 리스트를 만들어보세요.</div>`}
   `;
 }
+// 리스트 접기(준비물·장보기 모두, 기기에 기억): 접으면 머리(이름·진행률·버튼)만 보임
+const CL_CLOSED_KEY = 'campbase.clClosed';
+function clClosedSet(){ try{ const v = JSON.parse(localStorage.getItem(CL_CLOSED_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(e){ return new Set(); } }
+function toggleClFold(id){
+  const set = clClosedSet();
+  if(set.has(id)) set.delete(id); else set.add(id);
+  try{ localStorage.setItem(CL_CLOSED_KEY, JSON.stringify([...set])); }catch(e){}
+  renderView();
+  const b = document.querySelector(`[data-action="cl-fold"][data-id="${CSS.escape(id)}"].cl-fold`);
+  if(b) b.focus({ preventScroll: true });
+}
 // 리스트 하나(헤더 + 소분류 + 항목). inPanel이면 일정 패널 안의 구역(카드 테두리 대신 구분선 — 카드 안에 카드 금지)
 function checklistListHtml(cl, ctx, inPanel){
   const { grp, filter, myUid, selTrip, tripTitles } = ctx;
@@ -3470,10 +3491,12 @@ function checklistListHtml(cl, ctx, inPanel){
   const groups = shop ? (visible.length ? [{ group: null, items: [...visible.filter(it=>!it.home), ...visible.filter(it=>it.home)] }] : []) : groupChecklistItems(visible);
   const okLabel = it => shop ? (it.home ? '챙겼어요' : '샀어요') : '가져감';
   const tripOk = shop && cl.tripId && SP.trips.some(t=>t.id===cl.tripId);
+  const closed = clClosedSet().has(cl.id);
   return `
-      <div class="${inPanel ? 'panel-list' : 'card'} checklist-group ${shop ? 'shop-list' : ''}" data-cl="${esc(cl.id)}">
+      <div class="${inPanel ? 'panel-list' : 'card'} checklist-group ${shop ? 'shop-list' : ''} ${closed ? 'cl-closed' : ''}" data-cl="${esc(cl.id)}">
         <h3>
-          <span style="flex:1;min-width:0;">${shop ? icon('cart', 'shop-ico') : ''}${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
+          <button type="button" class="icon-btn cl-fold" data-action="cl-fold" data-id="${esc(cl.id)}" aria-expanded="${!closed}" aria-controls="clb-${esc(cl.id)}" aria-label="'${esc(cl.title)}' ${closed ? '펼치기' : '접기'}" title="${closed ? '펼치기' : '접기'}">${icon('chev')}</button>
+          <span class="cl-title" data-action="cl-fold" data-id="${esc(cl.id)}" style="flex:1;min-width:0;">${shop ? icon('cart', 'shop-ico') : ''}${esc(cl.title)}${!selTrip && cl.tripId && tripTitles[cl.tripId] ? ` <span class="tag trip-tag">${icon('calendar')}${esc(tripTitles[cl.tripId])}</span>` : ''}</span>
           ${allDone ? `<span class="tag done-tag">완료</span>` : `<span class="tag">${decided}/${total}</span>`}
           <button class="btn btn-sm cl-add-btn" data-action="cl-add-item" data-id="${cl.id}">${icon('plus')} 항목 추가</button>
           ${moreMenuHtml('cl:' + cl.id, [
@@ -3485,6 +3508,7 @@ function checklistListHtml(cl, ctx, inPanel){
             { action:'cl-del-list', attrs:{'data-id':cl.id}, icon:'trash', label:'리스트 삭제', danger:true },
           ], `'${cl.title}' 리스트 메뉴`)}
         </h3>
+        <div class="cl-body" id="clb-${esc(cl.id)}" ${closed ? 'hidden' : ''}>
         ${shop ? `<div class="shop-note">${tripOk ? `식단에서 자동으로 만든 목록이에요 · <button class="link-btn" data-action="cook-open-trip" data-space="${esc(spaceKey())}" data-trip="${esc(cl.tripId)}">식단표 보기</button>` : '일정이 지워져서 식단과 자동으로 맞추지 않아요.'}</div>` : ''}
         ${groups.length ? groups.map(gr=>{
           const gDecided = gr.items.filter(isDecided).length;
@@ -3507,9 +3531,10 @@ function checklistListHtml(cl, ctx, inPanel){
                   <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="${okLabel(it)}" aria-label="'${esc(it.label)}' ${okLabel(it)}" aria-pressed="${status==='packed'}">${icon('check')}</button>
                   <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="${shop ? '안 사요' : '안 가져감 (일부러 제외)'}" aria-label="'${esc(it.label)}' ${shop ? '안 사요' : '안 가져감'}" aria-pressed="${status==='skip'}">${icon('close')}</button>
                 </div>
-                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}${shop && it.home ? ` <span class="tag shop-home-tag">집에 있음</span>` : ''}${shop && it.gone ? ` <span class="tag shop-gone">식단에서 빠짐</span>` : ''}${shop && (it.uses||[]).length ? ` <span class="shop-uses">${esc(it.uses.join(' · '))}</span>` : ''}</span>
+                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${it.qty ? ` <span class="cl-qty num">×${esc(String(it.qty))}</span>` : ''}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}${shop && it.home ? ` <span class="tag shop-home-tag">집에 있음</span>` : ''}${shop && it.gone ? ` <span class="tag shop-gone">식단에서 빠짐</span>` : ''}${shop && (it.uses||[]).length ? ` <span class="shop-uses">${esc(it.uses.join(' · '))}</span>` : ''}</span>
                 ${grp ? assigneeChipHtml(grp, cl.id, it) : ''}
                 ${moreMenuHtml('cli:' + cl.id + ':' + it.id, [
+                  { action:'cl-item-edit', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'edit', label:'이름·개수 고치기' },
                   shop ? { action:'shop-home', attrs:{'data-list':cl.id, 'data-item':it.id}, icon: it.home ? 'cart' : 'home', label: it.home ? '사야 해요' : '집에 있어요' } : null,
                   { action:'cl-del-item', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'trash', label:'항목 삭제', danger:true },
                 ], `'${it.label}' 항목 메뉴`)}
@@ -3519,6 +3544,7 @@ function checklistListHtml(cl, ctx, inPanel){
         }).join('') : (filter==='all' && !allItems.length && !shop
           ? `<div class="empty cl-empty">항목이 없어요.<br><button class="btn btn-sm" data-action="cl-gear-import" data-id="${cl.id}">${icon('gear')} 장비에서 불러오기</button></div>`
           : `<div class="empty">${filter==='all' ? '항목이 없어요.' : '이 조건에 맞는 항목이 없어요.'}</div>`)}
+        </div>
       </div>`;
 }
 /* ============================ 캠핑 일정 ============================
@@ -4394,18 +4420,30 @@ function saveNewChecklist(){
   persistChecklist(list);
   closeModal(); renderView(); toast('리스트를 만들었어요.');
 }
+// 항목 추가: 이름 + 개수(선택). 소분류 칸은 없앰(사용자 요청) — 소분류 제목의 +로 열면 그 소분류에, 아니면 '기타'로 들어감
+// 항목의 선택 필드 qty(1 이상의 정수, 없으면 개수 표시 없음)
+function itemQtyField(v){
+  return `<div class="field"><label for="cli-qty">개수 <span class="meta">(선택)</span></label>
+    <div class="sv-row">
+      <button type="button" class="icon-btn" data-action="cli-qty-step" data-d="-1" aria-label="개수 하나 줄이기">−</button>
+      <input id="cli-qty" type="number" inputmode="numeric" min="1" max="999" value="${v ? esc(String(v)) : ''}" placeholder="—">
+      <button type="button" class="icon-btn" data-action="cli-qty-step" data-d="1" aria-label="개수 하나 늘리기">${icon('plus')}</button>
+    </div></div>`;
+}
+function readItemQty(){
+  const raw = ((document.getElementById('cli-qty') || {}).value || '').trim();
+  if(!raw) return null;
+  const n = Math.round(Number(raw));
+  return n >= 1 && n <= 999 ? n : undefined;   // undefined = 잘못된 값
+}
 function addChecklistItemModal(listId, presetGroup){
   const list = SP.checklists.find(c=>c.id===listId);
-  const existingGroups = Array.from(new Set(((list&&list.items)||[]).map(it=>it.group||'기타')));
-  const shop = list && list.kind==='shopping';   // 장보기는 소분류 없음
+  const shop = list && list.kind==='shopping';
   openModal(`
     <h3>항목 추가</h3>
-    <div class="field"><label>항목 이름</label><input id="cli-label" placeholder="${shop ? '예: 얼음' : '예: 랜턴'}"></div>
-    ${shop ? `<input type="hidden" id="cli-group" value="">` : `<div class="field">
-      <label>소분류</label>
-      <input id="cli-group" value="${esc(presetGroup||'')}" placeholder="예: 조리도구 (비워두면 기타로 들어가요)">
-      ${existingGroups.length ? `<div class="seg-group" style="margin-top:7px;">${existingGroups.map(g=>`<div class="seg-btn" data-action="cli-group-pick" data-val="${esc(g)}">${esc(g)}</div>`).join('')}</div>` : ''}
-    </div>`}
+    <div class="field"><label for="cli-label">항목 이름</label><input id="cli-label" placeholder="${shop ? '예: 얼음' : '예: 랜턴'}"></div>
+    ${itemQtyField(null)}
+    <input type="hidden" id="cli-group" value="${esc(presetGroup||'')}">
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="cl-add-item-save" data-id="${listId}">${icon('save')} 추가</button>
@@ -4418,15 +4456,46 @@ function saveChecklistItem(listId){
   if(!labelEl){ toast('입력창을 찾지 못했어요. 창을 닫고 다시 시도해주세요.'); return; }
   const label = labelEl.value.trim();
   if(!label){ toast('항목 이름을 입력해주세요.'); return; }
+  const qty = readItemQty();
+  if(qty===undefined){ toast('개수는 1~999로 입력해주세요.'); return; }
   const group = (groupEl ? groupEl.value : '').trim() || '기타';
   const list = SP.checklists.find(c=>c.id===listId);
   if(!list){ toast('리스트를 찾지 못했어요.'); return; }
   list.items = list.items || [];
   const newItem = { id: uid('i'), label, status:'pending', group };
+  if(qty) newItem.qty = qty;
   if(inGroupSpace() && state.user) newItem.addedBy = state.user.uid;
   list.items.push(newItem);
   persistChecklist(list);
   closeModal(); renderView(); toast('항목을 추가했어요.');
+}
+// 항목 ⋯ "이름·개수 고치기"
+function editChecklistItemModal(listId, itemId){
+  const list = SP.checklists.find(c=>c.id===listId);
+  const it = list && (list.items||[]).find(i=>i.id===itemId);
+  if(!it) return;
+  openModal(`
+    <h3>항목 고치기</h3>
+    <div class="field"><label for="cli-label">항목 이름</label><input id="cli-label" value="${esc(it.label)}"></div>
+    ${itemQtyField(it.qty)}
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="cl-item-edit-save" data-list="${esc(listId)}" data-item="${esc(itemId)}">${icon('save')} 저장</button>
+    </div>`);
+}
+function saveChecklistItemEdit(listId, itemId){
+  const list = SP.checklists.find(c=>c.id===listId);
+  const it = list && (list.items||[]).find(i=>i.id===itemId);
+  if(!it) return;
+  const label = ((document.getElementById('cli-label') || {}).value || '').trim();
+  if(!label){ toast('항목 이름을 입력해주세요.'); return; }
+  const qty = readItemQty();
+  if(qty===undefined){ toast('개수는 1~999로 입력해주세요.'); return; }
+  it.label = label;
+  if(qty) it.qty = qty; else delete it.qty;
+  if(inGroupSpace() && state.user) it.updatedBy = state.user.uid;
+  persistChecklist(list);
+  closeModal(); renderView(); toast('항목을 고쳤어요.');
 }
 function resetChecklist(listId){
   const list = SP.checklists.find(c=>c.id===listId);
@@ -4791,6 +4860,8 @@ function openShoppingList(space, tripId){
   if(space!==state.space) selectSpace(space);
   const t = findTrip(space, tripId);
   state.tripFilter = tripId; state.checklistFilter = 'all';
+  const sl = shoppingListOf(space, tripId);   // 접어 둔 장보기 목록이면 펼쳐서 보여 줌
+  if(sl){ const set = clClosedSet(); if(set.delete(sl.id)) try{ localStorage.setItem(CL_CLOSED_KEY, JSON.stringify([...set])); }catch(e){} }
   state.currentView = t && tripPhase(t).kind==='past' ? 'pastTrips' : 'checklist';
   if(state.gearSelecting) setGearSelecting(false);
   renderNav(); renderView();
@@ -5751,11 +5822,10 @@ function wireGlobalActions(){
       }
       case 'cl-add-item': addChecklistItemModal(id); break;
       case 'cl-add-item-save': saveChecklistItem(id); break;
-      case 'cli-group-pick': {
-        const groupEl = document.getElementById('cli-group');
-        if(groupEl) groupEl.value = a.getAttribute('data-val');
-        break;
-      }
+      case 'cli-qty-step': { const inp = document.getElementById('cli-qty'); if(inp) inp.value = String(Math.max(1, Math.min(999, (Math.round(Number(inp.value)) || (Number(a.getAttribute('data-d')) > 0 ? 0 : 2)) + Number(a.getAttribute('data-d'))))); break; }
+      case 'cl-fold': toggleClFold(a.getAttribute('data-id')); break;
+      case 'cl-item-edit': editChecklistItemModal(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
+      case 'cl-item-edit-save': saveChecklistItemEdit(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
       case 'cl-item-status': {
         const listId = a.getAttribute('data-list'), itemId = a.getAttribute('data-item'), val = a.getAttribute('data-val');
         const list = SP.checklists.find(c=>c.id===listId);
