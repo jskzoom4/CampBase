@@ -58,7 +58,8 @@
   메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
 - 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
 - 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }], createdBy? }`(체크 상태·담당자 없음).
-  **Checklist 하위 화면**: 지난 일정(`pastTrips`)·템플릿(`templates`). 데스크톱은 왼쪽 메뉴 Checklist 아래 하위 메뉴(`SUB_NAV`, `.nav-sub`),
+  **Checklist 하위 화면**: 지난 일정(`pastTrips`)·템플릿(`templates`). 데스크톱은 왼쪽 메뉴 Checklist 아래 하위 메뉴(`SUB_NAV`, `.nav-sub`) —
+  Checklist 옆 화살표(`nav-sub-toggle`, 40×40)로 펼치기/접기(기기별 `localStorage` `campbase.navSubOpen`, 처음엔 펼침, 접힌 채 하위 화면이면 Checklist가 켜짐),
   휴대폰은 탭바 6개 그대로(하위 화면에서도 Checklist 탭이 켜짐, `NAV_PARENT`) + 세 화면 맨 위의 하위 탭 `subTabsHtml()`(체크리스트 | 지난 일정 n | 템플릿 n, `sub-nav`, 휴대폰에서만 보임).
   화면 이동은 `goView()` 하나로(지난 일정은 목록부터, Checklist로 오면 지난 일정 선택은 풂). Checklist 일정 줄에는 템플릿 버튼이 없다(사용자 요청: 템플릿 메뉴에서만).
   **템플릿 화면**(`renderTemplatesPage()`, 지금 공간 기준·공간 칩 있음).
@@ -86,12 +87,16 @@
 - Home "다음 캠핑" 카드(`nextTripHtml()`, 위젯 키 `nextTrip` — 예전 `location` 값을 `normalizeHomeWidgets()`가 이어받음): 개인 일정 + 내가 참가하는 그룹 일정 중
   가장 가까운 다가오는/진행 중 일정 1개. 누르면 그 공간의 Checklist 탭에서 그 일정 선택(`openTripFromHome`). 없으면 "다음 캠핑 일정을 만들어보세요".
   끝난 지 7일 이내이고 내 후기가 없는 일정은 "'이름' 후기를 남겨보세요". Home의 다른 통계는 개인 데이터만.
+- **Camping에서도 지난 일정으로 후기 쓰기**(같은 캠핑장이 이름이 달라 다른 캠핑장 후기로 갈라지지 않게): `reviewDueTrips(maxAgo?, space?)` = 후기 없는 끝난 일정(개인 + 참가 그룹, 최근 순, Home은 7일 이내).
+  내 기록 보기 위쪽 `campReviewDueHtml()` 카드(`.camp-due`, 3개까지 + `camp-due-more`, 줄은 `trip-review`), 그룹 후기 보기에는 그 그룹 일정만.
+  새 기록 폼(일정에서 온 게 아닐 때)의 `#cf-trip` "지난 일정에서 불러오기" → `campFormPickTrip()`: 이름·지역·날짜 채움 + tripRef 연결 + 그룹 일정이면 그 그룹 공유 켬("직접 입력"으로 돌리면 해제).
+  캠핑장 이름 칸은 `datalist#cf-name-list`(`knownCampNames()`: 내 기록·일정·보고 있는 그룹 후기 이름).
 - 후기 남기기: 끝난 일정 카드의 `trip-review` → **내 개인** 캠핑 기록 폼을 캠핑장 이름·지역·시작일로 미리 채움(`campFormModal(null, prefill)`),
   저장하면 캠핑 기록에 선택 필드 `tripRef: { space: 'me'|gid, tripId }`. `hasMyReview()`로 "내 후기 작성함" 표시. 기록 수정(`saveCampForm`)은 기존 필드(tripRef 등)를 유지.
 - 개인 백업에 `trips`, `checklistTemplates` 포함(필드가 없는 예전 백업을 가져오면 지금 일정·템플릿은 그대로 둔다).
 
 ## 캠핑 식단·장보기 (Cooking 탭, 새 탭·새 컬렉션 없음, 규칙 그대로)
-- 흐름: 일정 고르기 → 끼니마다 메뉴 → 장보기 목록 자동 생성(일정의 체크리스트) → 마트에서 체크 → 캠핑장에서 식단표로 레시피 보기.
+- 흐름: 일정 고르기 → 끼니마다 메뉴 → 장보기 목록 자동 생성(일정의 체크리스트) → 마트에서 체크 → 캠핑장에서 식단표로 메뉴·재료 보기.
 - 레시피 `COOKING_RECIPES`: `serves`(기준 인원 2) + 재료 `{ name, qty?, unit?, cat, home? }`(`ingr()`로 정의). qty·unit은 serves 기준, qty 없으면 "적당량".
   cat = `SHOP_CATS`('고기·해산물'|'채소·과일'|'가공·면·유제품'|'양념·소스'|'음료·기타'), home = 보통 집에 있는 것(→ "집에서 챙길 것"). 재료 이름 배열이 필요하면 `ingNames(r)`.
 - 식단 = **일정 문서의 선택 필드**(개인 `users/{uid}/trips`, 그룹 `groups/{gid}/trips`): `mealServings?`(기본 인원, 없으면 그룹 = 참가 멤버 수, 개인 = 2),
@@ -112,13 +117,16 @@
   - Checklist 화면은 `checklistListHtml` 그대로 + kind shopping일 때만: 장바구니 아이콘·"식단에서 자동으로 만든 목록이에요 · 식단표 보기", 이름 옆 양·아래 쓰이는 메뉴,
     체크 버튼 이름만 "샀어요/챙겼어요"·"안 사요"(상태 값은 packed/skip 그대로), 항목 ⋯ "양 고치기"(`shop-qty`)·"집에 있어요/사야 해요"(`shop-home`),
     소분류 순서 `SHOP_GROUP_ORDER`(`orderShopGroups`), "템플릿으로 저장"·"장비에서 불러오기" 숨김.
-- Cooking 탭: 맨 위 [식단표 | 레시피](`cook-view`, `localStorage` `campbase.cookView`, 저장한 적 없으면 다가오는 일정이 있을 때 식단표).
+- Cooking 탭: **식단표 하나**(레시피 탭은 사용자 요청으로 없앰. `COOKING_RECIPES`는 메뉴 넣기 창의 "레시피에서 고르기"·기존 레시피 메뉴의 재료 계산용으로 남김).
   - 식단표: 일정 칩 = `allMyTrips()`의 다가오는·진행 중 일정(그룹 이름 작게) + "지난 일정" 접기(`cook-past-toggle`). 고른 일정 `state.cookSel`({space, tripId}), 없으면 가장 가까운 것.
     요약 카드(식단 n/m끼 정함 · 기본 n명(`meal-servings`) · 장보기 만들기(`shop-create`, 레시피 메뉴가 있을 때만)/열기(`shop-open` → `openShoppingList`)),
     날짜 카드(`.meal-day`) 안 끼니 줄(`.meal-row[data-meal-row]`: 이름 · 인원 칩(다르면 `.diff`) · 메뉴 칩(누르면 그 끼니 인원 기준 레시피 펼침, ⋯ 담당자(그룹)·옮기기·빼기(되돌리기)) · "+ 메뉴"),
     끼니 ⋯ 다 먹었어요(done)·옮기기·비우기(되돌리기)·지우기(추가 끼니·날짜 밖), 날짜마다 "+ 끼니 추가"(간식·야식·술안주·직접).
-    메뉴 고르기 창 `mealPickerModal`: 직접 입력(쉼표로 여러 개) + 레시피 검색(`#mp-search`, input 이벤트)·종류 칩 + 여러 개 선택.
-  - 레시피: 종류 필터·접는 카드(기기에 기억) + 읽기 전용 재료(2인 기준 양) + 카드마다 "식단에 추가"(`recipe-to-plan` → 일정·끼니 고르기, 일정 없으면 일정 만들기 안내).
+    메뉴 넣기 창 `mealPickerModal`: **음식 이름(`#mp-custom`) + 재료(`#mp-ings`, 선택)** 직접 입력이 기본. 재료를 적으면 메뉴 하나, 이름만이면 쉼표로 여러 개.
+    아래 `<details class="mp-recipes">` "레시피에서 고르기"(검색 `#mp-search`·종류 칩·여러 개 선택).
+  - 직접 입력 메뉴의 선택 필드 `ingredients: [{ name, qty?, unit? }]`(`parseIngredients("삼겹살 600g, 쌈장")`, 같은 이름은 하나, 40개까지).
+    양은 **그 끼니 전체 양 그대로**(인원으로 다시 계산 안 함), 장보기 소분류는 레시피에 같은 재료가 있으면 그 분류, 없으면 '음료·기타'(`customIngCat`).
+    펼치면 재료 목록, 메뉴 ⋯ "이름·재료 고치기"(`dish-edit` → `dishEditSave`, 레시피 메뉴는 없음). 장보기 만들기는 재료 있는 메뉴(`dishHasIngs`)가 있을 때.
   - 연결: 일정 패널 진행 줄 옆 `mealLinkHtml()`("식단 n/m"·"식단 짜기" → `openTripMeals`), Home 다음 캠핑 카드 " · 식단 n/m끼"(메뉴가 있을 때만),
     지난 일정 카드 "해먹은 메뉴 n개". 식단 없는 일정은 예전과 똑같이 보인다.
 - 예전 레시피별 재료 체크 `cookingChecks`는 **화면에서만 뺐다**. 구독·legacy 가져오기·개인 백업 내보내기/가져오기 형식은 그대로(되돌려도 데이터 그대로).
@@ -263,20 +271,21 @@ node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃
 node tests/smoke.test.js        # 로그인 후 모든 탭의 주요 동작 클릭 스모크 테스트 + 로그아웃
 node tests/groups.test.js       # 그룹: 만들기·초대 코드·참여·함께 체크·공간 전환·담당자·장비 주인·보내기·만료 코드·내보내기·나가기·이름 변경·삭제
 node tests/stability.test.js    # 삭제 되돌리기(개인/그룹, 필드 보존), 그룹 백업 왕복·잘못된 파일 거부, 새 버전 배너(APK)·앱 버전, legacy 닫힘에도 정상 동작
-node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 지난 일정 화면, 후기 남기기(tripRef)
+node tests/trips.test.js        # 캠핑 일정: 개인/그룹 만들기·수정·삭제(되돌리기), 템플릿 복사·연결·빈 리스트, 필터·진행률·내 담당, Home 다음 캠핑, 지난 일정 화면, 후기 남기기(tripRef),
+                                # Camping의 지난 일정 후기 카드·기록 추가의 "지난 일정에서 불러오기"(이름·공유·tripRef)
 node tests/gear-checklist.test.js  # 장비↔준비물: 담당자 추천(일치·불일치·주인 없음), 장비→체크리스트(개인/그룹, 중복 건너뛰기, 주인 자동 담당)
 node tests/ui.test.js           # 화면 규칙: 하단 탭바(390px)·본문 안 가림·키보드, ⋯ 메뉴(열기·바깥/Esc 닫기·키보드), 모달(X·Esc·배경·초점), 초점 표시, 앰버·대비
 node tests/reviews.test.js      # 그룹 후기 공유: 공유·수정·끄기·삭제·되돌리기 사본 동기화, 여러 그룹, 캠핑장별 묶음·평균·요약, 일정 후기 기본 공유, 내리기, 나간 멤버, 비멤버, 백업 후 맞춤,
                                 # 멤버 함께 고치기(작성자 기록·다른 그룹 반영), 그룹 화면 기록 추가, 샤워장, 후기 펼치기, "전체" 개수
 node tests/ui-f.test.js         # 화면 보완(F): 390px 마지막 항목 ⋯ 메뉴, 선택 목록 정렬, 후기 카드 이름, 일정 패널·sticky 요약·첫 항목 위치, 체크 버튼 40×40, 그룹 안내 1회,
-                                # Gear 선택 모드·0개 칩, Cooking 레시피 접기(재료 체크 없음), 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
-node tests/template-k.test.js   # 템플릿 하위 메뉴(데스크톱)·휴대폰 칩·다른 기기 반영, 새 템플릿을 장비에서 고르기(기본)·직접 입력, 템플릿에 장비 더 불러오기, 그룹
+                                # Gear 선택 모드·0개 칩, Cooking 레시피 탭 없음(재료 체크 없음), 모바일 시트·고정 버튼 바, 별점, Home 막대(390)/원형(1280), 최대 폭, 닫기 버튼 없음
+node tests/template-k.test.js   # 템플릿 하위 메뉴(데스크톱, 화살표로 펼치기/접기·기억)·휴대폰 칩·다른 기기 반영, 새 템플릿을 장비에서 고르기(기본)·직접 입력, 템플릿에 장비 더 불러오기, 그룹
 node tests/template-j.test.js   # 템플릿 페이지(리스트 없이 만들기·항목·되돌리기, 그룹은 만든 사람만), 새 리스트에서 템플릿, Gear 카테고리별 +, Home 장비 통계 없음
 node tests/gear-i.test.js       # Gear 수정(I): 장비 X 삭제(맨 아래도 눌림·되돌리기), 카테고리별 전체 선택(mixed), 카테고리 관리 버튼 위치
 node tests/trip-gear-h.test.js  # 일정 → 장비에서 불러오기(전체·묶음 선택, 이미 있는 항목 제외, 그룹/내 장비 담당자), 일정 메모(Description)
 node tests/meals.test.js        # 식단·장보기: 끼니 칸(2박·1박·당일), 메뉴 넣기·옮기기·빼기(되돌리기)·끼니 추가·인원·다 먹었어요·날짜 밖, 양 계산(배수·끼니별·합산·올림·단위·적당량),
                                 # 장보기 만들기·Checklist 표시·자동 맞춤(체크·담당·고친 양·집에 있음·직접 추가 유지, 빠진 재료), 그룹(실시간·담당·동시 수정·공간과 무관 저장),
-                                # 일정 패널·Home·지난 일정 연결, 레시피 보기·식단에 추가, 일정 삭제 되돌리기·백업 왕복·예전 백업, 일정 없음 안내
+                                # 일정 패널·Home·지난 일정 연결, 레시피 탭 없음·메뉴 직접 입력(이름·재료 → 장보기, 고치기), 일정 삭제 되돌리기·백업 왕복·예전 백업, 일정 없음 안내
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.

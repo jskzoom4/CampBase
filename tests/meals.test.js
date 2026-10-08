@@ -3,7 +3,7 @@
 //  양 계산(인원 배수·끼니별 인원·합산·올림·단위 다름·적당량), 장보기 목록 만들기(kind shopping, 분류·집에서 챙길 것, 진행률),
 //  식단 변경 시 자동 맞춤(체크·담당자·고친 양·집에 있음·직접 추가 유지, 빠진 재료 처리, 목록 삭제 뒤 재생성 안 함),
 //  그룹 일정(실시간, 메뉴 담당자 → 재료 담당자, 동시 수정, 개인 공간을 보고 있어도 그룹에 저장),
-//  일정 패널·Home·지난 일정 카드의 식단 요약과 이동, 레시피 보기(재료 체크 없음, 식단에 추가), 하위 호환·백업 왕복, 일정 삭제 되돌리기.
+//  일정 패널·Home·지난 일정 카드의 식단 요약과 이동, 레시피 탭 없음 + 메뉴 직접 입력(이름·재료 → 장보기, 고치기), 하위 호환·백업 왕복, 일정 삭제 되돌리기.
 // 실행: node tests/meals.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
 const { menuClick } = require('./ui-helpers');
@@ -64,10 +64,12 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   const confirmYes = async p => { await p.waitForSelector('[data-action="confirm-yes"]', { timeout: 3000 }); await p.click('[data-action="confirm-yes"]'); };
   const pickTrip = async (p, title) => { await p.locator(`.cook-trip-chip:has-text("${title}")`).first().click(); await settle(); };
   const row = (p, mid) => p.locator(`.meal-row[data-meal-row="${mid}"]`);
-  async function addMenu(p, mid, recipeIds, custom) {
+  async function addMenu(p, mid, recipeIds, custom, ings) {
     await row(p, mid).locator('[data-action="meal-add-dish"]').click();
-    await p.waitForSelector('#mp-list', { timeout: 3000 });
+    await p.waitForSelector('#mp-custom', { timeout: 3000 });
     if (custom) await p.fill('#mp-custom', custom);
+    if (ings) await p.fill('#mp-ings', ings);
+    if ((recipeIds || []).length) await p.locator('.mp-recipes summary').click();   // 레시피는 "레시피에서 고르기"를 펼쳐서
     for (const r of recipeIds || []) await p.locator(`.mp-pick[value="${r}"]`).check();
     await p.click('[data-action="mp-go"]');
     await settle();
@@ -96,7 +98,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
 
   // ================= 1. Cooking 탭 기본: 식단표, 가장 가까운 일정 =================
   await nav(A, 'cooking'); await settle();
-  check('2-1 다가오는 일정이 있으면 기본은 식단표([식단표 | 레시피])', (await A.locator('.cook-switch [data-view="plan"].active').count()) === 1 && (await A.locator('.cook-switch [data-view="recipes"]').count()) === 1);
+  check('N-3 Cooking은 식단표만(레시피 탭 없음)', (await A.locator('.meal-summary').count()) === 1 && (await A.locator('.cook-switch, [data-action="cook-view"], .recipe-card').count()) === 0);
   check('2-2 일정 칩: 내 일정 + 그룹 일정(그룹 이름 작게), 가장 가까운 일정이 기본 선택', (await A.locator('.cook-trip-chip.active:has-text("팸 캠핑")').count()) === 1
     && /캠핑팸/.test(await A.locator('.cook-trip-chip:has-text("팸 캠핑") .cook-grp').innerText()) && (await A.locator('.cook-trip-chip').count()) === 4);
   check('2-2 지난 일정은 "지난 일정" 접기 안에', (await A.locator('.cook-trip-chip:has-text("지난 춘천")').count()) === 0 && (await A.locator('[data-action="cook-past-toggle"]').count()) === 1);
@@ -272,23 +274,42 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
     const r = await A.evaluate(() => { const t = { title: 'x', startDate: '2099-01-01' }; return mealStats(t).dishes; }); return r === 0;
   })());
 
-  // ================= 8. 레시피 보기 =================
-  await A.click('.cook-switch [data-view="recipes"]'); await settle();
-  check('2-4 레시피 보기: 재료 체크·"재료 n/m" 없음', (await A.locator('.ing-row, [data-action="cook-toggle"]').count()) === 0 && !/재료 \d+\/\d+/.test(await A.locator('.recipe-grid').innerText()));
-  await A.locator('.recipe-card:has-text("김치찌개") [data-action="cook-open"]').click(); await settle();
-  check('2-4 펼치면 읽기 전용 재료(2인 기준 양)', /신김치\s*300g/.test(await A.locator('.recipe-card.open').innerText()) && /2인 기준/.test(await A.locator('.recipe-card.open').innerText()));
-  await A.locator('.recipe-card:has-text("김치찌개") [data-action="recipe-to-plan"]').click();
-  await A.waitForSelector('#rp-trip', { timeout: 3000 });
-  check('2-4 식단에 추가: 지금 고른 일정이 기본', /지난 춘천/.test(await A.locator('#rp-trip option:checked').innerText()));
-  await A.selectOption('#rp-trip', 'me|t1'); await settle();
-  await A.selectOption('#rp-meal', 'm2_lunch');
-  await A.click('[data-action="rp-go"]'); await settle();
-  check('2-4 레시피 → 일정·끼니 골라 넣기', same((meal(A_, 't1', 'm2_lunch') || { dishes: [] }).dishes.map(d => d.recipeId), ['ck10']));
-  await A.reload();
-  await A.waitForFunction(() => /자동 저장 켜짐/.test(document.getElementById('db-status').textContent), null, { timeout: 8000 });
+  // ================= 8. 메뉴 직접 입력(이름 + 재료) =================
   await nav(A, 'cooking'); await settle();
-  check('2-1 보기 선택은 기기에 기억(레시피)', (await A.locator('.cook-switch [data-view="recipes"].active').count()) === 1);
-  await A.click('.cook-switch [data-view="plan"]'); await settle();
+  await pickTrip(A, '1박 가평');
+  await row(A, 'm2_lunch').locator('[data-action="meal-add-dish"]').click();
+  await A.waitForSelector('#mp-custom', { timeout: 3000 });
+  check('N-3 메뉴 넣기 창: 음식 이름·재료 입력칸, 레시피는 접혀 있음', (await A.locator('#mp-ings').count()) === 1 && !(await A.locator('#mp-list').isVisible()));
+  await A.click('[data-action="mp-go"]'); await settle();
+  check('N-3 아무것도 안 넣으면 안내만(저장 안 함)', !meal(A_, 't1', 'm2_lunch') && (await A.locator('#mp-custom').count()) === 1);
+  await A.fill('#mp-ings', '햄 200g'); await A.click('[data-action="mp-go"]'); await settle();
+  check('N-3 재료만 있고 이름이 없으면 저장 안 함', !meal(A_, 't1', 'm2_lunch'));
+  await A.fill('#mp-custom', '부대찌개'); await A.fill('#mp-ings', '햄 200g, 라면사리 2개, 김치, 대파 1.5대'); await A.click('[data-action="mp-go"]'); await settle();
+  let bd = (meal(A_, 't1', 'm2_lunch') || { dishes: [] }).dishes[0] || {};
+  check('N-3 직접 입력: 메뉴 하나 + 재료(이름·양·단위) 저장', bd.name === '부대찌개' && !bd.recipeId
+    && same(bd.ingredients, [{ name: '햄', qty: 200, unit: 'g' }, { name: '라면사리', qty: 2, unit: '개' }, { name: '김치' }, { name: '대파', qty: 1.5, unit: '대' }]), bd);
+  await row(A, 'm2_lunch').locator('.dish-chip:has-text("부대찌개") [data-action="dish-open"]').click(); await settle();
+  const drText = await row(A, 'm2_lunch').locator('.dish-recipe').innerText();
+  check('N-3 메뉴를 누르면 적은 재료·양이 보임', /햄\s*200g/.test(drText) && /김치\s*적당량/.test(drText), drText);
+  check('N-3 재료가 있는 직접 입력 메뉴만으로도 장보기 목록 만들기 가능', !(await A.locator('[data-action="shop-create"]').isDisabled()));
+  await A.click('[data-action="shop-create"]'); await settle();
+  let s1 = shopOf(A_, 't1')[0] || { items: [] };
+  check('N-3 장보기: 직접 적은 재료가 양 그대로 들어감(인원으로 다시 계산 안 함)', item(s1, '햄') && item(s1, '햄').qtyText === '200g' && item(s1, '김치') && item(s1, '김치').qtyText === '적당량'
+    && same(item(s1, '햄').uses, ['부대찌개']) && item(s1, '햄').src === 'meal', s1.items.map(i => i.label + ':' + i.qtyText + ':' + i.group));
+  await menuClick(A, row(A, 'm2_lunch').locator('[data-action="dish-edit"]'));
+  await A.waitForSelector('#de-ings', { timeout: 3000 });
+  check('N-3 이름·재료 고치기 창에 지금 재료가 채워짐', (await A.inputValue('#de-ings')) === '햄 200g, 라면사리 2개, 김치, 대파 1.5대', await A.inputValue('#de-ings'));
+  await A.fill('#de-name', '부대찌개(큰 냄비)'); await A.fill('#de-ings', '햄 300g, 라면사리 2개');
+  await A.click('[data-action="dish-edit-save"]'); await settle(); await settle();
+  bd = (meal(A_, 't1', 'm2_lunch') || { dishes: [] }).dishes[0] || {};
+  s1 = shopOf(A_, 't1')[0] || { items: [] };
+  check('N-3 고치기 → 메뉴 이름·재료 저장, 장보기도 맞춤(양 바뀜, 빠진 재료는 지움)', bd.name === '부대찌개(큰 냄비)' && bd.ingredients.length === 2
+    && item(s1, '햄') && item(s1, '햄').qtyText === '300g' && !item(s1, '김치') && same(item(s1, '햄').uses, ['부대찌개(큰 냄비)']), s1.items.map(i => i.label + ':' + i.qtyText));
+  // 이름만 쉼표로 여러 개(예전처럼)
+  await addMenu(A, 'm1_lunch', [], '컵라면, 김밥');
+  check('N-3 재료 없이 이름만 쉼표로 적으면 메뉴 여러 개', same((meal(A_, 't1', 'm1_lunch') || { dishes: [] }).dishes.map(d => d.name), ['컵라면', '김밥']));
+  check('N-3 parseIngredients: 양 없는 재료·중복·숫자만', await A.evaluate(() => JSON.stringify(parseIngredients('양파, 양파 2개,  , 소금 0g, 우유 1L'))) === JSON.stringify([{ name: '양파' }, { name: '소금' }, { name: '우유', qty: 1, unit: 'L' }]),
+    await A.evaluate(() => JSON.stringify(parseIngredients('양파, 양파 2개,  , 소금 0g, 우유 1L'))));
 
   // ================= 9. 일정 삭제 되돌리기 · 백업 =================
   const t1Before = JSON.parse(JSON.stringify(trip(A_, 't1')));
@@ -323,17 +344,13 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await confirmYes(A); await settle(); await settle();
   check('1-4·하위 호환: 예전 백업(cookingChecks) 가져오기 정상, 데이터는 그대로 저장', !!server[A_ + 'checklists/oc'] && same(server[A_ + 'cookingChecks/ck1'], { checked: [0, 1] }));
   await nav(A, 'cooking'); await settle();
-  check('하위 호환: 일정·식단 보기 오류 없음', (await A.locator('.cook-switch').count()) === 1);
+  check('하위 호환: 일정·식단 보기 오류 없음', (await A.locator('.meal-summary, .meal-empty').count()) >= 1);
 
   // ================= 10. 일정이 하나도 없을 때 =================
   const C = await phone(UC, { mobile: true });
   await nav(C, 'cooking'); await settle();
-  await C.click('.cook-switch [data-view="plan"]'); await settle();
   check('2-2 일정이 없으면 "캠핑 일정을 만들면 식단을 짤 수 있어요" + 일정 만들기', /캠핑 일정을 만들면 식단을 짤 수 있어요/.test(await C.locator('.meal-empty').innerText()) && (await C.locator('.meal-empty [data-action="trip-new"]').count()) === 1);
-  await C.click('.cook-switch [data-view="recipes"]'); await settle();
-  await C.locator('[data-action="recipe-to-plan"]').first().click();
-  check('2-4 일정이 없을 때 "식단에 추가" → 일정 만들기 안내', /캠핑 일정을 만들면/.test(await C.locator('#modal-root').innerText()) && (await C.locator('#modal-root [data-action="trip-new"]').count()) === 1);
-  await C.click('#modal-root [data-action="trip-new"]'); await settle();
+  await C.click('.meal-empty [data-action="trip-new"]'); await settle();
   check('일정 만들기 안내 → 일정 만들기 창', (await C.locator('#tf-title').count()) === 1);
   await C.click('[data-action="modal-close"]'); await settle();
 

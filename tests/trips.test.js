@@ -265,6 +265,25 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await nav(A, 'home');
   await settle();
   check('Home: 끝난 지 7일 이내 + 내 후기 없는 일정 → "후기를 남겨보세요"', /'춘천 캠핑' 후기를 남겨보세요/.test(await A.locator('#main').innerText()) && !/팸 지난 캠핑/.test(await A.locator('#main').innerText()));
+  // Camping 탭에도 "지난 일정으로 후기 쓰기"(N-2): 후기 없는 지난 일정 전부(7일 넘은 그룹 일정 포함)
+  await nav(A, 'camping'); await settle();
+  const due = A.locator('.camp-due');
+  check('N-2 Camping: 지난 일정으로 후기 쓰기 카드(개인·그룹, 그룹 이름 표시)', (await due.count()) === 1 && (await due.locator('.camp-due-row').count()) === 2
+    && /춘천 호수 캠핑장/.test(await due.innerText()) && /양평 캠핑장[\s\S]*캠핑팸/.test(await due.innerText()), await due.innerText().catch(() => ''));
+  await due.locator('.camp-due-row:has-text("춘천 호수 캠핑장")').click();
+  await A.waitForSelector('#cf-name', { timeout: 3000 });
+  check('N-2 Camping에서 누르면 일정 정보로 채운 후기 폼(Home과 같음)', (await A.inputValue('#cf-name')) === '춘천 호수 캠핑장' && (await A.inputValue('#cf-date')) === ymd(-4) && (await A.locator('#cf-trip').count()) === 0);
+  await A.click('#modal-root [data-action="modal-close"]'); await settle();
+  await A.click('[data-action="camp-new"]');
+  await A.waitForSelector('#cf-trip', { timeout: 3000 });
+  check('N-2 기록 추가 창: "지난 일정에서 불러오기"(직접 입력 + 후기 없는 일정 2개)', (await A.locator('#cf-trip option').count()) === 3);
+  await A.selectOption('#cf-trip', GID + '|gpast'); await settle();
+  check('N-2 일정을 고르면 캠핑장 이름·지역·날짜 채움 + 그룹 일정이면 그 그룹 공유 켬', (await A.inputValue('#cf-name')) === '양평 캠핑장' && (await A.inputValue('#cf-region')) === '양평'
+    && (await A.inputValue('#cf-date')) === ymd(-12) && (await A.locator('[data-action="cf-share-toggle"].active').count()) === 1);
+  await A.selectOption('#cf-trip', ''); await settle();
+  check('N-2 "직접 입력"으로 돌리면 그룹 공유도 꺼짐', (await A.locator('[data-action="cf-share-toggle"].active').count()) === 0);
+  check('N-2 캠핑장 이름 입력 도우미(datalist)에 일정의 캠핑장 이름', (await A.locator('#cf-name-list option[value="양평 캠핑장"]').count()) === 1);
+  await A.click('#modal-root [data-action="modal-close"]'); await settle();
   await nav(A, 'checklist');
   await pickSpace(A, '내 공간');
   check('지난 일정은 Checklist 일정 줄에서 빠지고(접기 버튼도 없음) "전체" 칩에 전체 리스트 수', (await A.locator('.trip-chip:has-text("춘천 캠핑")').count()) === 0 && (await A.locator('[data-action="trip-past-toggle"]').count()) === 0
@@ -308,6 +327,15 @@ const md = off => { const d = new Date(); d.setDate(d.getDate() + off); return {
   await goPast(B);
   await B.click('.past-trip-card:has-text("팸 지난 캠핑")');
   check('B 화면에서는 B의 후기가 없으니 "후기 남기기"', (await B.locator('.trip-card [data-action="trip-review"]').count()) === 1);
+  // B: Camping → 기록 추가 → 지난 일정에서 불러오기로 저장하면 일정과 연결(tripRef) + 그룹 공유, 이름이 A 후기와 똑같음
+  await nav(B, 'camping'); await settle();
+  await B.click('[data-action="camp-new"]');
+  await B.waitForSelector('#cf-trip', { timeout: 3000 });
+  await B.selectOption('#cf-trip', GID + '|gpast'); await settle();
+  await B.click('[data-action="camp-save"]'); await settle();
+  const bReview = docsUnder('users/' + UB.uid + '/campingLogs/').find(c => c.name === '양평 캠핑장');
+  check('N-2 일정에서 불러와 저장: tripRef·그룹 공유·같은 캠핑장 이름', bReview && same(bReview.tripRef, { space: GID, tripId: 'gpast' }) && same(bReview.sharedGroupIds, [GID]) && bReview.name === gReview.name, bReview);
+  check('N-2 후기를 쓰면 Camping 카드에서 그 일정이 빠짐', (await B.locator('.camp-due-row:has-text("양평 캠핑장")').count()) === 0);
 
   // ================= 11. 그룹 일정 삭제(그룹 공간) 되돌리기 + 규칙 =================
   await nav(A, 'checklist'); await settle();

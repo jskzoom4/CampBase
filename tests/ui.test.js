@@ -242,12 +242,14 @@ function seed() {
       sample('그룹 만들기', '[data-action="group-new"]');
       sample('그룹 역할 태그', '.group-row .tag');
       await go('cooking');
-      sample('레시피 보조 글자', '.recipe-meta');
+      sample('식단표 보조 글자', '.ms-where, .meal-empty div');
       const accentEls = [...document.querySelectorAll('.btn-accent, .trip-new-chip')].map(e => e.dataset.action);
       await go('checklist');
       accentEls.push(...[...document.querySelectorAll('.btn-accent, .trip-new-chip')].map(e => e.dataset.action));
       await go('gear'); accentEls.push(...[...document.querySelectorAll('.btn-accent')].map(e => e.dataset.action));
       await go('camping'); accentEls.push(...[...document.querySelectorAll('.btn-accent')].map(e => e.dataset.action));
+      sample('지난 일정 후기 보조 글자', '.camp-due-meta');
+      sample('지난 일정 후기 버튼 글자', '.camp-due-go');
       const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
       const tagColors = [...document.querySelectorAll('.tag')].map(t => getComputedStyle(t).color);
       return { pairs, accentEls: [...new Set(accentEls)], accent, accentInTags: tagColors.includes(toRgb(accent)) };

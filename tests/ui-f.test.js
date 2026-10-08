@@ -1,7 +1,7 @@
 // F. UI 보완 묶음 테스트 (가짜 Firestore/Auth):
 //  1-1 ⋯ 메뉴가 하단 탭바 뒤로 숨지 않음, 1-2 선택 목록 한 줄 정렬, 1-3 그룹 후기 카드 표시 이름,
 //  2 일정 패널(구조·⋯ 메뉴·필터·후기 남기기·리스트 없음 안내·템플릿에서 가져오기·sticky 요약·첫 항목 위치),
-//  3-1 체크 버튼 누르는 영역, 3-2 그룹 배너, 3-3 Gear 선택 모드, 3-4 Cooking 레시피 접기(재료 체크 없음), 3-5 모바일 시트·고정 버튼 바,
+//  3-1 체크 버튼 누르는 영역, 3-2 그룹 배너, 3-3 Gear 선택 모드, 3-4 Cooking 레시피 탭 없음(재료 체크 없음), 3-5 모바일 시트·고정 버튼 바,
 //  3-6 별점, 3-7 기록 줄 정렬, 3-8 Home 막대 그래프, 3-9 본문 최대 폭, 3-10 X만 있는 확인 모달
 // 실행: node tests/ui-f.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
@@ -259,20 +259,10 @@ const server = {};
   await settle();
   check('3-3 주인 지정 장비가 생기면 주인 필터 줄 보임', (await D.locator('.owner-filter').count()) === 1);
 
-  // ================= 3-4 Cooking(레시피 보기) =================
-  await nav(D, 'cooking');
-  await D.click('.cook-switch [data-view="recipes"]'); await settle();
-  check('3-4 레시피 카드는 접힌 상태(이름·종류·난이도·시간), 재료 체크·"재료 n/m" 없음', (await D.locator('.recipe-card').count()) >= 10 && (await D.locator('.recipe-card.open').count()) === 0
-    && (await D.locator('.ing-row, [data-action="cook-toggle"]').count()) === 0 && !/재료 \d+\/\d+/.test(await D.locator('.recipe-grid').innerText()));
-  await D.locator('[data-action="cook-open"]').nth(0).click();
-  await D.locator('[data-action="cook-open"]').nth(1).click();
-  check('3-4 눌러서 펼치기(여러 개 동시에)', (await D.locator('.recipe-card.open').count()) === 2 && (await D.locator('[data-action="cook-open"][aria-expanded="true"]').count()) === 2);
-  check('3-4 펼치면 2인 기준 재료 목록(읽기 전용, 양 표시) + 카드마다 "식단에 추가"', /2인 기준/.test(await D.locator('.recipe-card.open').first().innerText()) && (await D.locator('.recipe-card.open').first().locator('.dr-ings li').count()) >= 3
-    && (await D.locator('.recipe-card [data-action="recipe-to-plan"]').count()) === (await D.locator('.recipe-card').count()));
-  await D.reload();
-  await D.waitForFunction(() => /자동 저장 켜짐/.test(document.getElementById('db-status').textContent), null, { timeout: 8000 });
-  await nav(D, 'cooking');
-  check('3-4 펼친 상태·레시피 보기는 기기에 기억', (await D.locator('.recipe-card.open').count()) === 2 && (await D.locator('.cook-switch [data-view="recipes"].active').count()) === 1);
+  // ================= 3-4 Cooking(레시피 탭 없음) =================
+  await nav(D, 'cooking'); await settle();
+  check('3-4 Cooking은 식단표만(레시피 카드·보기 전환 없음, 재료 체크 없음)', (await D.locator('.recipe-card, .cook-switch, [data-action="cook-view"]').count()) === 0
+    && (await D.locator('.ing-row, [data-action="cook-toggle"]').count()) === 0);
 
   // ================= 3-6 별점 / 3-7 기록 줄 =================
   await nav(D, 'camping');
