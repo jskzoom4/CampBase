@@ -407,9 +407,8 @@
   /* 장보기 목록(Checklist) */
   .shop-ico{width:16px;height:16px;vertical-align:-2px;margin-right:5px;color:var(--brand-text);}
   .shop-note{font-size:12px;color:var(--text-dim);margin:-4px 0 6px;}
-  .shop-qty{font-size:12.5px;color:var(--text-dim);margin-left:4px;font-weight:600;}
   .shop-uses{display:block;font-size:11.5px;color:var(--text-dim);margin-top:1px;text-decoration:none;}
-  .label.done .shop-uses, .label.done .shop-qty{text-decoration:none;}
+  .label.done .shop-uses{text-decoration:none;}
   .tag.shop-gone{margin-left:4px;}
   @media (prefers-reduced-motion: reduce){ .recipe-chev{transition:none;} }
   /* ---- 별점 입력(3-6) ---- */
@@ -466,6 +465,7 @@
   .checklist-group{margin-bottom:18px;}
   .checklist-group h3{font-size:16.5px;font-weight:700;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
   .cl-subgroup{margin-bottom:10px;padding-left:14px;border-left:2px solid var(--border);}
+  .cl-subgroup.cl-flat{padding-left:0;border-left:none;}
   .cl-subgroup:last-child{margin-bottom:0;}
   .cl-subgroup-head{display:flex;align-items:center;gap:2px;padding:0 2px;border-bottom:1px dashed var(--border);margin-bottom:2px;}
   .cl-subgroup-head .spacer{flex:1;}
@@ -3466,7 +3466,8 @@ function checklistListHtml(cl, ctx, inPanel){
     || (filter==='mine' && !!myUid && it.assigneeUid===myUid));
   // 장보기 목록(kind:'shopping', 식단에서 자동으로 만든 목록): 같은 화면에 양·쓰이는 메뉴·"샀어요/안 사요"·양 고치기·집에 있어요
   const shop = cl.kind==='shopping';
-  const groups = shop ? orderShopGroups(groupChecklistItems(visible)) : groupChecklistItems(visible);
+  // 장보기는 소분류로 나누지 않고 한 목록(사용자 요청): 살 것 먼저(목록 순서), 집에서 챙길 것은 맨 아래. 항목의 group 값은 그대로 둠
+  const groups = shop ? (visible.length ? [{ group: null, items: [...visible.filter(it=>!it.home), ...visible.filter(it=>it.home)] }] : []) : groupChecklistItems(visible);
   const okLabel = it => shop ? (it.home ? '챙겼어요' : '샀어요') : '가져감';
   const tripOk = shop && cl.tripId && SP.trips.some(t=>t.id===cl.tripId);
   return `
@@ -3488,8 +3489,8 @@ function checklistListHtml(cl, ctx, inPanel){
         ${groups.length ? groups.map(gr=>{
           const gDecided = gr.items.filter(isDecided).length;
           return `
-          <div class="cl-subgroup">
-            <div class="cl-subgroup-head">
+          <div class="cl-subgroup${gr.group===null ? ' cl-flat' : ''}">
+            ${gr.group===null ? '' : `<div class="cl-subgroup-head">
               <span class="cl-subgroup-name">${esc(gr.group)}</span>
               <span class="tag">${gDecided}/${gr.items.length}</span>
               <div class="spacer"></div>
@@ -3497,7 +3498,7 @@ function checklistListHtml(cl, ctx, inPanel){
               ${gr.group!=='기타' ? moreMenuHtml('clg:' + cl.id + ':' + gr.group, [
                 { action:'cl-group-rename', attrs:{'data-list':cl.id, 'data-group':gr.group}, icon:'edit', label:'소분류 이름 변경' },
               ], `'${gr.group}' 소분류 메뉴`) : ''}
-            </div>
+            </div>`}
             ${gr.items.map(it=>{
               const status = itemStatus(it);
               return `
@@ -3506,10 +3507,9 @@ function checklistListHtml(cl, ctx, inPanel){
                   <button class="cl-status-btn packed ${status==='packed'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="packed" title="${okLabel(it)}" aria-label="'${esc(it.label)}' ${okLabel(it)}" aria-pressed="${status==='packed'}">${icon('check')}</button>
                   <button class="cl-status-btn skip ${status==='skip'?'active':''}" data-action="cl-item-status" data-list="${cl.id}" data-item="${it.id}" data-val="skip" title="${shop ? '안 사요' : '안 가져감 (일부러 제외)'}" aria-label="'${esc(it.label)}' ${shop ? '안 사요' : '안 가져감'}" aria-pressed="${status==='skip'}">${icon('close')}</button>
                 </div>
-                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${shop && it.qtyText ? ` <span class="shop-qty num">${esc(it.qtyText)}</span>` : ''}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}${shop && it.gone ? ` <span class="tag shop-gone">식단에서 빠짐</span>` : ''}${shop && (it.uses||[]).length ? `<span class="shop-uses">${esc(it.uses.join(' · '))}</span>` : ''}</span>
+                <span class="label ${status==='packed'?'done':''}${status==='skip'?' skip':''}">${esc(it.label)}${status==='skip'?` <span class="tag skip-tag">제외</span>`:''}${shop && it.home ? ` <span class="tag shop-home-tag">집에 있음</span>` : ''}${shop && it.gone ? ` <span class="tag shop-gone">식단에서 빠짐</span>` : ''}${shop && (it.uses||[]).length ? ` <span class="shop-uses">${esc(it.uses.join(' · '))}</span>` : ''}</span>
                 ${grp ? assigneeChipHtml(grp, cl.id, it) : ''}
                 ${moreMenuHtml('cli:' + cl.id + ':' + it.id, [
-                  shop ? { action:'shop-qty', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'edit', label:'양 고치기' } : null,
                   shop ? { action:'shop-home', attrs:{'data-list':cl.id, 'data-item':it.id}, icon: it.home ? 'cart' : 'home', label: it.home ? '사야 해요' : '집에 있어요' } : null,
                   { action:'cl-del-item', attrs:{'data-list':cl.id, 'data-item':it.id}, icon:'trash', label:'항목 삭제', danger:true },
                 ], `'${it.label}' 항목 메뉴`)}
@@ -4397,14 +4397,15 @@ function saveNewChecklist(){
 function addChecklistItemModal(listId, presetGroup){
   const list = SP.checklists.find(c=>c.id===listId);
   const existingGroups = Array.from(new Set(((list&&list.items)||[]).map(it=>it.group||'기타')));
+  const shop = list && list.kind==='shopping';   // 장보기는 소분류 없음
   openModal(`
     <h3>항목 추가</h3>
-    <div class="field"><label>항목 이름</label><input id="cli-label" placeholder="예: 랜턴"></div>
-    <div class="field">
+    <div class="field"><label>항목 이름</label><input id="cli-label" placeholder="${shop ? '예: 얼음' : '예: 랜턴'}"></div>
+    ${shop ? `<input type="hidden" id="cli-group" value="">` : `<div class="field">
       <label>소분류</label>
       <input id="cli-group" value="${esc(presetGroup||'')}" placeholder="예: 조리도구 (비워두면 기타로 들어가요)">
       ${existingGroups.length ? `<div class="seg-group" style="margin-top:7px;">${existingGroups.map(g=>`<div class="seg-btn" data-action="cli-group-pick" data-val="${esc(g)}">${esc(g)}</div>`).join('')}</div>` : ''}
-    </div>
+    </div>`}
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="cl-add-item-save" data-id="${listId}">${icon('save')} 추가</button>
@@ -4492,7 +4493,6 @@ const MEAL_SLOTS = ['breakfast','lunch','dinner'];
 const SLOT_LABELS = { breakfast:'아침', lunch:'점심', dinner:'저녁' };
 const EXTRA_PRESETS = ['간식','야식','술안주'];
 const SHOP_HOME_GROUP = '집에서 챙길 것';
-const SHOP_GROUP_ORDER = ['고기·해산물','채소·과일','가공·면·유제품','음료·기타','양념·소스', SHOP_HOME_GROUP];
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
 function recipeById(id){ return COOKING_RECIPES.find(r=>r.id===id) || null; }
 // 예전처럼 재료 이름만 필요할 때(문자열 재료도 받아 줌)
@@ -4501,23 +4501,22 @@ function ingCatByKey(key){
   for(const r of COOKING_RECIPES) for(const ing of r.ingredients) if(normName(ing.name)===key) return ing.cat;
   return '기타';
 }
-/* ---- 직접 입력한 메뉴의 재료: dish.ingredients = [{ name, qty?, unit? }] (선택 필드, 양은 그 끼니 전체 양 그대로 — 인원으로 다시 계산하지 않음) ---- */
-// "삼겹살 600g, 양파 2개, 쌈장" → [{name:'삼겹살', qty:600, unit:'g'}, {name:'양파', qty:2, unit:'개'}, {name:'쌈장'}]
+/* ---- 직접 입력한 메뉴의 재료: dish.ingredients = [{ name }] (선택 필드). 양(개수·중량)은 따로 나누지 않고 이름에 같이 적는다(사용자 요청: "삼겹살 600g") ---- */
+// "삼겹살 600g, 양파 2개, 쌈장" → [{name:'삼겹살 600g'}, {name:'양파 2개'}, {name:'쌈장'}] (같은 이름은 하나, 40개까지)
 function parseIngredients(text){
   const out = [], seen = new Set();
   String(text || '').split(/[,，\n]/).map(x=>x.trim()).filter(Boolean).forEach(part=>{
-    const m = part.match(/^(.*?\S)\s*(\d+(?:\.\d+)?)\s*([^\d\s.,]{0,4})$/);
-    const ing = m && m[1].trim() ? { name: m[1].trim().slice(0, 30), qty: Number(m[2]), unit: m[3] || '' } : { name: part.slice(0, 30) };
-    if(ing.qty !== undefined && !(ing.qty > 0)){ delete ing.qty; delete ing.unit; }
-    const k = normName(ing.name);
+    const name = part.slice(0, 40), k = normName(name);
     if(!k || seen.has(k)) return;
-    seen.add(k); out.push(ing);
+    seen.add(k); out.push({ name });
   });
   return out.slice(0, 40);
 }
-function dishIngs(d){ return d && Array.isArray(d.ingredients) ? d.ingredients.filter(x=>x && x.name) : []; }
-function ingText(ing){ return ing.qty ? fmtNum(ing.qty) + (ing.unit || '') : '적당량'; }
-function ingredientsToText(list){ return (list || []).map(x=>x.qty ? `${x.name} ${fmtNum(x.qty)}${x.unit || ''}` : x.name).join(', '); }
+// 예전에 qty·unit을 따로 저장한 재료도 이름에 붙여서 하나로
+function dishIngs(d){
+  return d && Array.isArray(d.ingredients) ? d.ingredients.filter(x=>x && x.name).map(x=>({ name: x.qty ? `${x.name} ${fmtNum(x.qty)}${x.unit || ''}` : x.name })) : [];
+}
+function ingredientsToText(list){ return (list || []).map(x=>x.name).join(', '); }
 // 직접 입력한 재료의 장보기 소분류: 레시피에 같은 재료가 있으면 그 분류, 없으면 음료·기타
 function customIngCat(name){
   const k = normName(name);
@@ -4693,9 +4692,9 @@ function shoppingNeeds(t, space){
     const sv = mealServings(m, t, space);
     (m.dishes||[]).forEach(d=>{
       const r = d.recipeId && recipeById(d.recipeId);
-      // 레시피 메뉴: 기준 양 × 끼니 인원 ÷ serves, 직접 입력 메뉴: 적은 양 그대로
+      // 레시피 메뉴: 기준 양 × 끼니 인원 ÷ serves(qtyText로 저장만, 장보기 화면엔 안 보임), 직접 입력 메뉴: 이름만(양은 이름에 적음)
       const ings = r ? r.ingredients.map(ing=>({ ...ing, amount: ing.qty ? ing.qty * sv / (r.serves || 2) : 0 }))
-        : dishIngs(d).map(ing=>({ ...customIngCat(ing.name), name: ing.name, unit: ing.unit || '', amount: Number(ing.qty) || 0 }));
+        : dishIngs(d).map(ing=>({ ...customIngCat(ing.name), name: ing.name, unit: '', amount: 0 }));
       ings.forEach(ing=>{
         const k = normName(ing.name);
         let e = by[k];
@@ -4811,37 +4810,9 @@ function openShoppingList(space, tripId){
   setTimeout(go, 0);
 }
 function shoppingProgress(list){ const items = list.items || []; return { decided: items.filter(isDecided).length, total: items.length }; }
-// 장보기 소분류 순서: 고기·해산물 → 채소·과일 → 가공·면·유제품 → 음료·기타 → 양념·소스 → 집에서 챙길 것 → 그 밖
-function orderShopGroups(groups){
-  const rank = g=>{ const i = SHOP_GROUP_ORDER.indexOf(g.group); return i < 0 ? SHOP_GROUP_ORDER.length : i; };
-  return groups.map((g, i)=>({ g, i })).sort((a, b)=>rank(a.g) - rank(b.g) || a.i - b.i).map(x=>x.g);
-}
 function shopFindItem(listId, itemId){
   const list = SP.checklists.find(c=>c.id===listId);
   return { list, it: list && (list.items||[]).find(i=>i.id===itemId) };
-}
-function shopQtyModal(listId, itemId){
-  const { it } = shopFindItem(listId, itemId);
-  if(!it) return;
-  openModal(`
-    <h3>양 고치기</h3>
-    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">'<b style="color:var(--text);">${esc(it.label)}</b>' — 고친 양은 식단이 바뀌어도 그대로 둬요. 비우면 식단 기준으로 다시 계산해요.</p>
-    <div class="field"><label for="sq-qty">양</label><input id="sq-qty" maxlength="30" value="${esc(it.qtyText || '')}" placeholder="예: 1kg, 2팩"></div>
-    <div class="modal-actions">
-      <button class="btn" data-action="modal-close">취소</button>
-      <button class="btn btn-primary" data-action="shop-qty-save" data-list="${esc(listId)}" data-item="${esc(itemId)}">${icon('save')} 저장</button>
-    </div>`);
-}
-function saveShopQty(listId, itemId){
-  const { list, it } = shopFindItem(listId, itemId);
-  const el = document.getElementById('sq-qty');
-  if(!it || !el) return;
-  const v = el.value.trim();
-  if(v){ it.qtyText = v; it.qtyEdited = true; } else delete it.qtyEdited;
-  persistChecklist(list);
-  closeModal(); renderView();
-  if(!v && list.tripId) syncShoppingList(spaceKey(), list.tripId);
-  toast(v ? '양을 고쳤어요.' : '식단 기준 양으로 돌렸어요.');
 }
 function toggleShopHome(listId, itemId){
   const { list, it } = shopFindItem(listId, itemId);
@@ -4997,7 +4968,7 @@ function dishRecipeHtml(d, sv, g){
     return `
     <div class="dish-recipe">
       <div class="dr-head"><b>${esc(d.name)}</b><span class="meta">직접 넣은 메뉴${who}</span></div>
-      ${ings.length ? `<ul class="dr-ings">${ings.map(ing=>`<li><span>${esc(ing.name)}</span><span class="num">${esc(ingText(ing))}</span></li>`).join('')}</ul>` : `<div class="meta dr-noing">재료를 적으면 장보기 목록에 들어가요.</div>`}
+      ${ings.length ? `<ul class="dr-ings">${ings.map(ing=>`<li><span>${esc(ing.name)}</span></li>`).join('')}</ul>` : `<div class="meta dr-noing">재료를 적으면 장보기 목록에 들어가요.</div>`}
     </div>`;
   }
   return `
@@ -5029,7 +5000,7 @@ function mealPickerModal(a){
     <h3>메뉴 넣기 · ${esc(mealTitle(c.t, c.m))}</h3>
     <div class="field"><label for="mp-custom">음식 이름</label><input id="mp-custom" maxlength="40" placeholder="예: 삼겹살 구이"></div>
     <div class="field"><label for="mp-ings">재료 <span class="meta">(선택)</span></label><textarea id="mp-ings" rows="3" maxlength="600" placeholder="예: 삼겹살 600g, 상추 1봉, 쌈장"></textarea>
-      <div class="field-hint">쉼표로 나눠 적어요. 양은 이 끼니에 필요한 만큼 적고(선택), 적은 재료는 장보기 목록에 들어가요.</div></div>
+      <div class="field-hint">쉼표로 나눠 적어요. 양이 필요하면 이름에 같이 적어요(예: 삼겹살 600g). 적은 재료는 장보기 목록에 들어가요.</div></div>
     <details class="mp-recipes">
       <summary>레시피에서 고르기</summary>
       <div class="field" style="margin-top:8px;"><label for="mp-search">레시피 찾기</label><input id="mp-search" type="search" placeholder="이름·재료로 찾기" autocomplete="off"></div>
@@ -5078,7 +5049,7 @@ function dishEditModal(a){
     <h3>메뉴 고치기</h3>
     <div class="field"><label for="de-name">음식 이름</label><input id="de-name" maxlength="40" value="${esc(c.d.name)}"></div>
     <div class="field"><label for="de-ings">재료 <span class="meta">(선택)</span></label><textarea id="de-ings" rows="3" maxlength="600" placeholder="예: 삼겹살 600g, 상추 1봉, 쌈장">${esc(ingredientsToText(dishIngs(c.d)))}</textarea>
-      <div class="field-hint">쉼표로 나눠 적어요. 고치면 장보기 목록도 맞춰져요.</div></div>
+      <div class="field-hint">쉼표로 나눠 적고, 양은 이름에 같이 적어요. 고치면 장보기 목록도 맞춰져요.</div></div>
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="dish-edit-save" ${ctxAttrs(c)}>${icon('save')} 저장</button>
@@ -5614,8 +5585,6 @@ function wireGlobalActions(){
       case 'em-save': extraMealSave(a); break;
       case 'shop-create': createShoppingList(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
       case 'shop-open': openShoppingList(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
-      case 'shop-qty': shopQtyModal(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
-      case 'shop-qty-save': saveShopQty(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
       case 'shop-home': toggleShopHome(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
 
       case 'cf-star': {

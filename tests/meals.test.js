@@ -157,10 +157,11 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
     && (await A.locator('.trip-chip.active:has-text("2박 홍천")').count()) === 1);
   const shopList = A.locator('.shop-list');
   const srow = (list, label) => list.locator('.check-row').filter({ hasText: new RegExp('^\\s*' + label + '(\\s|$)') });
-  const groupsOrder = await shopList.locator('.cl-subgroup-name').allInnerTexts();
-  check('3-3 소분류 순서: 고기 → 채소 → 가공 → 양념 → 집에서 챙길 것', same(groupsOrder, ['고기·해산물', '채소·과일', '가공·면·유제품', '양념·소스', '집에서 챙길 것']), groupsOrder);
+  const rowLabels = await shopList.locator('.check-row .label').evaluateAll(els => els.map(e => e.firstChild.textContent.trim()));
+  check('O-1 장보기는 소분류로 나누지 않음(소분류 제목·+ 없음), 집에서 챙길 것은 맨 아래 + "집에 있음"', (await shopList.locator('.cl-subgroup-head, [data-action="cl-group-add"]').count()) === 0
+    && rowLabels.indexOf('소금') > rowLabels.indexOf('초콜릿칩') && rowLabels.indexOf('소금') > rowLabels.indexOf('삼겹살') && /집에 있음/.test(await srow(shopList, '소금').innerText()) && !/집에 있음/.test(await srow(shopList, '삼겹살').innerText()), rowLabels);
   const pork = srow(shopList, '삼겹살');
-  check('3-3 항목 줄: 이름 옆 양, 아래 쓰이는 메뉴, 장바구니 아이콘·안내', /800g/.test(await pork.locator('.shop-qty').innerText()) && /삼겹살 구이/.test(await pork.locator('.shop-uses').innerText())
+  check('O-2 항목 줄: 양(개수·중량) 표시 없음, 아래 쓰이는 메뉴, 장바구니 아이콘·안내', (await shopList.locator('.shop-qty').count()) === 0 && !/800g/.test(await pork.innerText()) && /삼겹살 구이/.test(await pork.locator('.shop-uses').innerText())
     && (await shopList.locator('h3 .shop-ico').count()) === 1 && /식단에서 자동으로 만든 목록/.test(await shopList.locator('.shop-note').innerText()));
   check('3-3 체크 버튼 이름: "샀어요"/"안 사요"(집에 있는 건 "챙겼어요")', (await pork.locator('[data-val="packed"]').getAttribute('aria-label')).includes('샀어요') && (await pork.locator('[data-val="skip"]').getAttribute('aria-label')).includes('안 사요')
     && (await srow(shopList, '소금').locator('[data-val="packed"]').getAttribute('aria-label')).includes('챙겼어요'));
@@ -171,13 +172,13 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await pork.locator('[data-val="packed"]').click(); await settle();
   check('1-3 일정 진행률에 장보기도 포함', (await panelProg()) !== before && /준비 1\//.test(await panelProg()), [before, await panelProg()]);
   await srow(shopList, '대파').locator('[data-val="packed"]').click(); await settle();
-  await menuClick(A, srow(shopList, '두부').locator('[data-action="shop-qty"]'));
-  await A.fill('#sq-qty', '2모'); await A.click('[data-action="shop-qty-save"]'); await settle();
+  check('O-2 항목 ⋯에 "양 고치기" 없음', (await shopList.locator('[data-action="shop-qty"]').count()) === 0);
   await menuClick(A, srow(shopList, '쌈장').locator('[data-action="shop-home"]')); await settle();
   shop = shopOf(A_, 't2')[0];
-  check('3-3 양 고치기(qtyEdited) · 집에 있어요(→ 집에서 챙길 것)', item(shop, '두부').qtyText === '2모' && item(shop, '두부').qtyEdited === true && item(shop, '쌈장').home === true && item(shop, '쌈장').group === '집에서 챙길 것');
+  check('3-3 집에 있어요(→ 집에서 챙길 것)', item(shop, '쌈장').home === true && item(shop, '쌈장').group === '집에서 챙길 것');
   await shopList.locator('[data-action="cl-add-item"]').click();
-  await A.fill('#cli-label', '얼음'); await A.fill('#cli-group', '음료·기타'); await A.click('[data-action="cl-add-item-save"]'); await settle();
+  check('O-1 장보기 항목 추가 창에는 소분류 칸 없음', !(await A.locator('#cli-group').isVisible()));
+  await A.fill('#cli-label', '얼음'); await A.click('[data-action="cl-add-item-save"]'); await settle();
   check('직접 추가 항목(src 없음)', !!item(shopOf(A_, 't2')[0], '얼음') && !item(shopOf(A_, 't2')[0], '얼음').src);
   check('4-1 일정 패널 진행 줄 옆 "식단 n/m"', /식단\s*3\/7/.test(await A.locator('.trip-panel .tp-meal-link').innerText()), await A.locator('.trip-panel .tp-meal-link').innerText());
   await A.click('.trip-panel .tp-meal-link'); await settle();
@@ -188,7 +189,7 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   shop = shopOf(A_, 't2')[0];
   check('3-2 빠진 재료: 아직 안 산 건 삭제(신김치·돼지고기)', !item(shop, '신김치') && !item(shop, '돼지고기'));
   check('3-2 이미 체크한 건 남기고 "식단에서 빠짐"(대파)', item(shop, '대파') && item(shop, '대파').gone === true && item(shop, '대파').status === 'packed');
-  check('3-2 체크·고친 양·집에 있음·직접 추가 유지', item(shop, '삼겹살').status === 'packed' && item(shop, '두부').qtyText === '2모' && item(shop, '쌈장').group === '집에서 챙길 것' && item(shop, '쌈장').home && !!item(shop, '얼음'));
+  check('3-2 체크·집에 있음·직접 추가 유지', item(shop, '삼겹살').status === 'packed' && item(shop, '쌈장').group === '집에서 챙길 것' && item(shop, '쌈장').home && !!item(shop, '얼음'));
   check('3-2 uses 갱신(두부는 된장찌개만)', same(item(shop, '두부').uses, ['된장찌개']), item(shop, '두부').uses);
   await A.click('#toast [data-action="undo-delete"]'); await settle();
   shop = shopOf(A_, 't2')[0];
@@ -286,16 +287,16 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   check('N-3 재료만 있고 이름이 없으면 저장 안 함', !meal(A_, 't1', 'm2_lunch'));
   await A.fill('#mp-custom', '부대찌개'); await A.fill('#mp-ings', '햄 200g, 라면사리 2개, 김치, 대파 1.5대'); await A.click('[data-action="mp-go"]'); await settle();
   let bd = (meal(A_, 't1', 'm2_lunch') || { dishes: [] }).dishes[0] || {};
-  check('N-3 직접 입력: 메뉴 하나 + 재료(이름·양·단위) 저장', bd.name === '부대찌개' && !bd.recipeId
-    && same(bd.ingredients, [{ name: '햄', qty: 200, unit: 'g' }, { name: '라면사리', qty: 2, unit: '개' }, { name: '김치' }, { name: '대파', qty: 1.5, unit: '대' }]), bd);
+  check('N-3·O-2 직접 입력: 메뉴 하나 + 재료(양은 이름에 그대로) 저장', bd.name === '부대찌개' && !bd.recipeId
+    && same(bd.ingredients, [{ name: '햄 200g' }, { name: '라면사리 2개' }, { name: '김치' }, { name: '대파 1.5대' }]), bd);
   await row(A, 'm2_lunch').locator('.dish-chip:has-text("부대찌개") [data-action="dish-open"]').click(); await settle();
   const drText = await row(A, 'm2_lunch').locator('.dish-recipe').innerText();
-  check('N-3 메뉴를 누르면 적은 재료·양이 보임', /햄\s*200g/.test(drText) && /김치\s*적당량/.test(drText), drText);
+  check('N-3 메뉴를 누르면 적은 재료가 보임(적당량 같은 양 칸 없음)', /햄 200g/.test(drText) && /김치/.test(drText) && !/적당량/.test(drText), drText);
   check('N-3 재료가 있는 직접 입력 메뉴만으로도 장보기 목록 만들기 가능', !(await A.locator('[data-action="shop-create"]').isDisabled()));
   await A.click('[data-action="shop-create"]'); await settle();
   let s1 = shopOf(A_, 't1')[0] || { items: [] };
-  check('N-3 장보기: 직접 적은 재료가 양 그대로 들어감(인원으로 다시 계산 안 함)', item(s1, '햄') && item(s1, '햄').qtyText === '200g' && item(s1, '김치') && item(s1, '김치').qtyText === '적당량'
-    && same(item(s1, '햄').uses, ['부대찌개']) && item(s1, '햄').src === 'meal', s1.items.map(i => i.label + ':' + i.qtyText + ':' + i.group));
+  check('N-3 장보기: 직접 적은 재료가 이름 그대로 들어감', item(s1, '햄 200g') && item(s1, '김치') && item(s1, '대파 1.5대')
+    && same(item(s1, '햄 200g').uses, ['부대찌개']) && item(s1, '햄 200g').src === 'meal', s1.items.map(i => i.label + ':' + i.qtyText + ':' + i.group));
   await menuClick(A, row(A, 'm2_lunch').locator('[data-action="dish-edit"]'));
   await A.waitForSelector('#de-ings', { timeout: 3000 });
   check('N-3 이름·재료 고치기 창에 지금 재료가 채워짐', (await A.inputValue('#de-ings')) === '햄 200g, 라면사리 2개, 김치, 대파 1.5대', await A.inputValue('#de-ings'));
@@ -303,13 +304,14 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
   await A.click('[data-action="dish-edit-save"]'); await settle(); await settle();
   bd = (meal(A_, 't1', 'm2_lunch') || { dishes: [] }).dishes[0] || {};
   s1 = shopOf(A_, 't1')[0] || { items: [] };
-  check('N-3 고치기 → 메뉴 이름·재료 저장, 장보기도 맞춤(양 바뀜, 빠진 재료는 지움)', bd.name === '부대찌개(큰 냄비)' && bd.ingredients.length === 2
-    && item(s1, '햄') && item(s1, '햄').qtyText === '300g' && !item(s1, '김치') && same(item(s1, '햄').uses, ['부대찌개(큰 냄비)']), s1.items.map(i => i.label + ':' + i.qtyText));
+  check('N-3 고치기 → 메뉴 이름·재료 저장, 장보기도 맞춤(바뀐 재료 추가, 빠진 재료는 지움)', bd.name === '부대찌개(큰 냄비)' && bd.ingredients.length === 2
+    && item(s1, '햄 300g') && !item(s1, '햄 200g') && !item(s1, '김치') && same(item(s1, '햄 300g').uses, ['부대찌개(큰 냄비)']), s1.items.map(i => i.label + ':' + i.qtyText));
   // 이름만 쉼표로 여러 개(예전처럼)
   await addMenu(A, 'm1_lunch', [], '컵라면, 김밥');
   check('N-3 재료 없이 이름만 쉼표로 적으면 메뉴 여러 개', same((meal(A_, 't1', 'm1_lunch') || { dishes: [] }).dishes.map(d => d.name), ['컵라면', '김밥']));
-  check('N-3 parseIngredients: 양 없는 재료·중복·숫자만', await A.evaluate(() => JSON.stringify(parseIngredients('양파, 양파 2개,  , 소금 0g, 우유 1L'))) === JSON.stringify([{ name: '양파' }, { name: '소금' }, { name: '우유', qty: 1, unit: 'L' }]),
-    await A.evaluate(() => JSON.stringify(parseIngredients('양파, 양파 2개,  , 소금 0g, 우유 1L'))));
+  check('O-2 parseIngredients: 이름 그대로(양 포함), 빈 칸·같은 이름은 하나', await A.evaluate(() => JSON.stringify(parseIngredients('양파, 양파 2개,  , 양파, 우유 1L'))) === JSON.stringify([{ name: '양파' }, { name: '양파 2개' }, { name: '우유 1L' }]),
+    await A.evaluate(() => JSON.stringify(parseIngredients('양파, 양파 2개,  , 양파, 우유 1L'))));
+  check('O-2 예전에 양을 따로 저장한 재료도 이름에 붙여서 보임', await A.evaluate(() => JSON.stringify(dishIngs({ ingredients: [{ name: '햄', qty: 200, unit: 'g' }, { name: '김치' }] }))) === JSON.stringify([{ name: '햄 200g' }, { name: '김치' }]));
 
   // ================= 9. 일정 삭제 되돌리기 · 백업 =================
   const t1Before = JSON.parse(JSON.stringify(trip(A_, 't1')));
