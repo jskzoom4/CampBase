@@ -115,12 +115,10 @@ function seed() {
       await tryClick('.cook-trip-chip:has-text("10월 팸 캠핑")'); await shot('21-cooking-plan-filled');
       await tryClick('.dish-btn:has-text("김치찌개")'); await shot('21b-cooking-plan-recipe-open');
       await tryClick('.meal-row[data-meal-row="m2_lunch"] [data-action="meal-add-dish"]'); await sleep(200);
-      await p.locator('#mp-list .mp-pick').nth(3).check().catch(() => {}); await shot('22-modal-meal-picker');
+      await p.fill('#mp-custom', '부대찌개').catch(() => {}); await p.fill('#mp-ings', '햄 200g, 라면사리 2개, 김치').catch(() => {}); await shot('22-modal-meal-picker');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('[data-action="shop-create"]'); await sleep(300);
       await tryClick('[data-action="shop-open"]'); await sleep(600); await shot('25-checklist-shopping');
-      await nav('cooking'); await tryClick('.cook-switch [data-view="recipes"]'); await tryClick('[data-action="cook-open"]'); await shot('24-cooking-recipes');
-      await tryClick('.cook-switch [data-view="plan"]');
       await nav('checklist'); await tryClick('[data-action="trip-new"]'); await sleep(200); await shot('9-modal-trip-group');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await nav('gear'); await tryClick('.space-chip:has-text("내 공간")');

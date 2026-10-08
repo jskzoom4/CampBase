@@ -85,6 +85,19 @@ const server = {};
   await D.click('#nav [data-nav="templates"]'); await settle();
   check('1 누르면 템플릿 화면(제목 "템플릿", 하위 메뉴만 켜짐, 공간 칩 있음)', (await D.locator('#view-title').innerText()) === '템플릿' && (await D.locator('#nav [data-nav="templates"].active').count()) === 1
     && (await D.locator('#nav [data-nav="checklist"].active').count()) === 0 && (await D.locator('.space-chip').count()) >= 2 && await D.locator('[data-action="tpl-new"]').isVisible());
+  // N-1 Checklist 옆 화살표로 하위 메뉴 펼치기/접기(기기에 기억)
+  const tog = D.locator('#nav [data-action="nav-sub-toggle"][data-id="checklist"]');
+  const tb = await tog.boundingBox();
+  check('N-1 Checklist 옆 화살표(펼쳐진 상태, aria-label, 40×40)', (await tog.count()) === 1 && (await tog.getAttribute('aria-expanded')) === 'true' && /접기/.test(await tog.getAttribute('aria-label')) && tb && tb.width >= 40 && tb.height >= 40);
+  await tog.click(); await settle();
+  check('N-1 누르면 지난 일정·템플릿 숨김, 보고 있던 템플릿 화면이면 Checklist가 켜짐', !(await D.locator('#nav [data-nav="templates"]').isVisible()) && !(await D.locator('#nav [data-nav="pastTrips"]').isVisible())
+    && (await tog.getAttribute('aria-expanded')) === 'false' && (await D.locator('#nav [data-nav="checklist"].active').count()) === 1 && (await D.locator('#view-title').innerText()) === '템플릿');
+  await D.reload();
+  await D.waitForFunction(() => /자동 저장 켜짐/.test(document.getElementById('db-status').textContent), null, { timeout: 8000 });
+  check('N-1 접은 상태는 기기에 기억', !(await D.locator('#nav [data-nav="templates"]').isVisible()) && (await tog.getAttribute('aria-expanded')) === 'false');
+  await tog.click(); await settle();
+  check('N-1 다시 누르면 펼침', await D.locator('#nav [data-nav="templates"]').isVisible() && await D.locator('#nav [data-nav="pastTrips"]').isVisible() && (await tog.getAttribute('aria-expanded')) === 'true');
+  await D.click('#nav [data-nav="templates"]'); await settle();
   check('1 휴대폰 탭바는 6개 그대로(템플릿 탭 없음)', (await M.locator('#mobile-tabbar [data-nav]').count()) === 6 && (await M.locator('#mobile-tabbar [data-nav="templates"]').count()) === 0);
   await nav(M, 'checklist'); await settle();
   await M.locator('.sub-tab[data-view="templates"]:visible, #nav [data-nav="templates"]:visible').first().click(); await settle();

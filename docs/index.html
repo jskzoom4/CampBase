@@ -285,6 +285,16 @@
   .next-trip-review svg{width:15px;height:15px;color:var(--brand-text);flex:none;}
   .next-trip-review span{flex:1;}
   .next-trip-review:hover{border-color:var(--brand);}
+  /* Camping: 지난 일정으로 후기 쓰기 */
+  .camp-due{padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
+  .camp-due-head .section-desc{margin-top:2px;}
+  button.next-trip-review{width:100%;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;min-height:44px;}
+  .camp-due-row > span:first-of-type{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .camp-due-meta{font-size:12px;color:var(--text-dim);}
+  .camp-due-meta svg{width:11px;height:11px;vertical-align:-1px;}
+  .camp-due-go{flex:none !important;font-size:12.5px;font-weight:600;color:var(--brand-text);}
+  .camp-due-more{align-self:flex-start;font-size:12.5px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px;min-height:32px;cursor:pointer;}
+
   /* ---- 그룹 후기 공유 ---- */
   .share-tag{display:inline-flex;align-items:center;gap:3px;font-family:"Work Sans",sans-serif;font-size:11px;vertical-align:middle;margin-left:4px;}
   .share-tag svg{width:11px;height:11px;}
@@ -334,30 +344,12 @@
     .select-bar{left:12px;right:12px;transform:none;max-width:none;width:auto;bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 10px);}
     body.gear-selecting #main{padding-bottom:calc(var(--tabbar-h) + var(--safe-bottom) + 120px);}
   }
-  /* ---- Cooking 접기/펼치기(3-4) ---- */
-  .recipe-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-items:start;}
-  .recipe-card{padding:0;}
-  .recipe-head{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:12px 12px 12px 16px;border:none;background:none;
     text-align:left;cursor:pointer;border-radius:var(--radius);color:var(--text);}
-  .recipe-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
-  .recipe-main .name{font-weight:700;font-size:14px;}
-  .recipe-meta{font-size:12px;color:var(--text-dim);}
-  .recipe-chev{width:16px;height:16px;flex:none;color:var(--text-dim);transition:transform .15s ease;}
-  .recipe-card.open .recipe-chev{transform:rotate(90deg);}
-  .recipe-body{padding:0 16px 14px;border-top:1px solid var(--border);}
-  .recipe-top{display:flex;align-items:center;gap:6px;padding-right:12px;}
-  .recipe-top .recipe-head{flex:1;min-width:0;}
-  .recipe-plan{flex:none;}
-  .ing-head{font-size:12.5px;font-weight:700;margin:12px 0 4px;}
-  .ing-head .meta{font-weight:400;color:var(--text-dim);margin-left:4px;}
   .dr-ings{list-style:none;margin:0;padding:0;}
   .dr-ings li{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid var(--border);font-size:13px;}
   .dr-ings li:last-child{border-bottom:none;}
   .dr-ings .num{color:var(--text-dim);flex:none;}
   /* ---- Cooking 식단표 ---- */
-  .cook-switch{margin-bottom:12px;}
-  .cook-switch .seg-btn{display:inline-flex;align-items:center;gap:5px;min-height:36px;}
-  .cook-switch svg{width:14px;height:14px;}
   .cook-grp{display:inline-flex;align-items:center;gap:2px;font-size:11px;opacity:.75;margin-left:2px;}
   .cook-grp svg{width:11px;height:11px;}
   .meal-empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;}
@@ -400,6 +392,11 @@
   .sv-row{display:flex;align-items:center;gap:8px;}
   .sv-row input{width:90px;text-align:center;}
   .mp-cats{margin:2px 0 8px;}
+  .mp-recipes{margin-top:4px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;}
+  .mp-recipes summary{cursor:pointer;font-size:13px;font-weight:600;min-height:28px;display:flex;align-items:center;}
+  .field-hint{margin-top:5px;font-size:12px;color:var(--text-dim);line-height:1.5;}
+  .field label .meta{font-weight:400;color:var(--text-dim);}
+  .dr-noing{font-size:12px;color:var(--text-dim);}
   .mp-list{max-height:300px;}
   .mp-row .meta{font-size:11.5px;color:var(--text-dim);flex:none;}
   /* 일정 패널·지난 일정의 식단 링크 */
@@ -595,6 +592,15 @@
   button.nav-item{width:100%;background:none;text-align:left;}
   .nav-item.nav-sub{padding:7px 10px 7px 30px;font-size:13px;margin-top:-2px;}
   .nav-item.nav-sub svg{width:15px;height:15px;}
+  /* Checklist 옆 화살표: 하위 메뉴(지난 일정·템플릿) 펼치기/접기(기기에 기억) */
+  .nav-row{display:flex;align-items:center;gap:2px;}
+  .nav-row > .nav-item{flex:1;min-width:0;}
+  .nav-subs{display:flex;flex-direction:column;gap:2px;}
+  .nav-subs[hidden]{display:none;}
+  .nav-sub-toggle{flex:none;width:40px;height:40px;color:var(--text-dim);}
+  .nav-sub-toggle svg{width:16px;height:16px;transition:transform .15s ease;}
+  .nav-sub-toggle[aria-expanded="true"] svg{transform:rotate(90deg);}
+  @media (prefers-reduced-motion: reduce){ .nav-sub-toggle svg{transition:none;} }
   /* ---- 공유 앱(웹/APK) 전용 ---- */
   #db-status-top{display:none;margin-left:auto;align-items:center;font-size:11px;color:var(--text-dim);
     background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;white-space:nowrap;}
@@ -2171,6 +2177,7 @@ function toggleHomeWidget(key){
 /* ============================ NAV ============================ */
 // Checklist 하위 메뉴: 지난 일정·템플릿. 데스크톱은 왼쪽 메뉴 Checklist 아래, 휴대폰은 탭바(6개) 그대로 Checklist가 켜진 채
 // 화면 위쪽 하위 탭(subTabsHtml: 체크리스트 | 지난 일정 | 템플릿)으로 들어감
+// 데스크톱 왼쪽 메뉴의 Checklist 옆 화살표(nav-sub-toggle)로 하위 메뉴를 펼치고 접는다(campbase.navSubOpen)
 const SUB_NAV = { checklist: [{ id:'pastTrips', label:'지난 일정', icon:'clock' }, { id:'templates', label:'템플릿', icon:'template' }] };
 const NAV_PARENT = { templates: 'checklist', pastTrips: 'checklist' };
 // 화면을 옮길 때(왼쪽 메뉴·탭바·하위 탭): 지난 일정 화면은 목록부터, Checklist로 오면 지난 일정 선택은 풂
@@ -2190,16 +2197,36 @@ function subTabsHtml(){
   ];
   return `<nav class="sub-tabs" aria-label="Checklist 하위 메뉴">${tabs.map(t=>`<button type="button" class="sub-tab ${state.currentView===t.id?'active':''}" data-action="sub-nav" data-view="${t.id}" ${state.currentView===t.id?'aria-current="page"':''}>${icon(t.icon)}<span>${t.label}</span>${t.n!==undefined?` <span class="num" style="opacity:.7;">${t.n}</span>`:''}</button>`).join('')}</nav>`;
 }
+// 하위 메뉴를 펼쳐 둘지(기기에 기억, 처음엔 펼침)
+const NAV_SUB_OPEN_KEY = 'campbase.navSubOpen';
+function navSubOpen(id){ try{ const v = JSON.parse(localStorage.getItem(NAV_SUB_OPEN_KEY) || '{}'); return v[id] !== false; }catch(e){ return true; } }
+function toggleNavSub(id){
+  let v = {}; try{ v = JSON.parse(localStorage.getItem(NAV_SUB_OPEN_KEY) || '{}') || {}; }catch(e){}
+  v[id] = !navSubOpen(id);
+  try{ localStorage.setItem(NAV_SUB_OPEN_KEY, JSON.stringify(v)); }catch(e){}
+  renderNav();
+  const b = document.querySelector(`[data-action="nav-sub-toggle"][data-id="${CSS.escape(id)}"]`);
+  if(b) b.focus({ preventScroll: true });
+}
 function renderNav(){
-  document.getElementById('nav').innerHTML = FEATURE_DEFS.map(f=>navItemHtml(f) + (SUB_NAV[f.id] || []).map(sf=>navItemHtml(sf, true)).join('')).join('');
+  document.getElementById('nav').innerHTML = FEATURE_DEFS.map(f=>{
+    const subs = SUB_NAV[f.id];
+    if(!subs) return navItemHtml(f);
+    const open = navSubOpen(f.id);
+    // 접혀 있는데 하위 화면을 보고 있으면 부모(Checklist)를 켜 둠
+    const childActive = !open && subs.some(sf=>sf.id===state.currentView);
+    return `<div class="nav-row">${navItemHtml(f, false, childActive)}<button type="button" class="icon-btn nav-sub-toggle" data-action="nav-sub-toggle" data-id="${f.id}" aria-expanded="${open}" aria-controls="nav-sub-${f.id}" aria-label="${esc(f.label)} 하위 메뉴 ${open ? '접기' : '펼치기'}" title="${open ? '접기' : '펼치기'}">${icon('chev')}</button></div>`
+      + `<div class="nav-subs" id="nav-sub-${f.id}" ${open ? '' : 'hidden'}>${subs.map(sf=>navItemHtml(sf, true)).join('')}</div>`;
+  }).join('');
   const tabView = NAV_PARENT[state.currentView] || state.currentView;
   document.getElementById('mobile-tabbar').innerHTML = FEATURE_DEFS.map(f=>`
     <button type="button" class="mnav-item ${tabView===f.id?'active':''}" data-nav="${f.id}" ${tabView===f.id?'aria-current="page"':''}>
       ${icon(f.icon)}<span>${f.label}</span>
     </button>`).join('');
 }
-function navItemHtml(f, sub){
-  return `<button type="button" class="nav-item ${sub?'nav-sub':''} ${state.currentView===f.id?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>${icon(f.icon)}<span>${f.label}</span></button>`;
+function navItemHtml(f, sub, childActive){
+  const on = state.currentView===f.id || childActive;
+  return `<button type="button" class="nav-item ${sub?'nav-sub':''} ${on?'active':''}" data-nav="${f.id}" ${state.currentView===f.id?'aria-current="page"':''}>${icon(f.icon)}<span>${f.label}</span></button>`;
 }
 
 /* ============================ VIEW DISPATCH ============================ */
@@ -2362,6 +2389,51 @@ function renderSettings(){
 }
 
 /* ============================ CAMPING ============================ */
+/* ---- 지난 일정으로 후기 쓰기(Home의 "후기를 남겨보세요"와 같은 흐름) ----
+ * 일정의 캠핑장 이름·지역·날짜를 그대로 쓰므로, 같은 캠핑장을 다녀온 멤버들의 후기가 이름이 달라 갈라지지 않는다. */
+const CAMP_DUE_SHOW = 3;
+state.campDueAll = false;
+function campReviewDueHtml(space){
+  const due = reviewDueTrips(undefined, space);
+  if(!due.length) return '';
+  const shown = state.campDueAll ? due : due.slice(0, CAMP_DUE_SHOW);
+  return `
+    <section class="card camp-due" aria-label="후기를 기다리는 지난 일정">
+      <div class="camp-due-head"><b>지난 일정으로 후기 쓰기</b> <span class="num tag">${due.length}</span>
+        <div class="section-desc">일정의 캠핑장 이름 그대로 저장돼서, 같은 캠핑장 후기가 한곳에 모여요.</div></div>
+      ${shown.map(x=>`
+        <button type="button" class="next-trip-review camp-due-row" data-action="trip-review" data-space="${esc(x.space)}" data-trip="${esc(x.trip.id)}">
+          ${icon('pen')}<span><b>${esc(x.trip.campsiteName || x.trip.title)}</b><span class="camp-due-meta">${[x.trip.campsiteName ? x.trip.title : '', fmtTripDates(x.trip)].filter(Boolean).map(esc).join(' · ')}${x.group ? ` · ${icon('users','chev-mini')}${esc(x.group.name)}` : ''}</span></span>
+          <span class="camp-due-go">후기 남기기</span>${icon('chev','chev-mini')}
+        </button>`).join('')}
+      ${due.length > CAMP_DUE_SHOW ? `<button type="button" class="link-btn camp-due-more" data-action="camp-due-more" aria-expanded="${state.campDueAll}">${state.campDueAll ? '접기' : `${due.length - CAMP_DUE_SHOW}개 더 보기`}</button>` : ''}
+    </section>`;
+}
+// 새 기록 폼의 "지난 일정에서 불러오기"를 고르면 캠핑장 이름·지역·날짜를 채우고 일정과 연결(tripRef), 그룹 일정이면 그 그룹 공유를 켬
+function campFormPickTrip(value){
+  const [space, tripId] = String(value || '').split('|');
+  const t = space && tripId ? findTrip(space, tripId) : null;
+  const prevRef = _campTripRef;
+  _campTripRef = t ? { space, tripId } : null;
+  if(prevRef && prevRef.space!=='me' && (!t || prevRef.space!==space)) _campShare.delete(prevRef.space);
+  if(t){
+    const set = (id, v)=>{ const el = document.getElementById(id); if(el) el.value = v || ''; };
+    set('cf-name', t.campsiteName || t.title); set('cf-region', t.region); set('cf-date', t.startDate);
+    if(space!=='me' && groupById(space)) _campShare.add(space);
+  }
+  document.querySelectorAll('[data-action="cf-share-toggle"]').forEach(el=>el.classList.toggle('active', _campShare.has(el.getAttribute('data-gid'))));
+  const hint = document.getElementById('cf-name-hint');
+  if(hint) hint.textContent = t ? '일정의 캠핑장 이름으로 채웠어요. 같은 캠핑장 후기끼리 모이게 그대로 두는 게 좋아요.' : '이미 있는 이름은 목록에서 고를 수 있어요.';
+}
+// 캠핑장 이름 입력 도우미: 내 기록·일정·보고 있는 그룹 후기의 이름(같은 캠핑장을 같은 이름으로 쓰게)
+function knownCampNames(){
+  const seen = new Map();
+  const add = n=>{ n = String(n || '').trim(); const k = normName(n); if(k && !seen.has(k)) seen.set(k, n); };
+  state.campingLogs.forEach(c=>add(c.name));
+  allMyTrips().forEach(x=>add(x.trip.campsiteName));
+  (state.groupReviews || []).forEach(r=>add(r.name));
+  return [...seen.values()].sort((a,b)=>a.localeCompare(b,'ko'));
+}
 function renderCamping(){
   const g = state.campView!=='me' ? groupById(state.campView) : null;
   return campViewChipsHtml() + (g ? renderGroupReviews(g) : renderMyCamping());
@@ -2382,6 +2454,7 @@ function renderMyCamping(){
       <div><h1>캠핑 기록</h1><div class="section-desc">다녀온 캠핑장의 사이트 정보와 후기를 남겨보세요.</div></div>
       <button class="btn btn-accent" data-action="camp-new">${icon('plus')} 기록 추가</button>
     </div>
+    ${campReviewDueHtml()}
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="seg-group" style="flex:1;">
         ${camCats.map(c=>`<div class="seg-btn ${c===filter?'active':''}" data-action="camp-filter" data-cat="${esc(c)}">${esc(camCatLabels[c]||c)} <span class="num" style="opacity:.65;">${c==='all' ? state.campingLogs.length : (byRegion[c]||0)}</span></div>`).join('')}
@@ -2575,6 +2648,7 @@ function renderGroupReviews(g){
       <div><h1>${esc(g.name)} 후기</h1><div class="section-desc">멤버들이 공유한 캠핑장 후기 모음이에요. 멤버 누구나 고칠 수 있고, 여기서 추가한 기록은 내 기록에도 저장돼요.</div></div>
       <button class="btn btn-accent" data-action="camp-new-group" data-gid="${esc(g.id)}">${icon('plus')} 기록 추가</button>
     </div>
+    ${campReviewDueHtml(g.id)}
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="seg-group" style="flex:1;">
         ${['all', ...regions].map(r=>`<div class="seg-btn ${r===filter?'active':''}" data-action="group-review-filter" data-cat="${esc(r)}">${r==='all'?'전체':esc(r)} <span class="num" style="opacity:.65;">${r==='all' ? cards.length : byRegion[r]}</span></div>`).join('')}
@@ -2724,6 +2798,8 @@ function campFormModal(id, prefill, reviewEdit){
   const shareGid = pf.shareGid && groupById(pf.shareGid) ? pf.shareGid : (_campTripRef && groupById(_campTripRef.space) ? _campTripRef.space : null);
   _campShare = new Set(rv ? [] : (c ? memberGids(c.sharedGroupIds) : (shareGid ? [shareGid] : [])));
   const rvGroup = rv ? groupById(reviewEdit.gid) : null;
+  // 새 기록(일정에서 온 게 아님)이면 후기 없는 지난 일정을 골라 채울 수 있게(그룹 화면에서 추가면 그 그룹 일정만)
+  const pickTrips = (!c && !_campTripRef) ? reviewDueTrips(undefined, shareGid && pf.shareGid ? shareGid : undefined) : [];
   const initType = c ? (c.siteType||SITE_TYPES[0]) : SITE_TYPES[0];
   const initToilet = c ? (c.toiletCondition||'') : '';
   const initStore = c ? (c.storeCondition||'') : '';
@@ -2733,7 +2809,13 @@ function campFormModal(id, prefill, reviewEdit){
     ${_campTripRef ? `<p style="margin:0 0 12px;color:var(--text-dim);font-size:12.5px;">일정 정보로 미리 채웠어요. 후기는 내 캠핑 기록(나만 보는 공간)에 저장돼요.</p>` : ''}
     ${rv ? `<p class="cf-note" style="margin:0 0 12px;color:var(--text-dim);font-size:12.5px;"><b style="color:var(--text);">${esc(memberName(rvGroup, rv.authorUid))}</b> 님의 후기예요. 고치면 '${esc(rvGroup.name)}' 그룹에 바로 반영되고, 작성자의 내 기록에도 반영돼요.</p>` : ''}
     ${!c && !_campTripRef && shareGid ? `<p class="cf-note" style="margin:0 0 12px;color:var(--text-dim);font-size:12.5px;">내 캠핑 기록에 저장되고 '${esc(groupById(shareGid).name)}' 그룹에 공유돼요.</p>` : ''}
-    <div class="field"><label>캠핑장 이름</label><input id="cf-name" value="${c?esc(c.name):esc(pf.name||'')}" placeholder="예: 홍천 강변 캠핑장"></div>
+    ${pickTrips.length ? `
+      <div class="field"><label for="cf-trip">지난 일정에서 불러오기</label>
+        <select id="cf-trip"><option value="">직접 입력</option>${pickTrips.map(x=>`<option value="${esc(x.space + '|' + x.trip.id)}">${esc(x.trip.campsiteName || x.trip.title)} · ${esc(fmtTripDates(x.trip))}${x.group ? ' · ' + esc(x.group.name) : ''}</option>`).join('')}</select>
+        <div class="field-hint">일정을 고르면 캠핑장 이름이 일정과 똑같이 저장돼요.</div></div>` : ''}
+    <div class="field"><label for="cf-name">캠핑장 이름</label><input id="cf-name" value="${c?esc(c.name):esc(pf.name||'')}" placeholder="예: 홍천 강변 캠핑장" list="cf-name-list" autocomplete="off">
+      <datalist id="cf-name-list">${knownCampNames().map(n=>`<option value="${esc(n)}"></option>`).join('')}</datalist>
+      ${!c ? `<div class="field-hint" id="cf-name-hint">${_campTripRef ? '일정의 캠핑장 이름으로 채웠어요. 같은 캠핑장 후기끼리 모이게 그대로 두는 게 좋아요.' : '이미 있는 이름은 목록에서 고를 수 있어요.'}</div>` : ''}</div>
     <div class="field-row">
       <div class="field"><label>방문일</label><input type="date" id="cf-date" value="${c?esc(c.date||''):esc(pf.date||'')}"></div>
       <div class="field"><label>지역</label><input id="cf-region" value="${c?esc(c.region||''):esc(pf.region||'')}" placeholder="예: 홍천"></div>
@@ -3979,13 +4061,21 @@ function allMyTrips(){
   });
   return out;
 }
+// 끝났는데 내 후기가 없는 일정(개인 + 참가한 그룹), 최근에 끝난 순. maxAgo(일)를 주면 그 안에 끝난 것만
+function reviewDueTrips(maxAgo, space){
+  const today = todayStr();
+  return allMyTrips().filter(x=>{
+    if(space && x.space!==space) return false;
+    const ph = tripPhase(x.trip, today);
+    return ph.kind==='past' && (maxAgo===undefined || ph.ago <= maxAgo) && !hasMyReview(x.space, x.trip.id);
+  }).sort((a,b)=> String(tripEnd(b.trip)).localeCompare(String(tripEnd(a.trip))));
+}
 function nextTripHtml(){
   const today = todayStr();
   const all = allMyTrips();
   const next = all.filter(x=>['upcoming','ongoing'].includes(tripPhase(x.trip, today).kind))
     .sort((a,b)=> String(a.trip.startDate).localeCompare(String(b.trip.startDate)) || (a.space==='me' ? -1 : b.space==='me' ? 1 : 0))[0];
-  const reviewDue = all.filter(x=>{ const ph = tripPhase(x.trip, today); return ph.kind==='past' && ph.ago <= 7 && !hasMyReview(x.space, x.trip.id); })
-    .sort((a,b)=> String(tripEnd(b.trip)).localeCompare(String(tripEnd(a.trip))));
+  const reviewDue = reviewDueTrips(7);
   let main;
   if(next){
     const t = next.trip, ph = tripPhase(t, today);
@@ -4411,6 +4501,31 @@ function ingCatByKey(key){
   for(const r of COOKING_RECIPES) for(const ing of r.ingredients) if(normName(ing.name)===key) return ing.cat;
   return '기타';
 }
+/* ---- 직접 입력한 메뉴의 재료: dish.ingredients = [{ name, qty?, unit? }] (선택 필드, 양은 그 끼니 전체 양 그대로 — 인원으로 다시 계산하지 않음) ---- */
+// "삼겹살 600g, 양파 2개, 쌈장" → [{name:'삼겹살', qty:600, unit:'g'}, {name:'양파', qty:2, unit:'개'}, {name:'쌈장'}]
+function parseIngredients(text){
+  const out = [], seen = new Set();
+  String(text || '').split(/[,，\n]/).map(x=>x.trim()).filter(Boolean).forEach(part=>{
+    const m = part.match(/^(.*?\S)\s*(\d+(?:\.\d+)?)\s*([^\d\s.,]{0,4})$/);
+    const ing = m && m[1].trim() ? { name: m[1].trim().slice(0, 30), qty: Number(m[2]), unit: m[3] || '' } : { name: part.slice(0, 30) };
+    if(ing.qty !== undefined && !(ing.qty > 0)){ delete ing.qty; delete ing.unit; }
+    const k = normName(ing.name);
+    if(!k || seen.has(k)) return;
+    seen.add(k); out.push(ing);
+  });
+  return out.slice(0, 40);
+}
+function dishIngs(d){ return d && Array.isArray(d.ingredients) ? d.ingredients.filter(x=>x && x.name) : []; }
+function ingText(ing){ return ing.qty ? fmtNum(ing.qty) + (ing.unit || '') : '적당량'; }
+function ingredientsToText(list){ return (list || []).map(x=>x.qty ? `${x.name} ${fmtNum(x.qty)}${x.unit || ''}` : x.name).join(', '); }
+// 직접 입력한 재료의 장보기 소분류: 레시피에 같은 재료가 있으면 그 분류, 없으면 음료·기타
+function customIngCat(name){
+  const k = normName(name);
+  for(const r of COOKING_RECIPES) for(const ing of r.ingredients) if(normName(ing.name)===k) return { cat: ing.cat, home: !!ing.home };
+  return { cat: '음료·기타', home: false };
+}
+// 장보기 목록을 만들 수 있는 메뉴(레시피 또는 재료를 적은 직접 입력 메뉴)
+function dishHasIngs(d){ return !!(d && ((d.recipeId && recipeById(d.recipeId)) || dishIngs(d).length)); }
 function spaceDbOf(space){ return space==='me' ? state.db : groupDb(space); }
 function findTrip(space, id){ return (tripsOf(space) || []).find(t=>t.id===id) || null; }
 function tripGroupOf(space){ return space==='me' ? null : groupById(space); }
@@ -4570,7 +4685,7 @@ function roundQty(q, unit){ return (unit==='g' || unit==='ml') ? Math.ceil(q / 5
 function fmtNum(n){ return String(Math.round(n * 10) / 10); }
 function fmtQty(q, unit){ return fmtNum(roundQty(q, unit)) + unit; }
 function scaledIng(ing, servings, serves){ return ing.qty ? fmtQty(ing.qty * servings / (serves || 2), ing.unit) : '적당량'; }
-// 일정의 다 먹지 않은 끼니의 레시피 메뉴 재료를 모아 이름(normName)별로 합침
+// 일정의 다 먹지 않은 끼니의 메뉴 재료(레시피 + 직접 입력한 재료)를 모아 이름(normName)별로 합침
 function shoppingNeeds(t, space){
   const by = {}, order = [];
   tripMeals(t).forEach(m=>{
@@ -4578,12 +4693,14 @@ function shoppingNeeds(t, space){
     const sv = mealServings(m, t, space);
     (m.dishes||[]).forEach(d=>{
       const r = d.recipeId && recipeById(d.recipeId);
-      if(!r) return;
-      r.ingredients.forEach(ing=>{
+      // 레시피 메뉴: 기준 양 × 끼니 인원 ÷ serves, 직접 입력 메뉴: 적은 양 그대로
+      const ings = r ? r.ingredients.map(ing=>({ ...ing, amount: ing.qty ? ing.qty * sv / (r.serves || 2) : 0 }))
+        : dishIngs(d).map(ing=>({ ...customIngCat(ing.name), name: ing.name, unit: ing.unit || '', amount: Number(ing.qty) || 0 }));
+      ings.forEach(ing=>{
         const k = normName(ing.name);
         let e = by[k];
         if(!e){ e = by[k] = { key: k, label: ing.name, cat: ing.cat, home: !!ing.home, qty: {}, uses: [], who: new Set(), anyFree: false }; order.push(k); }
-        if(ing.qty) e.qty[ing.unit] = (e.qty[ing.unit] || 0) + ing.qty * sv / (r.serves || 2);
+        if(ing.amount) e.qty[ing.unit] = (e.qty[ing.unit] || 0) + ing.amount;
         if(!e.uses.includes(d.name)) e.uses.push(d.name);
         if(d.assigneeUid) e.who.add(d.assigneeUid); else e.anyFree = true;
       });
@@ -4744,8 +4861,7 @@ function toggleShopHome(listId, itemId){
 }
 
 /* ============================ COOKING ============================
- * 맨 위 [식단표 | 레시피](기기에 기억, 처음엔 다가오는 일정이 있으면 식단표). 식단표는 내 일정 + 내가 참가하는 그룹 일정에서 고름(공간 전환과 따로). */
-const COOK_VIEW_KEY = 'campbase.cookView';
+ * 식단표 하나(레시피 탭은 없앰). 내 일정 + 내가 참가하는 그룹 일정에서 고름(공간 전환과 따로). */
 state.cookSel = null;          // { space, tripId } — 식단표에서 고른 일정
 state.cookShowPast = false;
 state.cookOpenDish = null;     // 펼친 메뉴(dish id)
@@ -4758,12 +4874,6 @@ function cookPast(){
   const today = todayStr();
   return allMyTrips().filter(x=>tripPhase(x.trip, today).kind==='past').sort((a, b)=>String(tripEnd(b.trip)).localeCompare(String(tripEnd(a.trip))));
 }
-function cookView(){
-  let v = null; try{ v = localStorage.getItem(COOK_VIEW_KEY); }catch(e){}
-  if(v==='plan' || v==='recipes') return v;
-  return cookUpcoming().length ? 'plan' : 'recipes';
-}
-function setCookView(v){ try{ localStorage.setItem(COOK_VIEW_KEY, v); }catch(e){} }
 function cookSelected(){
   const s = state.cookSel;
   if(s){ const t = findTrip(s.space, s.tripId); if(t && (s.space==='me' || groupById(s.space))) return { space: s.space, group: tripGroupOf(s.space), trip: t }; }
@@ -4772,19 +4882,13 @@ function cookSelected(){
 function openTripMeals(space, tripId){
   if(space!=='me' && !groupById(space)){ toast('그 그룹에 더 이상 속해 있지 않아요.'); return; }
   state.cookSel = { space, tripId }; state.cookOpenDish = null;
-  setCookView('plan');
   const t = findTrip(space, tripId);
   if(t && tripPhase(t).kind==='past') state.cookShowPast = true;
   goView('cooking');
 }
+// 레시피 탭은 없앰(사용자 요청): Cooking = 식단표 하나. 메뉴는 직접 입력(이름 + 재료)이 기본, 레시피는 메뉴 넣기 창에서 골라 쓸 수 있음
 function renderCooking(){
-  const v = cookView();
-  return `
-    <div class="seg-group cook-switch" role="group" aria-label="Cooking 보기">
-      <div class="seg-btn ${v==='plan'?'active':''}" data-action="cook-view" data-view="plan" aria-pressed="${v==='plan'}">${icon('calendar')} 식단표</div>
-      <div class="seg-btn ${v==='recipes'?'active':''}" data-action="cook-view" data-view="recipes" aria-pressed="${v==='recipes'}">${icon('cooking')} 레시피</div>
-    </div>
-    ${v==='plan' ? renderMealPlan() : renderRecipes()}`;
+  return `<div class="cook-plan">${renderMealPlan()}</div>`;
 }
 function cookTripChip(x, sel){
   const active = sel && sel.space===x.space && sel.trip.id===x.trip.id;
@@ -4815,7 +4919,7 @@ function mealPlanBody(space, t, g){
   const st = mealStats(t);
   const base = baseServings(t, space);
   const list = shoppingListOf(space, t.id);
-  const hasRecipe = tripMeals(t).some(m=>!m.done && (m.dishes||[]).some(d=>d.recipeId && recipeById(d.recipeId)));
+  const hasRecipe = tripMeals(t).some(m=>!m.done && (m.dishes||[]).some(dishHasIngs));
   const sp = list ? shoppingProgress(list) : null;
   const L = mealLayout(t);
   const where = [fmtTripDates(t), t.campsiteName || t.region].filter(Boolean).map(esc).join(' · ');
@@ -4828,7 +4932,7 @@ function mealPlanBody(space, t, g){
         <span class="spacer"></span>
         ${list
           ? `<button class="btn btn-sm shop-open" data-action="shop-open" data-space="${esc(space)}" data-trip="${esc(t.id)}">${icon('cart')} 장보기 <span class="num">${sp.decided}/${sp.total}</span> · 열기</button>`
-          : `<button class="btn btn-sm btn-accent shop-create" data-action="shop-create" data-space="${esc(space)}" data-trip="${esc(t.id)}" ${hasRecipe ? '' : 'disabled title="레시피 메뉴를 하나 이상 넣으면 만들 수 있어요"'}>${icon('cart')} 장보기 목록 만들기</button>`}
+          : `<button class="btn btn-sm btn-accent shop-create" data-action="shop-create" data-space="${esc(space)}" data-trip="${esc(t.id)}" ${hasRecipe ? '' : 'disabled title="재료가 있는 메뉴를 하나 이상 넣으면 만들 수 있어요"'}>${icon('cart')} 장보기 목록 만들기</button>`}
       </div>
     </section>
     ${L.days.map(d=>`
@@ -4874,6 +4978,7 @@ function mealRowHtml(space, t, g, m, base){
           <span class="dish-chip ${open && open.id===d.id ? 'open' : ''}">
             <button class="dish-btn" data-action="dish-open" ${attrs({ ...ds, 'data-dish': d.id })} aria-expanded="${!!(open && open.id===d.id)}">${d.recipeId ? icon('cooking') : ''}<span>${esc(d.name)}</span>${g && d.assigneeUid ? memberAvatarHtml(g, d.assigneeUid) : ''}</button>
             ${moreMenuHtml('dish:' + d.id, [
+              !d.recipeId ? { action:'dish-edit', attrs: { ...ds, 'data-dish': d.id }, icon:'edit', label:'이름·재료 고치기' } : null,
               g ? { action:'dish-assign', attrs: { ...ds, 'data-dish': d.id }, icon:'users', label: d.assigneeUid ? '담당자 바꾸기' : '담당자 지정' } : null,
               { action:'dish-move', attrs: { ...ds, 'data-dish': d.id }, icon:'calendar', label:'다른 끼니로 옮기기' },
               { action:'dish-del', attrs: { ...ds, 'data-dish': d.id }, icon:'trash', label:'빼기', danger:true },
@@ -4887,7 +4992,14 @@ function mealRowHtml(space, t, g, m, base){
 function dishRecipeHtml(d, sv, g){
   const r = d.recipeId && recipeById(d.recipeId);
   const who = g && d.assigneeUid ? ` · 담당 ${esc(memberName(g, d.assigneeUid))}` : '';
-  if(!r) return `<div class="dish-recipe"><div class="dr-head"><b>${esc(d.name)}</b><span class="meta">직접 넣은 메뉴${who}</span></div></div>`;
+  if(!r){
+    const ings = dishIngs(d);
+    return `
+    <div class="dish-recipe">
+      <div class="dr-head"><b>${esc(d.name)}</b><span class="meta">직접 넣은 메뉴${who}</span></div>
+      ${ings.length ? `<ul class="dr-ings">${ings.map(ing=>`<li><span>${esc(ing.name)}</span><span class="num">${esc(ingText(ing))}</span></li>`).join('')}</ul>` : `<div class="meta dr-noing">재료를 적으면 장보기 목록에 들어가요.</div>`}
+    </div>`;
+  }
   return `
     <div class="dish-recipe">
       <div class="dr-head"><b>${esc(r.name)}</b><span class="meta">${sv}명 기준 · ${esc(r.time)}${who}</span></div>
@@ -4908,21 +5020,27 @@ function mealCtx(a){
   return { space, tripId, t, m, d, g: tripGroupOf(space) };
 }
 function ctxAttrs(c, extra){ return `data-space="${esc(c.space)}" data-trip="${esc(c.tripId)}" data-meal="${esc(c.m ? c.m.id : '')}"${c.d ? ` data-dish="${esc(c.d.id)}"` : ''}${extra || ''}`; }
+// 메뉴 넣기: 음식 이름 + 재료(선택)를 직접 입력하는 게 기본. 레시피는 아래 "레시피에서 고르기"를 펼쳐서
 function mealPickerModal(a){
   const c = mealCtx(a);
   if(!c.t || !c.m) return;
   const cats = Array.from(new Set(COOKING_RECIPES.map(r=>r.category)));
   openModal(`
     <h3>메뉴 넣기 · ${esc(mealTitle(c.t, c.m))}</h3>
-    <div class="field"><label for="mp-custom">직접 입력</label><input id="mp-custom" maxlength="40" placeholder="예: 라면, 치킨 포장 (여러 개는 쉼표로)"></div>
-    <div class="field"><label for="mp-search">레시피에서 고르기</label><input id="mp-search" type="search" placeholder="이름·재료로 찾기" autocomplete="off"></div>
-    <div class="seg-group mp-cats" role="group" aria-label="레시피 종류">
-      <div class="seg-btn active" data-action="mp-cat" data-cat="all">전체</div>
-      ${cats.map(x=>`<div class="seg-btn" data-action="mp-cat" data-cat="${esc(x)}">${esc(x)}</div>`).join('')}
-    </div>
-    <div class="send-list mp-list" id="mp-list">
-      ${COOKING_RECIPES.map(r=>`<label class="send-row mp-row" data-cat="${esc(r.category)}" data-text="${esc(normName(r.name + ingNames(r).join('')))}"><input type="checkbox" class="mp-pick" value="${esc(r.id)}"> <span class="sr-name">${esc(r.name)}</span> <span class="meta">${esc(r.category)} · ${esc(r.time)}</span></label>`).join('')}
-    </div>
+    <div class="field"><label for="mp-custom">음식 이름</label><input id="mp-custom" maxlength="40" placeholder="예: 삼겹살 구이"></div>
+    <div class="field"><label for="mp-ings">재료 <span class="meta">(선택)</span></label><textarea id="mp-ings" rows="3" maxlength="600" placeholder="예: 삼겹살 600g, 상추 1봉, 쌈장"></textarea>
+      <div class="field-hint">쉼표로 나눠 적어요. 양은 이 끼니에 필요한 만큼 적고(선택), 적은 재료는 장보기 목록에 들어가요.</div></div>
+    <details class="mp-recipes">
+      <summary>레시피에서 고르기</summary>
+      <div class="field" style="margin-top:8px;"><label for="mp-search">레시피 찾기</label><input id="mp-search" type="search" placeholder="이름·재료로 찾기" autocomplete="off"></div>
+      <div class="seg-group mp-cats" role="group" aria-label="레시피 종류">
+        <div class="seg-btn active" data-action="mp-cat" data-cat="all">전체</div>
+        ${cats.map(x=>`<div class="seg-btn" data-action="mp-cat" data-cat="${esc(x)}">${esc(x)}</div>`).join('')}
+      </div>
+      <div class="send-list mp-list" id="mp-list">
+        ${COOKING_RECIPES.map(r=>`<label class="send-row mp-row" data-cat="${esc(r.category)}" data-text="${esc(normName(r.name + ingNames(r).join('')))}"><input type="checkbox" class="mp-pick" value="${esc(r.id)}"> <span class="sr-name">${esc(r.name)}</span> <span class="meta">${esc(r.category)} · ${esc(r.time)}</span></label>`).join('')}
+      </div>
+    </details>
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="mp-go" ${ctxAttrs(c)}>${icon('plus')} 넣기</button>
@@ -4941,13 +5059,40 @@ function mealPickerGo(a){
   const c = mealCtx(a);
   if(!c.t || !c.m) return;
   const dishes = [];
-  const custom = ((document.getElementById('mp-custom') || {}).value || '').split(/[,，]/).map(x=>x.trim()).filter(Boolean);
-  custom.forEach(name=>dishes.push({ id: uid('d'), name: name.slice(0, 40) }));
+  const name = ((document.getElementById('mp-custom') || {}).value || '').trim();
+  const ings = parseIngredients((document.getElementById('mp-ings') || {}).value);
+  if(!name && ings.length){ toast('음식 이름을 입력해주세요.'); return; }
+  // 재료를 적었으면 메뉴 하나, 이름만이면 쉼표로 여러 개(예전처럼)
+  if(ings.length) dishes.push({ id: uid('d'), name: name.slice(0, 40), ingredients: ings });
+  else name.split(/[,，]/).map(x=>x.trim()).filter(Boolean).forEach(n=>dishes.push({ id: uid('d'), name: n.slice(0, 40) }));
   document.querySelectorAll('#mp-list .mp-pick:checked').forEach(cb=>{ const r = recipeById(cb.value); if(r) dishes.push({ id: uid('d'), recipeId: r.id, name: r.name }); });
-  if(!dishes.length){ toast('메뉴를 고르거나 이름을 입력해주세요.'); return; }
+  if(!dishes.length){ toast('음식 이름을 입력하거나 레시피를 골라주세요.'); return; }
   closeModal();
   mutateMeals(c.space, c.tripId, mealOps.addDishes(c.m, dishes));
   toast(`${mealTitle(c.t, c.m)}에 메뉴 ${dishes.length}개를 넣었어요.`, 'ok');
+}
+function dishEditModal(a){
+  const c = mealCtx(a);
+  if(!c.d) return;
+  openModal(`
+    <h3>메뉴 고치기</h3>
+    <div class="field"><label for="de-name">음식 이름</label><input id="de-name" maxlength="40" value="${esc(c.d.name)}"></div>
+    <div class="field"><label for="de-ings">재료 <span class="meta">(선택)</span></label><textarea id="de-ings" rows="3" maxlength="600" placeholder="예: 삼겹살 600g, 상추 1봉, 쌈장">${esc(ingredientsToText(dishIngs(c.d)))}</textarea>
+      <div class="field-hint">쉼표로 나눠 적어요. 고치면 장보기 목록도 맞춰져요.</div></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="dish-edit-save" ${ctxAttrs(c)}>${icon('save')} 저장</button>
+    </div>`);
+}
+function dishEditSave(a){
+  const c = mealCtx(a);
+  if(!c.d) return;
+  const name = ((document.getElementById('de-name') || {}).value || '').trim().slice(0, 40);
+  if(!name){ toast('음식 이름을 입력해주세요.'); return; }
+  const ings = parseIngredients((document.getElementById('de-ings') || {}).value);
+  closeModal();
+  mutateMeals(c.space, c.tripId, mealOps.setDish(c.m.id, c.d.id, { name, ingredients: ings.length ? ings : null }));
+  toast(`'${name}'을(를) 고쳤어요.`);
 }
 function servingsModal(a){
   const c = mealCtx(a);
@@ -5095,94 +5240,6 @@ function toggleDishOpen(a){
   renderView();
   const b = document.querySelector(`[data-action="dish-open"][data-dish="${CSS.escape(id)}"]`);
   if(b) b.focus({ preventScroll: true });
-}
-
-/* ---- 레시피 보기(읽기 전용 재료 + "식단에 추가") ---- */
-function renderRecipes(){
-  const cats = ['all', ...Array.from(new Set(COOKING_RECIPES.map(r=>r.category)))];
-  const activeCat = state.cookingCategory || 'all';
-  const list = COOKING_RECIPES.filter(r=> activeCat==='all' || r.category===activeCat);
-  const open = cookOpenSet();
-  return `
-    <div class="section-head">
-      <div><h1>캠핑 요리</h1><div class="section-desc">캠핑 요리 블로그(LifeBase, 우리의식탁)에서 모은 레시피예요. "식단에 추가"로 일정 끼니에 넣으면 장보기 목록까지 만들어져요.</div></div>
-    </div>
-    <div class="seg-group" style="margin-bottom:16px;">
-      ${cats.map(c=>`<div class="seg-btn ${c===activeCat?'active':''}" data-action="cook-filter" data-cat="${esc(c)}">${c==='all' ? '전체' : esc(c)} <span class="num" style="opacity:.65;">${c==='all' ? COOKING_RECIPES.length : COOKING_RECIPES.filter(r=>r.category===c).length}</span></div>`).join('')}
-    </div>
-    <div class="grid recipe-grid">
-      ${list.length ? list.map(r=>recipeCardHtml(r, open.has(r.id))).join('') : '<div class="empty">이 카테고리에는 레시피가 없어요.</div>'}
-    </div>`;
-}
-// 레시피 카드: 접힌 상태(이름·종류·난이도·시간), 눌러서 펼침(여러 개, 기기에 기억). 펼치면 2인 기준 재료(읽기 전용)·순서·출처
-const COOK_OPEN_KEY = 'campbase.cookOpen';
-function cookOpenSet(){ try{ const v = JSON.parse(localStorage.getItem(COOK_OPEN_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); }catch(e){ return new Set(); } }
-function toggleCookOpen(rid){
-  const set = cookOpenSet();
-  if(set.has(rid)) set.delete(rid); else set.add(rid);
-  try{ localStorage.setItem(COOK_OPEN_KEY, JSON.stringify([...set])); }catch(e){}
-  renderView();
-  const b = document.querySelector(`[data-action="cook-open"][data-recipe="${CSS.escape(rid)}"]`);
-  if(b) b.focus({ preventScroll: true });
-}
-function recipeCardHtml(r, open){
-  return `
-    <div class="card recipe-card ${open ? 'open' : ''}">
-      <div class="recipe-top">
-        <button type="button" class="recipe-head" data-action="cook-open" data-recipe="${r.id}" aria-expanded="${open}" aria-controls="recipe-${r.id}">
-          <span class="recipe-main">
-            <span class="name">${esc(r.name)}</span>
-            <span class="recipe-meta">${esc(r.category)} · ${esc(r.difficulty)} · ${esc(r.time)}</span>
-          </span>
-          ${icon('chev', 'recipe-chev')}
-        </button>
-        <button type="button" class="btn btn-sm recipe-plan" data-action="recipe-to-plan" data-recipe="${r.id}" aria-label="'${esc(r.name)}' 식단에 추가">${icon('plus')} 식단에 추가</button>
-      </div>
-      ${open ? `<div class="recipe-body" id="recipe-${r.id}">
-        <div class="ing-head">재료 <span class="meta">${r.serves || 2}인 기준</span></div>
-        <ul class="dr-ings">${r.ingredients.map(ing=>`<li><span>${esc(ing.name)}</span><span class="num">${esc(scaledIng(ing, r.serves || 2, r.serves))}</span></li>`).join('')}</ul>
-        <div class="section-desc" style="margin:10px 0;line-height:1.5;">${esc(r.steps)}</div>
-        <a class="section-desc" href="${r.source.url}" target="_blank" rel="noopener" style="text-decoration:none;">출처: ${esc(r.source.name)} ↗</a>
-      </div>` : ''}
-    </div>`;
-}
-// 레시피 → 식단: 일정·끼니 고르기(지금 식단표에서 고른 일정이 기본)
-function recipeToPlanModal(rid){
-  const r = recipeById(rid);
-  if(!r) return;
-  const trips = [...cookUpcoming(), ...cookPast()];
-  const sel = cookSelected();
-  if(sel && !trips.some(x=>x.space===sel.space && x.trip.id===sel.trip.id)) trips.unshift(sel);
-  if(!trips.length){
-    openModal(`<h3>식단에 추가</h3><p style="margin:0 0 12px;color:var(--text-dim);font-size:13px;">캠핑 일정을 만들면 끼니마다 메뉴를 넣을 수 있어요.</p>
-      <div class="modal-actions"><button class="btn btn-accent" data-action="trip-new">${icon('plus')} 일정 만들기</button></div>`);
-    return;
-  }
-  const cur = sel || trips[0];
-  openModal(`
-    <h3>'${esc(r.name)}' 식단에 추가</h3>
-    <div class="field"><label for="rp-trip">일정</label><select id="rp-trip" data-recipe="${esc(r.id)}">${trips.map(x=>`<option value="${esc(x.space + '|' + x.trip.id)}" ${x.space===cur.space && x.trip.id===cur.trip.id ? 'selected' : ''}>${esc(x.trip.title)}${x.group ? ' · ' + esc(x.group.name) : ''} (${esc(tripPhase(x.trip).label)})</option>`).join('')}</select></div>
-    <div class="field"><label for="rp-meal">끼니</label><select id="rp-meal">${rpMealOptions(cur.space, cur.trip)}</select></div>
-    <div class="modal-actions">
-      <button class="btn" data-action="modal-close">취소</button>
-      <button class="btn btn-primary" data-action="rp-go" data-recipe="${esc(r.id)}">${icon('plus')} 넣기</button>
-    </div>`);
-}
-function rpMealOptions(space, t){
-  const L = mealLayout(t);
-  const firstEmpty = L.days.flatMap(d=>d.rows).find(m=>!(m.dishes||[]).length && !m.done);
-  return L.days.flatMap(d=>d.rows).map(m=>`<option value="${esc(m.id)}" ${firstEmpty && m.id===firstEmpty.id ? 'selected' : ''}>${esc(mealTitle(t, m))}${tripDayDate(t, m.day) ? ' · ' + esc(tripDayDate(t, m.day)) : ''}${(m.dishes||[]).length ? ' (' + esc(m.dishes.map(d=>d.name).join(', ')) + ')' : ''}</option>`).join('');
-}
-function rpGo(rid){
-  const r = recipeById(rid);
-  const [space, tripId] = String((document.getElementById('rp-trip') || {}).value || '').split('|');
-  const t = findTrip(space, tripId);
-  const m = t && mealProto(t, (document.getElementById('rp-meal') || {}).value);
-  if(!r || !t || !m){ toast('일정과 끼니를 골라주세요.'); return; }
-  closeModal();
-  state.cookSel = { space, tripId };
-  mutateMeals(space, tripId, mealOps.addDishes(m, [{ id: uid('d'), recipeId: r.id, name: r.name }]));
-  toast(`'${r.name}'을(를) ${t.title} ${mealTitle(t, m)}에 넣었어요.`, 'ok');
 }
 
 /* ============================ MODAL / TOAST ============================ */
@@ -5488,6 +5545,7 @@ function wireGlobalActions(){
       case 'undo-delete': runUndo(); break;
 
       case 'camp-new': campFormModal(); break;
+      case 'camp-due-more': state.campDueAll = !state.campDueAll; renderView(); break;
       case 'camp-edit': campFormModal(id); break;
       case 'camp-del': {
         const target = state.campingLogs.find(c=>c.id===id);
@@ -5529,8 +5587,6 @@ function wireGlobalActions(){
         renderNav(); renderView();
         break;
 
-      case 'cook-open': toggleCookOpen(a.getAttribute('data-recipe')); break;
-      case 'cook-view': setCookView(a.getAttribute('data-view')==='recipes' ? 'recipes' : 'plan'); renderView(); break;
       case 'cook-trip': state.cookSel = { space: a.getAttribute('data-space'), tripId: a.getAttribute('data-trip') }; state.cookOpenDish = null; renderView(); break;
       case 'cook-past-toggle': state.cookShowPast = !state.cookShowPast; renderView(); break;
       case 'cook-open-trip': openTripMeals(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
@@ -5542,6 +5598,8 @@ function wireGlobalActions(){
       case 'sv-save': servingsSave(a); break;
       case 'dish-open': toggleDishOpen(a); break;
       case 'dish-move': dishMoveModal(a); break;
+      case 'dish-edit': dishEditModal(a); break;
+      case 'dish-edit-save': dishEditSave(a); break;
       case 'dish-move-go': dishMoveGo(a); break;
       case 'dish-del': dishDelete(a); break;
       case 'dish-assign': dishAssignModal(a); break;
@@ -5554,17 +5612,11 @@ function wireGlobalActions(){
       case 'meal-extra-add': extraMealModal(a); break;
       case 'em-preset': { const inp = document.getElementById('em-label'); if(inp) inp.value = a.getAttribute('data-val'); document.querySelectorAll('[data-action="em-preset"]').forEach(x=>x.classList.toggle('active', x===a)); break; }
       case 'em-save': extraMealSave(a); break;
-      case 'recipe-to-plan': recipeToPlanModal(a.getAttribute('data-recipe')); break;
-      case 'rp-go': rpGo(a.getAttribute('data-recipe')); break;
       case 'shop-create': createShoppingList(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
       case 'shop-open': openShoppingList(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
       case 'shop-qty': shopQtyModal(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
       case 'shop-qty-save': saveShopQty(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
       case 'shop-home': toggleShopHome(a.getAttribute('data-list'), a.getAttribute('data-item')); break;
-      case 'cook-filter':
-        state.cookingCategory = a.getAttribute('data-cat');
-        renderView();
-        break;
 
       case 'cf-star': {
         const cur = Number((document.getElementById('cf-rating') || {}).value || 0), n = Number(a.getAttribute('data-val'));
@@ -5631,6 +5683,7 @@ function wireGlobalActions(){
       case 'tpl-item-del': deleteTplItemWithUndo(id, Number(a.getAttribute('data-idx'))); break;
       case 'tpl-make-list': makeListFromTemplate(id); break;
       case 'sub-nav': goView(a.getAttribute('data-view')); break;
+      case 'nav-sub-toggle': toggleNavSub(a.getAttribute('data-id')); break;
       case 'past-trip-open': state.tripFilter = a.getAttribute('data-trip') || 'all'; state.checklistFilter = 'all'; renderView(); break;
       case 'past-trip-back': state.tripFilter = 'all'; renderView(); break;
       case 'tpl-gear-import': gearPickModal(id, 'space', 'tpl'); break;
@@ -5838,11 +5891,7 @@ function wireGlobalActions(){
       return;
     }
     if(e.target.matches && e.target.matches('[data-action="gpk-toggle"]')){ gpkSync(e.target); return; }
-    if(e.target.id==='rp-trip'){   // 레시피 → 식단: 일정을 바꾸면 끼니 목록도
-      const [sp, tid] = String(e.target.value).split('|'); const t = findTrip(sp, tid), m = document.getElementById('rp-meal');
-      if(t && m) m.innerHTML = rpMealOptions(sp, t);
-      return;
-    }
+    if(e.target.id==='cf-trip'){ campFormPickTrip(e.target.value); return; }
     if(e.target.id==='ncl-tpl'){   // 새 리스트: 템플릿을 고르면 비어 있는 이름 칸에 템플릿 이름
       const t = SP.templates.find(x=>x.id===e.target.value), inp = document.getElementById('ncl-title');
       if(t && inp && !inp.value.trim()) inp.value = t.title || '';

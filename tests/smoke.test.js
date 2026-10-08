@@ -220,37 +220,20 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   const delList = page.locator('[data-action="cl-del-list"]').last();
   if (await delList.count()) { await clickAndConfirm(delList, 'cl-del-list'); log('checklist del list'); }
 
-  // 7. Cooking: 식단표(일정이 있으면 메뉴 넣기) + 레시피 보기(필터·펼치기·식단에 추가 창)
+  // 7. Cooking: 식단표(레시피 탭 없음) — 일정이 있으면 메뉴 직접 입력(이름 + 재료) → 장보기
   await page.click('[data-nav="cooking"]');
   await page.waitForTimeout(150);
-  await page.click('.cook-switch [data-view="plan"]');
-  await page.waitForTimeout(150);
+  if (await page.locator('.cook-switch, [data-action="cook-view"], .recipe-card').count()) issues.push('cooking: 레시피 탭이 아직 있음');
   const addDish = page.locator('[data-action="meal-add-dish"]').first();
   if (await addDish.count()) {
     await addDish.click(); await page.waitForTimeout(150);
-    await page.locator('.mp-pick').first().check();
+    await page.fill('#mp-custom', '부대찌개');
+    await page.fill('#mp-ings', '햄 200g, 라면사리 1개');
     await page.click('[data-action="mp-go"]'); await page.waitForTimeout(200);
     log('cooking add dish');
     const mk = page.locator('[data-action="shop-create"]:not([disabled])');
     if (await mk.count()) { await mk.click(); await page.waitForTimeout(200); log('cooking shopping list'); }
   }
-  await page.click('.cook-switch [data-view="recipes"]');
-  await page.waitForTimeout(150);
-  const cookFilters = await page.locator('[data-action="cook-filter"]').count();
-  for (let i = 0; i < cookFilters; i++) {
-    await page.locator('[data-action="cook-filter"]').nth(i).click();
-    await page.waitForTimeout(80);
-  }
-  log('cooking filters');
-  await page.locator('[data-action="cook-filter"]').first().click();
-  await page.waitForTimeout(100);
-  await page.locator('[data-action="cook-open"]').first().click();
-  await page.waitForTimeout(120);
-  await page.locator('[data-action="recipe-to-plan"]').first().click();
-  await page.waitForTimeout(150);
-  await page.click('#modal-root [data-action="modal-close"]');
-  await page.waitForTimeout(250);
-  log('cooking recipe → plan');
 
   // 8. Settings: 기존 공유 데이터 가져오기(빈 상태) + 백업 내보내기 + 로그아웃
   await page.click('[data-nav="settings"]');
