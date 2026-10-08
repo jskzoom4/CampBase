@@ -167,6 +167,9 @@ const ymd = off => { const d = new Date(); d.setDate(d.getDate() + off); return 
     && (await srow(shopList, '소금').locator('[data-val="packed"]').getAttribute('aria-label')).includes('챙겼어요'));
   const listMenu = await shopList.locator('h3 .more-menu').evaluate(m => [...m.querySelectorAll('.more-item')].map(b => b.dataset.action).join(','));
   check('3-3 장보기 목록 ⋯: 템플릿으로 저장·장비에서 불러오기 없음', !/cl-save-template|cl-gear-import/.test(listMenu) && /cl-del-list/.test(listMenu), listMenu);
+  await shopList.locator('button.cl-fold').click(); await settle();
+  check('P-2 장보기 목록도 접기·펼치기', !(await srow(shopList, '삼겹살').isVisible()) && /장보기/.test(await shopList.locator('h3').innerText()));
+  await shopList.locator('button.cl-fold').click(); await settle();
   const panelProg = async () => (await A.locator('.trip-panel .trip-progress-text').innerText());
   const before = await panelProg();
   await pork.locator('[data-val="packed"]').click(); await settle();

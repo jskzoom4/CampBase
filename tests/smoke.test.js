@@ -178,7 +178,7 @@ const CHROMIUM = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/c
   await addItemBtns.last().click();
   await page.waitForTimeout(150);
   await page.fill('#cli-label', '스모크항목');
-  await page.fill('#cli-group', '스모크소분류');
+  await page.fill('#cli-qty', '2');
   await page.click('[data-action="cl-add-item-save"]');
   await page.waitForTimeout(200);
   log('checklist add item');
