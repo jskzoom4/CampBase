@@ -107,7 +107,7 @@ const server = {};
   const panel = M.locator('.trip-panel');
   check('2-1 일정을 고르면 하나의 패널(따로 있던 "준비물" 제목·새 리스트·필터 줄 없음)', (await panel.count()) === 1 && (await M.locator('.section-head').count()) === 0 && (await M.locator('.cl-filter-row').count()) === 0);
   check('2-1 1줄: 달력 + 일정 이름 · D-n 태그 · ⋯ 메뉴', /10월 팸 캠핑/.test(await M.locator('.trip-panel-head .tp-name').innerText()) && /D-3/.test(await M.locator('.trip-panel-head .trip-phase').innerText()) && (await M.locator('.trip-panel-head .more-btn').count()) === 1);
-  check('2-1 ⋯ 메뉴: 일정 수정·새 리스트·일정 삭제(삭제가 맨 아래 빨간색)', await M.locator('.trip-panel-head .more-menu').evaluate(m => [...m.querySelectorAll('.more-item')].map(b => b.dataset.action + (b.classList.contains('danger') ? '!' : '')).join(',')) === 'trip-edit,cl-new-list,trip-del!');
+  check('2-1 ⋯ 메뉴: 일정 수정·새 리스트·사이트 배치(Q)·일정 삭제(삭제가 맨 아래 빨간색)', await M.locator('.trip-panel-head .more-menu').evaluate(m => [...m.querySelectorAll('.more-item')].map(b => b.dataset.action + (b.classList.contains('danger') ? '!' : '')).join(',')) === 'trip-edit,cl-new-list,trip-layout,trip-del!');
   check('2-1 2줄: 날짜·캠핑장·지역 + 참가 멤버 사진 묶음(aria-label "2명 참가")', /가평 숲속 야영장 · 가평/.test(await M.locator('.tp-meta-row .tp-where').innerText()) && (await M.locator('.tp-meta-row .avatar-stack[aria-label="2명 참가"] .mini-avatar').count()) === 2);
   check('2-1 3줄: 진행 막대 + "준비 2/9 · 내 담당 3"', /준비 2\/9 · 내 담당 3/.test(await M.locator('.trip-panel .trip-progress-text').innerText()) && (await M.locator('.trip-panel .trip-bar-track[role="progressbar"]').count()) === 1);
   check('2-1 4줄: 작은 필터(전체·완료·미완료·내 담당) + "+ 리스트"', (await M.locator('.tp-tools [data-action="cl-filter"]').count()) === 4 && (await M.locator('.tp-tools [data-action="cl-new-list"]').isVisible()));

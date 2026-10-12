@@ -7,16 +7,16 @@
 
 ## 앱의 목적 (새 기능은 이 세 가지에 도움이 되는지로 판단)
 1. 캠핑 갈 때 준비할 것 챙기기 — Checklist 탭
-2. 내가 가진 캠핑 장비 조회 — Gear 탭
+2. 내가 가진 캠핑 장비 조회 — Gear 탭 (+ 사이트 배치: 사이트 크기 안에 텐트를 놓아 피칭 가능 여부 미리 보기 — Gear 하위 화면)
 3. 다녀온 캠핑장 후기 남기기(사이트 크기, 화장실·매점 상태, 체크인/아웃 시간 등) — Camping 탭
    (+ 캠핑 식단 짜기·장보기 — Cooking 탭, 1번 "챙기기"의 일부)
 
 ## 구조
-- `docs/index.html` — 앱 전체(HTML+CSS+JS 한 파일, 바닐라 JS, 빌드 도구 없음). 로그인 화면(`#login-screen`) + 탭: Home / Camping / Gear / Checklist / Cooking / Settings.
+- `docs/index.html` — 앱 전체(HTML+CSS+JS 한 파일, 바닐라 JS, 빌드 도구 없음). 로그인 화면(`#login-screen`) + 탭: Home / Camping / Gear(+ 사이트 배치) / Checklist / Cooking / Settings.
 - `docs/firebase-config.js` — Firebase 프로젝트 `campbase-f5df5` 연결값(비밀 아님).
 - `docs/sw.js`, `docs/manifest.webmanifest`, `docs/icons/` — 웹(홈 화면 설치)용.
 - `firestore.rules.final` — 전환 기간 2단계용 초안(`firestore.rules`에서 전환 기간 블록만 뺀 것). **`firestore.rules`를 바꾸면 이 파일도 같이 바꿔야 한다**(규칙 테스트가 둘이 어긋나면 실패).
-- `firestore.rules` — Firestore 보안 규칙. `users/{uid}/**`는 본인만, `groups/**`·`groupInvites`는 그룹 규칙(아래), 최상위 legacy 경로는 "전환 기간" 블록(현재 1단계: 로그인한 사람만 읽기 전용), 나머지는 거부.
+- `firestore.rules` — Firestore 보안 규칙. `users/{uid}/**`는 본인만, `groups/**`·`groupInvites`는 그룹 규칙(아래, 하위 컬렉션 허용 목록 `checklists·gear·trips·layouts`), 최상위 legacy 경로는 "전환 기간" 블록(현재 1단계: 로그인한 사람만 읽기 전용), 나머지는 거부.
 - `firebase.json` — 에뮬레이터(규칙 테스트)용 설정. 실제 배포에는 쓰지 않음.
 - `capacitor.config.json`, `package.json`, `assets/`, `keystore/` — 안드로이드 APK 빌드용(Capacitor 6 + `@capacitor-firebase/authentication` 6.x, `skipNativeAuth: true`).
 - `android-config/google-services.json` — APK 구글 로그인용. 워크플로가 `android/app/`로 복사한다.
@@ -34,6 +34,7 @@
   - `users/{uid}` — `{ name, email, photoURL, updatedAt }` (로그인할 때마다 갱신)
   - `users/{uid}/campingLogs|gear|checklists|cookingChecks/{id}` — 캠핑 기록 상태 필드: `toiletCondition`, `showerCondition`(샤워장, `SHOWER_LEVELS`, 선택), `storeCondition`
   - `users/{uid}/trips/{id}`, `users/{uid}/checklistTemplates/{id}` — 캠핑 일정·체크리스트 템플릿(아래 "캠핑 일정")
+  - `users/{uid}/layouts/{id}` — 사이트 배치(아래 "사이트 배치")
   - `users/{uid}/settings/app` — `{ gearCategories, gearCategoryMeta?, weatherLocation, homeWidgets }` (Home 위젯도 계정 기준. `weatherLocation`은 지금 화면에서 안 씀 — 날씨 기능용으로 남겨 둠)
 - 최상위 `campingLogs/gear/checklists/cookingChecks`, `app/settings`는 **예전 공유 저장소(legacy)**. 새 앱은
   Settings → "기존 공유 데이터 가져오기"에서 **읽기만** 한다(내 공간으로 복사, 같은 id는 건너뜀, 원본 유지).
@@ -137,6 +138,50 @@
     지난 일정 카드 "해먹은 메뉴 n개". 식단 없는 일정은 예전과 똑같이 보인다.
 - 예전 레시피별 재료 체크 `cookingChecks`는 **화면에서만 뺐다**. 구독·legacy 가져오기·개인 백업 내보내기/가져오기 형식은 그대로(되돌려도 데이터 그대로).
 
+## 사이트 배치 (Gear 하위 화면 `layouts`, 사용자 요청 Q)
+- 목적: 캠핑장 사이트(직사각형, m) 안에 텐트·타프·물건을 실제 크기로 놓아 **텐트 2개 이상이 피칭되는지, 어디에 놓을지** 미리 정하기.
+- **장비의 배치용 크기**(선택) `footprint = { kind:'tent'|'tarp'|'item', w, d, shape:'rect'|'round', guy? }`(바닥 가로·세로 m 0.1~30, 스트링·팩 여유 0~5, 0.1 단위, `normFootprint()`).
+  장비 폼 아래 "사이트 배치용 크기" 묶음(`fpFieldsHtml()`/`readFootprintForm()`): 종류 칩(`gf-fp-kind`, 기본값 `fpKindFromCategory()`: 카테고리에 '타프' → 타프, '텐트'·'쉘터' → 텐트, 아니면 기타 — 직접 고르기 전까지 카테고리를 따라감),
+  가로×세로(`inputmode="decimal"`), 모양 칩(`gf-fp-shape`), 스트링 여유. 둘 다 비우면 footprint 삭제, 하나만 쓰면 저장 막음. 목록 줄 meta 끝에 `.fp-size` "2.7×2.4m".
+  그룹으로 보내기·백업은 장비 객체 그대로라 footprint도 같이 감.
+- **배치 문서**: 개인 `users/{uid}/layouts/{id}`, 그룹 `groups/{gid}/layouts/{id}` =
+  `{ title, siteW, siteD, siteType?(SITE_TYPES — 캠핑 기록과 같은 목록), entrance:'bottom'|'top'|'left'|'right', tripId?(같은 공간 일정), logId?(불러온 내 캠핑 기록),
+     items:[{ id, gearId?, name, kind, shape, w, d, guy, x, y, rot }], createdBy, createdAt, updatedBy, updatedAt }`.
+  x·y = 사이트 왼쪽 위 기준 **물건 중심**(m), rot 0|90|180|270(시계 방향), 출입문은 rot 0일 때 아래 변(90 왼쪽·180 위·270 오른쪽). 크기는 **놓을 때의 사본**(장비가 바뀌면 `loStale()` → "새로 불러오기" `lo-refresh`).
+  같은 장비 여러 번 가능. 그룹 배치에 내 개인 장비를 놓아도 사본이라 다른 멤버도 보임.
+- 상태: `state.layouts`(개인, `startUserData()`), `state.groupLayouts`(지금 그룹, `startSpaceData()`), Gear처럼 `SP.layouts`/`spaceDb()`. 공간 칩은 Gear와 같은 `state.space`.
+  화면 상태 `state.layoutSel`(편집 중 id, 없으면 목록) · `state.layoutPick`(고른 물건) · `state.layoutHint`(자동 배치 안내). 공간을 바꾸거나 `goView()` 하면 초기화.
+- **저장은 편집 동작(op) 단위** `mutateLayout(space, id, op)` — 식단 `mutateMeals`와 같은 방식: `loOps.*`(add/insert/remove/set/setMany, 여러 번 적용해도 같은 결과, items는 id 기준)를
+  내 화면 → 저장소 최신 문서 순서로 적용해 `update({ items, updatedBy, updatedAt })`. 최근 8초 op는 `replayLayoutOps()`가 스냅샷마다 다시 적용(동시 수정 보완).
+  **끄는 도중에는 저장하지 않음**(놓을 때 한 번, 끄는 중엔 `renderView()`도 미룸 `_loDrag`). 이름·크기·진입로·일정 같은 필드는 `updateLayoutFields()`(null이면 deleteField).
+- **판정 `layoutVerdict(L)` 하나**(목록 태그 `loVerdictTag()`·편집 화면·자동 배치 비용이 같은 규칙): ✕ 어려움 = 텐트·기타 본체가 사이트 밖("위쪽 0.3m 밖") / 텐트·기타 본체끼리 겹침("돔텐트와 리빙쉘이 0.4m 겹쳐요") / 타프 본체가 밖,
+  ⚠ 확인 = 스트링 영역이 밖 / 스트링이 다른 텐트·기타 본체에 걸림 / 진입로 쪽 통로 0.6m 미만 / 크기 0. 타프는 겹쳐도 됨(타프끼리도), 스트링끼리 겹침도 괜찮음.
+  원형은 타원(0.05m 격자 샘플링). 결과 = 가장 나쁜 단계, 함께 남는 바닥 비율(텐트·기타 합집합, `free:true`일 때)·통로 폭·물건 수, 어려움이면 `loNeed()`("가로 0.4m 부족 — 사이트가 최소 …m 필요").
+  글은 조사 `josa()`(와/과·이/가·을/를). 같은 이름 물건은 "돔텐트 1·2"(`loNames`).
+- **자동 배치 `loAutoArrange(L, ids?)`**: 텐트(큰 것부터, 문 방향 때문에 4방향) → 기타 → 타프 순, 0.25m(큰 사이트는 더 넓게) 격자 + 0.1m 다듬기, 비용 `loSpotCost()`(판정 규칙 + 진입로 반대쪽부터·통로 0.7m·문 앞 1m 비우기·문이 진입로 쪽).
+  타프는 가장 큰 텐트 출입문 앞 후보(`loTarpCandidates`·`loTarpFront`)부터. 못 넣으면 가장 나은 자리 + 판정 카드에 "…을 놓을 자리가 없어요 — … 부족, 사이트가 최소 …m 필요"(`state.layoutHint`).
+  "장비 놓기"는 ids를 줘서 새 물건만 빈 곳에(자리가 없으면 사이트 가운데). 8×10m·6개 1초 이내(테스트).
+- 화면(`renderLayoutsPage()`): 하위 탭 `subTabsHtml('gear')`(장비 n | 사이트 배치 n) + 공간 칩.
+  목록 = 카드(`.lo-card`: SVG 미리보기 · 제목 · "6.0 × 8.0m · 이름들" · 판정 태그 · 일정 태그 · 그룹이면 만든 사람) ⋯(이름·사이트 크기 바꾸기 `lo-meta`, 복제 `lo-dup`, 일정 연결/해제 `lo-trip`, 삭제 `lo-del` 되돌리기).
+  비었을 때 안내 + "배치 만들기" + 파선 카드 "후기에서 불러오기"(`lo-from-log`, 크기를 읽을 수 있는 기록이 있을 때만).
+  배치 만들기 창 `layoutFormModal(id?, {title, tripId, logId})`: 후기에서 불러오기(`#lf-log`, `parseSiteSize()`: "5x5m"·"5 × 6"·"6*8"·"6m x 8m"·"5.5x7"·"6X8" → {w,d}, "20평" → null → "크기 직접 입력"),
+  이름·사이트 가로×세로(1~50)·바닥 종류·진입로 칩·일정(같은 공간의 다가오는·진행 중) → 만들면 바로 편집.
+  편집 = ‹ 제목 ⋯ / 사이트 줄 / 판정 카드(`#lo-verdict`, ✓⚠✕ + 글, 이유 `lo-issue`를 누르면 그 물건 선택) / "+ 장비 놓기"(앰버)·"자동 배치" / 배치판 / 놓은 물건 목록(`lo-pick`, 화면 읽기·작은 화면 대안).
+- **배치판** `drawLayoutBoard()`(renderView 뒤에 실제 폭을 재서 px 단위 SVG, `_loView` 축척): 폭 맞춤·세로는 화면 높이 65%, 1m 격자, 가장자리 눈금(좁으면 2·5m), 진입로 띠.
+  텐트 = 연한 초록 + 초록 테두리, 타프 = 주황 점선 반투명(위에 그림), 기타 = 흰 면 + 회색, 스트링 = 바깥 점선(문제면 빨강), 출입문 = 굵은 짧은 선(회전 따라), 문제 물건은 빨강 테두리 + "✕ 0.3m 밖".
+  색은 CSS 변수(`--lo-*`, `--warn-text` — 앰버 `--accent`와 다른 값, 두 모드 대비 4.5:1). 누르기 판정은 SVG가 아니라 `loHit()`(고른 물건 → 텐트·기타 → 타프).
+  끌기 = Pointer Events(document 위임 `loPointerDown/Move/Up`, `#lo-board` `touch-action:none`, 4px 넘게 움직여야 끌기, 0.1m 맞춤, 사이트 밖 2m까지 `loClampPos`).
+  키보드: 물건 `<g tabindex=0 role=button aria-label="돔텐트 2.7×2.4m, 왼쪽 0.6m 위 4.4m, 문제: …">`, 화살표 0.1m(Shift 0.5m, 0.05m 단위 유지) · R 회전 · Delete 빼기 · Esc 해제 · Enter 고르기.
+  다시 그려도 초점이 있던 물건·줄로 돌아감(renderView `keepFocus`).
+- **도구 막대**(`#lo-bar.select-bar.lo-bar`, 어두운 막대, Gear 선택 모드 액션 바 위치 그대로 — 하단 탭바 위): 이름·크기 + "왼쪽 0.6m · 아래 1.2m" · [↻ 90°](`lo-rot`) [위치](`lo-pos`: 왼쪽 위 모서리 x, y m, 중심은 0.05 단위로 저장) [빼기](`lo-del-item`, 되돌리기) [X].
+  떠 있는 동안 `body.lo-selecting` + `--lo-bar-h`(`syncLayoutBar()`)로 본문 아래 여백을 늘림.
+- **장비 놓기 창** `layoutGearModal(src, preselect)`: footprint 있는 장비만 체크(그룹이면 [그룹 장비 | 내 장비] `lpk-src`), 없는 장비는 회색 + "크기 입력"(`lpk-size` → `gearFormModal(id, _, {src, back})` 저장 후 돌아와 그 장비가 골라짐),
+  "직접 추가"(`<details>`, 크기 있는 장비가 없으면 펼침): 이름·가로×세로·종류·스트링 + 빠른 칩(차량 4.8×1.9·테이블 1.2×0.8·화로대 0.6×0.6, 기타) · "직접 추가해서 놓기"(`lpk-custom`).
+- 연결: 일정 패널 ⋯ "사이트 배치"(`trip-layout` — 연결된 배치가 있으면 열기, 없으면 이 일정으로 만들기: 제목 = 일정 이름, tripId, 같은 캠핑장 이름 기록에 크기가 있으면 채움). 일정 패널에 줄은 더하지 않음.
+  Camping 내 기록 ⋯ "이 사이트로 배치 만들기"(`camp-layout`, 크기를 읽을 수 있을 때만). 일정 삭제 → 배치는 남고 tripId만 풀림(되돌리면 다시 연결).
+- 백업: 개인 백업·그룹 백업에 `layouts`(없는 예전 백업을 가져오면 지금 배치 그대로). 그룹 삭제 때 `GROUP_SUBCOLLECTIONS`로 함께 삭제.
+- 이번에 하지 않은 것(다음 후보): 자유 각도 회전, 직사각형이 아닌 사이트·경사·장애물, 배치도 이미지 저장·공유, 차량을 사이트 밖에 따로.
+
 ## 그룹 후기 공유 (Camping 탭, 멤버 누구나 수정)
 - 개인 캠핑 기록의 선택 필드 `sharedGroupIds: [gid, ...]`(없으면 공유 안 함). 공유한 그룹마다 사본
   `groups/{gid}/sharedReviews/{내uid}_{기록id}` = 후기 필드(`REVIEW_FIELDS`: name, date, region, siteType, siteSize, rating, checkinTime, checkoutTime, toiletCondition, showerCondition, storeCondition, notes, tripRef) + `{ authorUid, sourceLogId, updatedBy, updatedAt }`.
@@ -164,13 +209,13 @@
 
 ## 그룹
 - `groups/{gid}` = `{ name, ownerUid, memberUids: [...], members: { uid: { name, photoURL, role: 'owner'|'member' } }, createdAt, gearCategories, gearCategoryMeta?, joinCode? }`
-  - `groups/{gid}/checklists|gear|trips/{id}` — 멤버 모두 읽기·쓰기, `checklistTemplates`는 위 "템플릿" 규칙(앱의 `GROUP_SUBCOLLECTIONS` = 이 넷. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
+  - `groups/{gid}/checklists|gear|trips|layouts/{id}` — 멤버 모두 읽기·쓰기, `checklistTemplates`는 위 "템플릿" 규칙(앱의 `GROUP_SUBCOLLECTIONS` = 이 다섯. 새 하위 컬렉션을 쓰려면 규칙·`.final`·가짜 SDK의 `GROUP_SUBS`에 추가). 그룹 공간에서 저장하면 `addedBy`(처음 만든 사람)·`updatedBy`(마지막 수정) uid를 남긴다.
   - 그룹 장비 카테고리는 `groups/{gid}.gearCategories` + `gearCategoryMeta`(아래 "장비 카테고리"). 멤버는 이 두 필드만 바꿀 수 있다(규칙).
   - 내 그룹 목록: `state.rootDb.collection('groups').where('memberUids','array-contains', uid)` 실시간 구독 → `state.groups`.
 - `groupInvites/{code}` = `{ gid, groupName, createdBy, expiresAt(밀리초 숫자), createdAt }`. 코드는 6자리, 문자 `INVITE_CHARS`(0/O/1/I 제외), 7일 만료.
 - 참여: `groups/{gid}`에 `update({ memberUids: arrayUnion(나), 'members.나': {...role:'member'}, joinCode: 코드 })` — 규칙이 `joinCode`로 초대 코드(같은 gid, 만료 전)를 `get()`해서 확인한다.
   나가기/내보내기는 `arrayRemove` + `deleteField()`. 그룹장은 나갈 수 없고 삭제만(하위 데이터(`GROUP_SUBCOLLECTIONS` 전부) → 초대 코드 → 그룹 문서 순서로 삭제).
-- **공간 전환은 Checklist·Gear 탭에만**(일정·템플릿도 Checklist 탭의 지금 공간 기준) (`spaceChipsHtml()`, `state.space` = `'me'` 또는 gid, 기기별 `localStorage` `campbase.space.<uid>`).
+- **공간 전환은 Checklist·Gear 탭에만**(일정·템플릿도 Checklist 탭의 지금 공간 기준, 사이트 배치는 Gear 공간 기준) (`spaceChipsHtml()`, `state.space` = `'me'` 또는 gid, 기기별 `localStorage` `campbase.space.<uid>`).
   Home·Camping(내 기록)·Settings·백업·legacy 가져오기는 항상 개인 공간(`state.db`, `state.checklists`, `state.gear`). Camping의 그룹 후기 보기는 위 "그룹 후기 공유"(따로 전환).
   Cooking 식단표는 공간 전환 없이 고른 일정의 공간에 바로 저장(위 "캠핑 식단·장보기").
 - Checklist·Gear 코드는 `SP.checklists / SP.gear / SP.gearCategories`(지금 공간)와 `spaceDb()`로 읽고 쓴다. 이 두 탭에서 `state.checklists`/`state.gear`를 직접 쓰지 말 것.
@@ -188,7 +233,7 @@
 - 장비 수정(`saveGearForm`)은 기존 필드(`addedBy`, `ownerUid` 등)를 유지하고 폼 값만 덮어쓴다.
 
 ## 장비(Gear)와 카테고리
-- 장비 = `{ name, brand(직접 입력), category, comment?, ownerUid?(그룹), addedBy?, updatedBy? }`. 예전 장비의 `price/weight/date`는 지우지 않고 남겨 두지만 화면·폼에서는 안 씀.
+- 장비 = `{ name, brand(직접 입력), category, comment?, ownerUid?(그룹), addedBy?, updatedBy?, footprint? }`. `footprint`는 아래 "사이트 배치". 예전 장비의 `price/weight/date`는 지우지 않고 남겨 두지만 화면·폼에서는 안 씀.
 - 카테고리는 **대분류/소분류**. `gearCategories` = 소분류 이름 순서(예전 앱도 읽는 목록), 선택 필드 `gearCategoryMeta = { majors:[{name, desc}], subs:[{name, major, desc}] }`
   (대분류 순서·설명, 소분류의 대분류·설명). 장비의 `category`는 소분류 이름 / 대분류 이름(소분류 없이 바로) / `''`(미분류). 대분류·소분류 이름은 서로 겹치지 않게, '미분류'는 이름으로 못 씀.
 - **기본 카테고리·잠금 없음**: 새 사용자·새 그룹은 빈 목록. 저장한 적이 없으면(`null`) 장비에 쓰인 카테고리를 보여준다(`deriveGearCats`). 어떤 카테고리든 지울 수 있고, 장비는 지우지 않고 대분류(있으면) 또는 미분류로 옮긴다.
@@ -216,7 +261,7 @@
   `items = [{ action, attrs:{'data-id':…}, icon, label, danger }]` — 항목도 **같은 data-action**으로 `wireGlobalActions()`에서 처리된다.
   위험한 항목(`danger:true`, 삭제·나가기)은 빨간색으로 맨 아래. 바깥 클릭·Esc로 닫힘, 화살표/Home/End/Tab/Enter 지원, 한 번에 하나만 열림(`closeAllMenus`).
   지금 메뉴에 있는 것: 리스트(장비에서 불러오기·이름 변경·초기화·템플릿으로 저장·그룹으로 보내기·삭제), 소분류(이름 변경), 항목(이름·개수 고치기·삭제, 장보기면 집에 있어요), 캠핑 기록(삭제), 일정 패널(수정·새 리스트·삭제), 그룹 행(멤버·이름 변경·백업·삭제/나가기),
-  식단 끼니(다 먹었어요·옮기기·비우기·지우기), 식단 메뉴(담당자·옮기기·빼기).
+  식단 끼니(다 먹었어요·옮기기·비우기·지우기), 식단 메뉴(담당자·옮기기·빼기), 사이트 배치 카드·편집(이름·크기·복제·일정 연결·삭제).
   **Gear는 예외**: 장비 줄은 연필(수정) + X(삭제, `gear-del`, 확인 후 되돌리기) 버튼, 카테고리 관리는 "장비 추가" 옆에 바로 보이는 버튼(사용자 요청).
   메뉴 위치는 `placeMenu()`: 아래로 펼쳐서 하단 탭바(위쪽 끝)를 넘으면 위로, 위도 모자라면 화면 안에 `position:fixed`로(넘치면 메뉴 안 스크롤). #main을 스크롤하면 닫힌다.
   테스트에서 메뉴 안 버튼은 `tests/ui-helpers.js`의 `menuClick(page, selector)`로 누른다(메뉴를 열고 누름). Gear 선택 모드 동작은 `gearAction(page, action, ids)`(선택 모드로 고르고 액션 바 버튼을 누름).
@@ -270,7 +315,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열다섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열여섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드,
@@ -294,9 +339,12 @@ node tests/meals.test.js        # 식단·장보기: 끼니 칸(2박·1박·당�
                                 # 장보기 만들기·Checklist 표시·자동 맞춤(체크·담당·고친 양·집에 있음·직접 추가 유지, 빠진 재료), 그룹(실시간·담당·동시 수정·공간과 무관 저장),
                                 # 일정 패널·Home·지난 일정 연결, 레시피 탭 없음·메뉴 직접 입력(이름·재료 → 장보기, 고치기), 일정 삭제 되돌리기·백업 왕복·예전 백업, 일정 없음 안내
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
+node tests/layouts-q.test.js    # 사이트 배치(Q): 장비 배치용 크기(저장·수정·비우기·하나만 막기·종류 기본값·목록 표시·보내기·백업), parseSiteSize, 후기에서 배치 만들기,
+                                # 하위 메뉴(데스크톱·휴대폰)·빈 화면, 장비 놓기(크기 입력 이어가기·직접 추가·빠른 칩), 끌기·0.1m·회전·위치·빼기(되돌리기)·키보드·터치,
+                                # 판정 규칙(겹침·밖·스트링·타프·통로·원형·회전), 자동 배치(가능·어려움+부족·되돌리기·1초), 그룹(실시간·동시 수정·내 장비·비멤버·백업·삭제), 연결, 390px 도구 막대, 대비·앰버
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780~8782, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780~8783, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

@@ -41,7 +41,7 @@ async function check(name, p) {
     assertSucceeds(getDoc(doc(alice, 'users/alice'))),
     assertSucceeds(setDoc(doc(alice, 'users/alice'), { name: '앨리스', email: 'a@example.com', photoURL: '', updatedAt: 'now' })),
   ]));
-  for (const c of ['campingLogs', 'gear', 'checklists', 'cookingChecks']) {
+  for (const c of ['campingLogs', 'gear', 'checklists', 'cookingChecks', 'layouts']) {
     await check(`본인: users/{uid}/${c} 읽기·쓰기·삭제`, (async () => {
       await assertSucceeds(setDoc(doc(alice, `users/alice/${c}/t1`), { v: 1 }));
       await assertSucceeds(getDocs(collection(alice, `users/alice/${c}`)));
@@ -59,6 +59,10 @@ async function check(name, p) {
   await check('남(bob): alice 공간에 쓰기 거부', assertFails(setDoc(doc(bob, 'users/alice/gear/evil'), { v: 1 })));
   await check('남(bob): alice 데이터 삭제 거부', assertFails(deleteDoc(doc(bob, 'users/alice/gear/g1'))));
   await check('남(bob): alice 설정 읽기 거부', assertFails(getDoc(doc(bob, 'users/alice/settings/app'))));
+  await check('남(bob): alice 사이트 배치(users/{uid}/layouts) 읽기·쓰기 거부', (async () => {
+    await assertFails(getDocs(collection(bob, 'users/alice/layouts')));
+    await assertFails(setDoc(doc(bob, 'users/alice/layouts/x'), { title: 'x', items: [] }));
+  })());
   await check('로그인 안 함: 개인 공간 읽기 거부', assertFails(getDoc(doc(anon, 'users/alice/gear/g1'))));
   await check('로그인 안 함: 개인 공간 쓰기 거부', assertFails(setDoc(doc(anon, 'users/alice/gear/x'), { v: 1 })));
   await check('로그인 안 함: 계정 문서 읽기 거부', assertFails(getDoc(doc(anon, 'users/alice'))));
@@ -119,7 +123,7 @@ async function check(name, p) {
   })());
   await check('그룹 데이터: 비멤버 읽기 거부', assertFails(getDocs(collection(carol, 'groups/fam/checklists'))));
   await check('그룹 데이터: 비멤버 쓰기 거부', assertFails(setDoc(doc(carol, 'groups/fam/gear/x'), { v: 1 })));
-  for (const c of ['trips', 'checklistTemplates']) {
+  for (const c of ['trips', 'checklistTemplates', 'layouts']) {
     await check(`그룹 ${c}: 멤버 읽기·쓰기·삭제`, (async () => {
       await assertSucceeds(setDoc(doc(bob, `groups/fam/${c}/t1`), { title: '팸 캠핑', createdBy: 'bob' }));
       await assertSucceeds(getDocs(collection(alice, `groups/fam/${c}`)));
@@ -325,6 +329,14 @@ async function check(name, p) {
     await assertSucceeds(setDoc(doc(a3, 'groups/fam/gear/g1'), { name: '텐트' }));
     await assertFails(getDoc(doc(b3, 'groups/fam')));
     await assertFails(getDocs(collection(b3, 'groups/fam/gear')));
+  })());
+  await check('final 규칙: 사이트 배치(groups/{gid}/layouts) 멤버 읽기·쓰기, 비멤버 거부, 개인 layouts는 본인만', (async () => {
+    await assertSucceeds(setDoc(doc(a3, 'groups/fam/layouts/l1'), { title: '팸 사이트', siteW: 6, siteD: 8, items: [] }));
+    await assertSucceeds(getDocs(collection(a3, 'groups/fam/layouts')));
+    await assertFails(getDocs(collection(b3, 'groups/fam/layouts')));
+    await assertFails(setDoc(doc(b3, 'groups/fam/layouts/evil'), { title: 'x', items: [] }));
+    await assertSucceeds(setDoc(doc(a3, 'users/alice/layouts/l1'), { title: 'x', items: [] }));
+    await assertFails(getDoc(doc(b3, 'users/alice/layouts/l1')));
   })());
   await env3.cleanup();
 

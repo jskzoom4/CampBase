@@ -1,6 +1,7 @@
 // 화면 스크린샷(디자인 확인용, 자동 테스트 아님): 390px·1280px × 밝은/어두운 모드로 주요 화면 5개.
 // 실행: node tests/screenshots.js <출력폴더> [docs 폴더(기본: docs)]
 //   Home / Camping(내 기록·그룹 후기) / Gear(선택 모드가 있으면 선택 모드) / Checklist(전체·그룹 일정 패널·스크롤 상태) / Cooking / 모달(그룹 일정 만들기)
+//   사이트 배치(Q): 목록(빈 상태·카드) / 편집(가능·확인·어려움·물건 선택) / 장비 놓기 창 / 장비 폼의 배치용 크기
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -29,10 +30,16 @@ function seed() {
       subs: [{ name: '텐트', major: '쉘터', desc: '4인용 이상' }, { name: '타프', major: '쉘터', desc: '' }, { name: '침낭', major: '잠자리', desc: '' }, { name: '매트', major: '잠자리', desc: '' },
         { name: '체어/테이블', major: '키친', desc: '' }, { name: '조리용품', major: '키친', desc: '' }] } };
   s[A + 'checklistTemplates/tp1'] = { title: '여름 오토캠핑 기본', createdBy: 'uidAlice', items: [{ label: '텐트', group: '텐트' }, { label: '타프', group: '텐트' }, { label: '버너', group: '조리' }, { label: '코펠', group: '조리' }, { label: '랜턴', group: '조명' }] };
-  s[A + 'gear/g1'] = { name: '스텔스 5 텐트', brand: 'Snow Peak', category: '텐트', price: 520000, weight: 8.2, date: '2024-04-12', comment: '폴대 하나 수리함. 우중 캠핑 땐 그라운드시트 같이' };
+  s[A + 'gear/g1'] = { name: '스텔스 5 텐트', brand: 'Snow Peak', category: '텐트', price: 520000, weight: 8.2, date: '2024-04-12', comment: '폴대 하나 수리함. 우중 캠핑 땐 그라운드시트 같이', footprint: { kind: 'tent', w: 2.7, d: 2.4, shape: 'rect', guy: 0.5 } };
+  s[A + 'gear/g8'] = { name: '리빙쉘 L', brand: 'Snow Peak', category: '텐트', footprint: { kind: 'tent', w: 4.5, d: 3.0, shape: 'rect', guy: 0.5 } };
+  const it = (id, gearId, name, kind, w, d, guy, x, y, rot) => ({ id, gearId, name, kind, shape: 'rect', w, d, guy, x, y, rot: rot || 0 });
+  const lo = (title, W, D, type, items, extra) => ({ title, siteW: W, siteD: D, siteType: type, entrance: 'bottom', items, createdBy: 'uidAlice', createdAt: '2026-10-01T00:00:00Z', updatedBy: 'uidAlice', updatedAt: '2026-10-0' + (items.length) + 'T00:00:00Z', ...(extra || {}) });
+  s[A + 'layouts/lo1'] = lo('홍천 A-12', 6, 8, '데크', [it('a', 'g8', '리빙쉘 L', 'tent', 4.5, 3.0, 0.5, 2.8, 2.0), it('b', 'g1', '스텔스 5 텐트', 'tent', 2.7, 2.4, 0.5, 1.9, 5.2), it('c', 'g4', '렉타 타프 L', 'tarp', 3, 3, 0, 4.4, 5.3)], { tripId: 't1', logId: 'c1' });
+  s[A + 'layouts/lo2'] = lo('가평 B-3', 5, 6, '흙', [it('a', 'g8', '리빙쉘 L', 'tent', 4.5, 3.0, 0.5, 2.5, 1.9), it('d', '', '테이블', 'item', 1.2, 0.8, 0, 1.2, 5.5)]);
+  s[A + 'layouts/lo3'] = lo('좁은 사이트', 5, 5, '파쇄석', [it('a', 'g8', '리빙쉘 L', 'tent', 4.5, 3.0, 0.5, 2.5, 1.6), it('b', 'g1', '스텔스 5 텐트', 'tent', 2.7, 2.4, 0.5, 2.4, 3.8), it('e', '', '차량', 'item', 4.8, 1.9, 0, 2.5, 4.4)]);
   s[A + 'gear/g2'] = { name: '체어 원', brand: 'Helinox', category: '체어/테이블', price: 139000, weight: 0.9, date: '2024-05-20' };
   s[A + 'gear/g3'] = { name: '부스터 플러스1', brand: 'Kovea', category: '조리용품', price: 78000, weight: 0.4, date: '2023-09-02', comment: '가스 카트리지 2개' };
-  s[A + 'gear/g4'] = { name: '렉타 타프 L', brand: 'DOD', category: '타프' };
+  s[A + 'gear/g4'] = { name: '렉타 타프 L', brand: 'DOD', category: '타프', footprint: { kind: 'tarp', w: 3, d: 3, shape: 'rect' } };
   s[A + 'gear/g5'] = { name: '오로라 침낭', brand: 'Nanga', category: '침낭', comment: '겨울용(-10도)' };
   s[A + 'gear/g6'] = { name: '자충 매트', brand: 'Therm-a-Rest', category: '매트' };
   s[A + 'gear/g7'] = { name: '레일로드 랜턴', brand: 'Barebones', category: '조명' };
@@ -140,6 +147,24 @@ function seed() {
       await shot('18-modal-template-gear'); await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250); await nav('checklist');
       await tryClick('[data-action="trip-pick"][data-trip="all"]'); await tryClick('[data-action="cl-new-list"]'); await sleep(200);
       await p.selectOption('#ncl-tpl', 'tp1').catch(() => {}); await sleep(100); await shot('17-modal-new-list');
+      // 사이트 배치(Q)
+      const goLo = async () => { await tryClick('.sub-tab[data-view="layouts"]:visible, #nav [data-nav="layouts"]:visible'); await sleep(300); };
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250); await p.evaluate(() => document.activeElement && document.activeElement.blur()); await sleep(100);
+      await nav('gear'); await tryClick('.space-chip:has-text("캠핑팸")'); await tryClick('[data-action="space-note-ok"]'); await goLo(); await shot('26-layouts-empty');
+      await tryClick('.space-chip:has-text("내 공간")'); await sleep(300); await shot('27-layouts-list');
+      await tryClick('.lo-card:has-text("홍천 A-12")'); await sleep(300); await shot('28-layout-edit-ok');
+      await tryClick('.lo-row:has-text("스텔스")'); await sleep(300); await shot('31-layout-edit-selected');
+      await p.evaluate(() => { const m = document.getElementById('main'); m.scrollTop = m.scrollHeight; }); await sleep(250); await shot('31b-layout-edit-selected-bottom');
+      await p.evaluate(() => { document.getElementById('main').scrollTop = 0; });
+      await tryClick('[data-action="lo-unpick"]'); await tryClick('[data-action="lo-place"]'); await sleep(300); await shot('32-modal-layout-place');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('[data-action="lo-back"]'); await tryClick('.lo-card:has-text("가평 B-3")'); await sleep(300); await shot('29-layout-edit-warn');
+      await tryClick('[data-action="lo-back"]'); await tryClick('.lo-card:has-text("좁은 사이트")'); await sleep(300); await shot('30-layout-edit-bad');
+      await tryClick('[data-action="lo-back"]'); await tryClick('[data-action="lo-new"]'); await sleep(250); await p.selectOption('#lf-log', 'c1').catch(() => {}); await sleep(150); await shot('34-modal-layout-new');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await nav('gear'); await tryClick('[data-action="gear-edit"][data-id="g1"]'); await sleep(250);
+      await p.evaluate(() => { const b = document.querySelector('.modal-body'); if (b) b.scrollTop = b.scrollHeight; }); await shot('33-modal-gear-form-footprint');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await ctx.close();
     }
   }

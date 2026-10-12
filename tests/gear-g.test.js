@@ -233,7 +233,7 @@ const server = {};
   const M = await phone(UA, { mobile: true });
   await nav(M, 'gear'); await settle();
   await openManage(M);
-  const btnSizes = await M.locator('#cat-manage-list .icon-btn').evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); }));
+  const btnSizes = await M.locator('#cat-manage-list .icon-btn').evaluateAll(els => els.map(e => { const r = e.getBoundingClientRect(); return Math.round(Math.min(r.width, r.height) * 100) / 100; }));   // 시트가 올라오는 효과 중 39.99997px 같은 소수점 오차는 반올림
   check('390px 카테고리 관리: 화살표·연필 버튼 40×40 이상, 가로 넘침 없음', btnSizes.length > 0 && btnSizes.every(v => v >= 40)
     && await M.evaluate(() => { const m = document.querySelector('#modal-root .modal'); return m.scrollWidth <= m.clientWidth + 1; }), btnSizes);
 
