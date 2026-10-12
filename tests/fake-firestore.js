@@ -85,7 +85,7 @@
   const LEGACY = ['campingLogs', 'gear', 'checklists', 'cookingChecks'];
   const me = () => (currentUser ? currentUser.uid : null);
   const INVITE_RE = /^[A-HJ-NP-Z2-9]{6,8}$/;
-  const GROUP_SUBS = ['checklists', 'gear', 'trips', 'checklistTemplates'];   // firestore.rules의 허용 목록
+  const GROUP_SUBS = ['checklists', 'gear', 'trips', 'checklistTemplates', 'layouts'];   // firestore.rules의 허용 목록
   const groupSubOk = seg => seg.length <= 4 && GROUP_SUBS.includes(seg[2]);
   function isMemberOf(gid) { const g = store['groups/' + gid]; return !!(me() && g && (g.memberUids || []).includes(me())); }
   function canRead(ref) {
