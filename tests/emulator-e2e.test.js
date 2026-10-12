@@ -164,6 +164,21 @@ const until = async (fn, t = 8000) => { const end = Date.now() + t; while (Date.
   await B.locator('.space-chip:has-text("캠핑팸")').click().catch(() => {});
   await B.waitForSelector('.checklist-group:has-text("그룹 준비물")', { timeout: 8000 }).catch(() => {});
   check('실제 규칙: A의 그룹 리스트가 B에게 보임', (await B.locator('.checklist-group:has-text("그룹 준비물")').count()) === 1);
+  // 사이트 배치(Q): 그룹 layouts 만들기 → 물건 놓기(get + update로 items만) → B에게 보임 (진짜 SDK + 진짜 규칙)
+  await nav(A, 'gear');
+  await A.locator('#nav [data-nav="layouts"]:visible, .sub-tab[data-view="layouts"]:visible').first().click();
+  await A.click('[data-action="lo-new"]');
+  await A.fill('#lf-title', '팸 사이트'); await A.fill('#lf-w', '6'); await A.fill('#lf-d', '8');
+  await A.click('[data-action="lo-save"]');
+  const loId = await until(() => admin(async db => { const s = await getDocs(collection(db, `groups/${gid}/layouts`)); return s.size === 1 && s.docs[0].id; }));
+  check('실제 규칙: 그룹 사이트 배치 만들기(groups/{gid}/layouts)', !!loId, loId);
+  await A.evaluate(([g, id]) => mutateLayout(g, id, loOps.add([{ id: 'it1', name: '돔텐트', kind: 'tent', shape: 'rect', w: 2.7, d: 2.4, guy: 0.5, x: 2, y: 2, rot: 0 }])), [gid, loId]);
+  const loDoc = await until(() => admin(async db => { const d = (await getDoc(doc(db, `groups/${gid}/layouts/${loId}`))).data(); return d && (d.items || []).length === 1 && d; }));
+  check('실제 SDK: 편집 동작(op) 저장 — items만 update, 제목·크기 유지', loDoc && loDoc.items[0].name === '돔텐트' && loDoc.title === '팸 사이트' && loDoc.siteW === 6 && loDoc.updatedBy === aUid, loDoc);
+  await nav(B, 'gear');
+  await B.locator('#nav [data-nav="layouts"]:visible, .sub-tab[data-view="layouts"]:visible').first().click();
+  await B.waitForSelector('.lo-card:has-text("팸 사이트")', { timeout: 8000 }).catch(() => {});
+  check('실제 규칙: A의 그룹 배치가 B에게 보임', (await B.locator('.lo-card:has-text("팸 사이트")').count()) === 1);
   await nav(B, 'settings');
   await menuClick(B, '.group-row [data-action="group-leave"]');
   await B.click('[data-action="confirm-yes"]');
