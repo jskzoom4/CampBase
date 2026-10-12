@@ -22,6 +22,10 @@
     --good:#237d48; --good-text:#1d6b3d; --warn:#c98a2c; --bad:#b5452f; --bad-solid:#b5452f;
     --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee7; --border:#e4e1d8; --text:#1f2420; --text-dim:#63675f;
     --radius:14px; --tabbar-h:62px; --safe-bottom:env(safe-area-inset-bottom, 0px);
+    /* 사이트 배치: 확인 필요(앰버 계열 글자 — 칠하는 앰버 --accent와 다른 값), 배치판 색 */
+    --warn-text:#8a4b06; --lo-site:#f6f4ee; --lo-grid:#e6e2d8; --lo-tent-fill:#dceee2; --lo-tent-stroke:#2f6f4f;
+    --lo-tarp:#c0670f; --lo-tarp-fill:rgba(214,128,40,.16); --lo-item-fill:#ffffff; --lo-item-stroke:#7b8078; --lo-label-halo:rgba(255,255,255,.75);
+    --lo-bar-bg:#1f2420; --lo-bar-fg:#f7f6f2;
     color-scheme: light dark;
   }
   @media (prefers-color-scheme: dark){
@@ -29,12 +33,16 @@
       --bg:#141815; --surface:#1c211d; --surface-2:#232821; --border:#333a32; --text:#eceae3; --text-dim:#9aa199;
       --brand:#357a57; --brand-text:#5fae86; --brand-dark:#2c6a4b; --accent:#e3a54f; --on-accent:#141815;
       --good:#24814c; --good-text:#4cc27d; --bad:#e06a57; --bad-solid:#b5452f;
+      --warn-text:#ebb466; --lo-site:#1a1f1b; --lo-grid:#2d332c; --lo-tent-fill:#22432f; --lo-tent-stroke:#5fae86;
+      --lo-tarp:#eaa95c; --lo-tarp-fill:rgba(234,169,92,.16); --lo-item-fill:#2a302a; --lo-item-stroke:#9aa199; --lo-label-halo:rgba(20,24,21,.7); --lo-bar-bg:#2e352f; --lo-bar-fg:#f3f1ea;
     }
   }
   :root[data-theme="dark"]{
     --bg:#141815; --surface:#1c211d; --surface-2:#232821; --border:#333a32; --text:#eceae3; --text-dim:#9aa199;
     --brand:#357a57; --brand-text:#5fae86; --brand-dark:#2c6a4b; --accent:#e3a54f; --on-accent:#141815;
     --good:#24814c; --good-text:#4cc27d; --bad:#e06a57; --bad-solid:#b5452f;
+    --warn-text:#ebb466; --lo-site:#1a1f1b; --lo-grid:#2d332c; --lo-tent-fill:#22432f; --lo-tent-stroke:#5fae86;
+    --lo-tarp:#eaa95c; --lo-tarp-fill:rgba(234,169,92,.16); --lo-item-fill:#2a302a; --lo-item-stroke:#9aa199; --lo-label-halo:rgba(20,24,21,.7); --lo-bar-bg:#2e352f; --lo-bar-fg:#f3f1ea;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
@@ -679,6 +687,156 @@
   .owner-filter .seg-btn{display:inline-flex;align-items:center;gap:5px;}
   .account-photo{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2);
     display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text-dim);}
+
+  /* ---- 사이트 배치(Gear 하위 화면) ---- */
+  .fp-size{margin-left:6px;font-size:11.5px;color:var(--text-dim);white-space:nowrap;}
+  .fp-head .fp-opt{font-weight:500;}
+  .fp-desc{margin:-2px 0 10px;}
+  .lo-size-row{display:flex;align-items:center;gap:8px;}
+  .lo-size-row input{flex:1 1 0;min-width:0;}
+  .field .lo-size-row input{width:auto;}
+  .lo-size-row > span{flex:none;color:var(--text-dim);font-size:13px;}
+  .lo-pos-row{display:flex;gap:10px;}
+  .lo-pos-row .field{flex:1;min-width:0;}
+  .lf-note{margin:0 0 12px;color:var(--text-dim);font-size:12.5px;line-height:1.6;}
+  .lf-note b{color:var(--text);}
+  .lo-card{display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:10px;padding:12px 10px 12px 12px;}
+  .lo-card:hover{border-color:var(--brand);}
+  .lo-prev{width:64px;height:64px;flex:none;}
+  .lo-prev .lo-site{stroke-width:1.2;}
+  .lo-pv{stroke-width:1;}
+  .lo-pv-tent{fill:var(--lo-tent-fill);stroke:var(--lo-tent-stroke);}
+  .lo-pv-tarp{fill:var(--lo-tarp-fill);stroke:var(--lo-tarp);stroke-dasharray:3 2;}
+  .lo-pv-item{fill:var(--lo-item-fill);stroke:var(--lo-item-stroke);}
+  .lo-card-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+  .lo-card-title{font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lo-card-meta{font-size:12px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lo-card-tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:2px;}
+  .tag.lo-tag-ok{background:color-mix(in srgb, var(--good) 18%, transparent);color:var(--good-text);}
+  .tag.lo-tag-warn{background:color-mix(in srgb, var(--warn) 16%, transparent);color:var(--warn-text);}
+  .tag.lo-tag-bad{background:color-mix(in srgb, var(--bad-solid) 14%, transparent);color:var(--bad);}
+  .lo-owner{margin-left:0;}
+  .lo-empty h2{font-size:17px;}
+  .lo-empty-btn{margin-top:14px;}
+  .placeholder-card .lo-empty-btn svg{width:15px;height:15px;margin:0;color:inherit;}
+  .lo-from-log{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;border-style:dashed;cursor:pointer;text-align:left;font:inherit;color:var(--text);min-height:56px;}
+  .lo-from-log svg{width:20px;height:20px;color:var(--brand-text);flex:none;}
+  .lo-from-log > span{flex:1;display:flex;flex-direction:column;gap:2px;font-size:13.5px;}
+  .lo-from-log .meta{font-size:12.5px;color:var(--brand-text);font-weight:600;}
+  .lo-from-log:hover{border-color:var(--brand);}
+  .lo-top{display:flex;align-items:center;gap:4px;margin:0 0 2px -8px;}
+  .lo-title{flex:1;min-width:0;margin:0;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lo-siteline{font-size:12.5px;color:var(--text-dim);margin:0 0 12px;line-height:1.9;}
+  .lo-siteline .trip-tag{margin-left:4px;}
+  .lo-size-link{display:inline-block;min-height:32px;padding:0 2px;text-decoration:underline;text-underline-offset:3px;}
+  .lo-verdict{margin-bottom:12px;border-left:4px solid var(--border);padding:12px 14px;}
+  .lo-verdict.lo-v-ok{border-left-color:var(--good);}
+  .lo-verdict.lo-v-warn{border-left-color:var(--warn);background:color-mix(in srgb, var(--warn) 9%, var(--surface));}
+  .lo-verdict.lo-v-bad{border-left-color:var(--bad-solid);background:color-mix(in srgb, var(--bad-solid) 7%, var(--surface));}
+  .lo-v-big{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;}
+  .lo-v-ok .lo-v-big{color:var(--good-text);}
+  .lo-v-warn .lo-v-big{color:var(--warn-text);}
+  .lo-v-bad .lo-v-big{color:var(--bad);}
+  .lo-v-ico{font-size:20px;line-height:1;}
+  .lo-v-sub{font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+  .lo-v-hint{font-size:13px;font-weight:600;margin-top:8px;color:var(--text);line-height:1.5;}
+  .lo-issues{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;}
+  .lo-issue{display:flex;align-items:flex-start;gap:8px;width:100%;min-height:40px;padding:8px 6px;border:0;border-top:1px solid var(--border);background:none;
+    font:inherit;font-size:13px;text-align:left;cursor:pointer;color:var(--text);line-height:1.45;border-radius:0;}
+  .lo-issue:hover{background:color-mix(in srgb, var(--text) 5%, transparent);}
+  .lo-is-ico{flex:none;width:18px;text-align:center;font-weight:700;}
+  .lo-is-bad .lo-is-ico{color:var(--bad);}
+  .lo-is-warn .lo-is-ico{color:var(--warn-text);}
+  .lo-v-info{font-size:12px;color:var(--text-dim);margin-top:8px;}
+  .lo-v-info b{color:var(--text);font-weight:600;}
+  .lo-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .lo-actions .btn[disabled]{opacity:.5;cursor:default;}
+  .lo-board-card{padding:10px 8px;margin-bottom:12px;}
+  .lo-board{display:flex;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;}
+  .lo-svg{display:block;max-width:100%;height:auto;touch-action:none;overflow:visible;}
+  .lo-site{fill:var(--lo-site);stroke:var(--text-dim);stroke-width:1.5;}
+  .lo-grid{stroke:var(--lo-grid);stroke-width:1;}
+  .lo-tick{stroke:var(--text-dim);stroke-width:1;}
+  .lo-ruler{font-size:10px;fill:var(--text-dim);font-family:"JetBrains Mono",monospace;}
+  .lo-ent rect{fill:color-mix(in srgb, var(--brand) 14%, transparent);}
+  .lo-ent text{font-size:11px;font-weight:700;fill:var(--brand-text);}
+  .lo-it{cursor:grab;}
+  .lo-k-tent .lo-body{fill:var(--lo-tent-fill);stroke:var(--lo-tent-stroke);stroke-width:2;}
+  .lo-k-tarp .lo-body{fill:var(--lo-tarp-fill);stroke:var(--lo-tarp);stroke-width:2;stroke-dasharray:6 4;}
+  .lo-k-item .lo-body{fill:var(--lo-item-fill);stroke:var(--lo-item-stroke);stroke-width:1.5;}
+  .lo-guy{fill:none;stroke:var(--lo-item-stroke);stroke-width:1;stroke-dasharray:3 3;pointer-events:none;}
+  .lo-guy.bad{stroke:var(--bad);stroke-width:1.6;}
+  .lo-lv-bad .lo-body{stroke:var(--bad);stroke-width:2.6;}
+  .lo-door{stroke:var(--text);stroke-width:4.5;stroke-linecap:round;}
+  .lo-name, .lo-size, .lo-badge, .lo-dist-t{paint-order:stroke;stroke-linejoin:round;pointer-events:none;}
+  .lo-name{font-size:12px;font-weight:700;fill:var(--text);stroke:var(--lo-label-halo);stroke-width:3px;}
+  .lo-size{font-size:10.5px;fill:var(--text-dim);font-family:"JetBrains Mono",monospace;stroke:var(--lo-label-halo);stroke-width:3px;}
+  .lo-badge{font-size:11px;font-weight:700;stroke:var(--surface);stroke-width:3px;}
+  .lo-badge.bad{fill:var(--bad);} .lo-badge.warn{fill:var(--warn-text);}
+  .lo-sel .lo-body{stroke-width:3;}
+  .lo-sel.lo-k-tent .lo-body, .lo-sel.lo-k-item .lo-body{stroke:var(--brand-text);}
+  .lo-lv-bad.lo-sel .lo-body{stroke:var(--bad);}
+  .lo-dot{fill:var(--surface);stroke:var(--brand-text);stroke-width:1.5;}
+  .lo-dist{stroke:var(--brand-text);stroke-width:1.2;stroke-dasharray:4 3;}
+  .lo-dist-t{font-size:11px;font-weight:700;fill:var(--brand-text);stroke:var(--surface);stroke-width:3px;font-family:"JetBrains Mono",monospace;}
+  .lo-it:focus-visible .lo-body{stroke:var(--brand-text);stroke-width:3.5;}
+  .lo-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;justify-content:center;font-size:11px;color:var(--text-dim);margin-top:8px;}
+  .lo-lg{display:inline-block;width:14px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:-6px;}
+  .lo-lg-tent{background:var(--lo-tent-fill);border:2px solid var(--lo-tent-stroke);}
+  .lo-lg-tarp{background:var(--lo-tarp-fill);border:2px dashed var(--lo-tarp);}
+  .lo-lg-item{background:var(--lo-item-fill);border:1.5px solid var(--lo-item-stroke);}
+  .lo-lg-guy{border:1px dashed var(--lo-item-stroke);}
+  .lo-lg-door{height:4px;background:var(--text);border-radius:2px;}
+  .lo-list{padding:6px 12px 8px;}
+  .lo-list-head{display:flex;align-items:center;gap:6px;padding:6px 2px;font-size:13.5px;}
+  .lo-list-tip{margin-left:auto;font-size:11.5px;color:var(--text-dim);}
+  .lo-row-wrap{border-top:1px solid var(--border);}
+  .lo-row{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 6px;border:0;background:none;font:inherit;color:var(--text);text-align:left;cursor:pointer;border-radius:8px;}
+  .lo-row:hover{background:var(--surface-2);}
+  .lo-row.on{background:color-mix(in srgb, var(--brand) 10%, transparent);}
+  .lo-st{flex:none;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+  .lo-st-ok{background:color-mix(in srgb, var(--good) 18%, transparent);color:var(--good-text);}
+  .lo-st-warn{background:color-mix(in srgb, var(--warn) 18%, transparent);color:var(--warn-text);}
+  .lo-st-bad{background:color-mix(in srgb, var(--bad-solid) 16%, transparent);color:var(--bad);}
+  .lo-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .lo-row-name{font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lo-row-meta{font-size:12px;color:var(--text-dim);}
+  .lo-row-note{font-size:12px;font-weight:600;}
+  .lo-n-bad{color:var(--bad);} .lo-n-warn{color:var(--warn-text);}
+  .lo-stale{font-size:12px;color:var(--warn-text);padding:0 6px 8px 40px;}
+  .lo-stale .link-btn{min-height:32px;text-decoration:underline;text-underline-offset:3px;}
+  /* 고른 물건 도구 막대: Gear 선택 모드 액션 바(.select-bar) 자리 그대로, 어두운 막대 */
+  .select-bar.lo-bar{background:var(--lo-bar-bg);color:var(--lo-bar-fg);border-color:color-mix(in srgb, var(--lo-bar-fg) 18%, transparent);gap:6px 8px;box-shadow:0 10px 30px rgba(0,0,0,.35);}
+  .lo-bar-info{display:flex;flex-direction:column;min-width:0;font-size:13px;line-height:1.35;padding:0 4px;}
+  .lo-bar-info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lo-bar-dist{font-size:12px;opacity:.85;}
+  .lo-bar-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .lo-bar .btn{background:transparent;color:inherit;border-color:color-mix(in srgb, var(--lo-bar-fg) 40%, transparent);min-height:40px;}
+  .lo-bar .btn:hover{background:color-mix(in srgb, var(--lo-bar-fg) 14%, transparent);}
+  .lo-bar .icon-btn{color:inherit;}
+  .lo-bar .icon-btn:hover{background:color-mix(in srgb, var(--lo-bar-fg) 14%, transparent);color:inherit;}
+  .lo-bar :focus-visible{outline-color:var(--lo-bar-fg);}
+  body.lo-selecting #main{padding-bottom:calc(var(--lo-bar-h, 64px) + 44px);}
+  /* 장비 놓기 창 */
+  .lpk-list{max-height:min(40vh, 320px);}
+  .lpk-row{min-height:44px;}
+  .lpk-size{font-size:12px;color:var(--text-dim);flex:none;}
+  .lpk-row.is-nofp{color:var(--text-dim);cursor:default;}
+  .lpk-nofp-t{font-size:11.5px;flex:none;}
+  .lpk-row.is-nofp .btn{flex:none;min-height:36px;}
+  .lpk-custom{margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;}
+  .lpk-custom summary{cursor:pointer;font-size:13px;font-weight:600;min-height:32px;display:flex;align-items:center;gap:4px;}
+  .lpk-custom summary .meta{font-weight:400;color:var(--text-dim);}
+  .lpk-custom[open] summary{margin-bottom:8px;}
+  .lpk-quick{margin-bottom:10px;}
+  .lpk-quick .seg-btn{min-height:36px;}
+  .lpk-custom-btn{min-height:40px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  @media (max-width:820px){
+    body.lo-selecting #main{padding-bottom:calc(var(--tabbar-h) + var(--safe-bottom) + var(--lo-bar-h, 64px) + 32px);}
+    .lo-board-card{padding:8px 4px;}
+    .lo-bar{padding:8px;}
+  }
 </style>
 </head>
 <body class="signed-out">
@@ -758,6 +916,10 @@ const ICONS = {
   calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
   template:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   pen:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  layout:'<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="6" y="7.5" width="6.5" height="5" rx="1"/><path d="M15 9.5h3.5v7H15z" stroke-dasharray="2 1.6"/>',
+  rotate:'<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4.5H15"/>',
+  move:'<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
+  wand:'<path d="M4 20L14.5 9.5"/><path d="M13 8l3 3"/><path d="M17 3v3M15.5 4.5h3M20 9v3M18.5 10.5h3"/>',
 };
 function icon(name, cls){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="${cls||''}">${ICONS[name]||''}</svg>`; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1102,6 +1264,7 @@ function onAuthUser(user){
 function resetUserState(){
   state.campingLogs = []; state.gear = []; state.checklists = []; state.cookingChecks = {};
   state.trips = []; state.checklistTemplates = []; state.tripFilter = 'all';
+  state.layouts = []; state.layoutSel = null; state.layoutPick = null; state.layoutHint = null; document.body.classList.remove('lo-selecting');
   state.gearSelecting = false; state.gearSelected = new Set(); document.body.classList.remove('gear-selecting');
   state.campingLogsLoaded = false; state.groupReviewFilter = 'all'; state.groupReviewSort = 'date_desc'; state.campExpanded = new Set();
   state.weatherLocation = null;
@@ -1135,7 +1298,7 @@ function startUserData(){
   }), onErr));
   _unsubs.push(db.collection('gear').onSnapshot(live(snap=>{
     state.gear = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-    if(['home','gear'].includes(state.currentView)) renderView();
+    if(['home','gear','layouts'].includes(state.currentView)) renderView();
   }), onErr));
   _unsubs.push(db.collection('checklists').onSnapshot(live(snap=>{
     state.checklists = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
@@ -1144,7 +1307,12 @@ function startUserData(){
   _unsubs.push(db.collection('trips').onSnapshot(live(snap=>{
     state.trips = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
     replayMealOps('me');
-    if(['home','checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
+    if(['home','checklist','pastTrips','cooking','layouts'].includes(state.currentView)) renderView();
+  }), onErr));
+  _unsubs.push(db.collection('layouts').onSnapshot(live(snap=>{
+    state.layouts = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    replayLayoutOps('me');
+    if(['layouts','gear'].includes(state.currentView) && !inGroupSpace()) renderView();
   }), onErr));
   _unsubs.push(db.collection('checklistTemplates').onSnapshot(live(snap=>{
     state.checklistTemplates = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
@@ -1376,7 +1544,7 @@ function applyLegacyImport(plan){
 
 /* ---- 그룹 ----
  * groups/{gid} = { name, ownerUid, memberUids, members:{uid:{name,photoURL,role}}, createdAt, gearCategories }
- * groups/{gid}/checklists|gear/{id} — 멤버 모두가 함께 보고 고침.
+ * groups/{gid}/checklists|gear|trips|layouts/{id} — 멤버 모두가 함께 보고 고침.
  * Checklist·Gear 탭만 공간(내 공간 | 그룹)을 바꿔 볼 수 있고, 나머지 탭(Home 포함)은 항상 개인 공간.
  * 선택한 공간은 기기에 기억(localStorage campbase.space.<uid>). 권한은 firestore.rules가 지킨다. */
 state.groups = [];                 // 내가 속한 그룹(실시간)
@@ -1387,11 +1555,12 @@ state.groupTrips = {};             // gid → 그 그룹의 캠핑 일정 (내�
 state.groupTripLists = {};         // gid → 그 그룹의 체크리스트 (일정 준비 진행률 계산용)
 state.myReviewCopies = {};         // gid → 그 그룹에 있는 내 후기 사본(다른 멤버가 고친 내용을 내 기록에 반영하려고)
 state.groupGear = [];              // 선택한 그룹의 장비
+state.groupLayouts = [];           // 선택한 그룹의 사이트 배치
 let _groupsUnsub = null, _spaceUnsubs = [], _spaceGen = 0, _pendingSpace = null;
 let _groupBg = {};                 // gid → 일정·체크리스트 구독 해제 함수들
 const SPACE_KEY_PREFIX = 'campbase.space.';
 const INVITE_DAYS = 7;
-const GROUP_SUBCOLLECTIONS = ['checklists','gear','trips','checklistTemplates'];   // firestore.rules의 허용 목록과 같아야 함
+const GROUP_SUBCOLLECTIONS = ['checklists','gear','trips','checklistTemplates','layouts'];   // firestore.rules의 허용 목록과 같아야 함
 const INVITE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // 헷갈리는 0/O/1/I 제외
 const INVITE_LEN = 6;
 
@@ -1422,6 +1591,8 @@ const SP = {
   set trips(v){ const g = currentGroup(); if(g) state.groupTrips[g.id] = v; else state.trips = v; },
   get templates(){ return inGroupSpace() ? state.groupTemplates : state.checklistTemplates; },
   set templates(v){ if(inGroupSpace()) state.groupTemplates = v; else state.checklistTemplates = v; },
+  get layouts(){ return inGroupSpace() ? state.groupLayouts : state.layouts; },
+  set layouts(v){ if(inGroupSpace()) state.groupLayouts = v; else state.layouts = v; },
   // 저장한 목록이 없으면(null) 지금 공간 장비에 쓰인 카테고리. 바꿀 때는 항상 새 배열을 대입할 것(push 금지)
   get gearCategories(){ const g = currentGroup(); const list = g ? g.gearCategories : state.gearCategories; return Array.isArray(list) ? list : deriveGearCats(g ? state.groupGear : state.gear); },
   set gearCategories(v){ const g = currentGroup(); if(g) g.gearCategories = v; else state.gearCategories = v; },
@@ -1465,7 +1636,7 @@ function startGroups(){
       toast('그룹에 더 이상 속해 있지 않아서 내 공간으로 돌아왔어요.');
       return;
     }
-    if(['home','camping','checklist','gear','settings','templates','pastTrips','cooking'].includes(state.currentView)) renderView();
+    if(['home','camping','checklist','gear','settings','templates','pastTrips','cooking','layouts'].includes(state.currentView)) renderView();
   }, e=>{ if(gen===_dataGen) reportDbError(e); });
 }
 // 내가 속한 모든 그룹의 일정·체크리스트를 항상 구독(Home "다음 캠핑" 카드, 그룹 공간의 일정 줄).
@@ -1488,7 +1659,7 @@ function syncGroupBackground(){
         if(!ok()) return;
         state.groupTrips[gid] = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
         replayMealOps(gid);
-        if(['home','checklist','pastTrips','cooking'].includes(state.currentView)) renderView();
+        if(['home','checklist','pastTrips','cooking','layouts'].includes(state.currentView)) renderView();
       }, quiet),
       db.collection('checklists').onSnapshot(snap=>{
         if(!ok()) return;
@@ -1521,7 +1692,7 @@ function stopSpaceData(){
   _spaceGen++;
   _spaceUnsubs.forEach(fn=>{ try{ fn && fn(); }catch(e){} });
   _spaceUnsubs = [];
-  state.groupChecklists = []; state.groupGear = []; state.groupTemplates = [];
+  state.groupChecklists = []; state.groupGear = []; state.groupTemplates = []; state.groupLayouts = [];
 }
 function startSpaceData(gid){
   const gen = _spaceGen, db = groupDb(gid);
@@ -1538,7 +1709,13 @@ function startSpaceData(gid){
   _spaceUnsubs.push(db.collection('gear').onSnapshot(snap=>{
     if(gen !== _spaceGen) return;
     state.groupGear = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
-    if(state.currentView==='gear') renderView();
+    if(['gear','layouts'].includes(state.currentView)) renderView();
+  }, onErr));
+  _spaceUnsubs.push(db.collection('layouts').onSnapshot(snap=>{
+    if(gen !== _spaceGen) return;
+    state.groupLayouts = snap.docs.map(d=>({id:d.id, ...unfreeze(d.data())}));
+    replayLayoutOps(gid);
+    if(['gear','layouts'].includes(state.currentView)) renderView();
   }, onErr));
   _spaceUnsubs.push(db.collection('checklistTemplates').onSnapshot(snap=>{
     if(gen !== _spaceGen) return;
@@ -1556,8 +1733,8 @@ function selectSpace(space, keepPending){
   state.space = space;
   saveSpace();
   if(space!=='me') startSpaceData(space);
-  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; state.tripFilter = 'all'; setGearSelecting(false); }   // 공간마다 카테고리·멤버·일정이 다름
-  if(['checklist','gear','settings','templates','pastTrips'].includes(state.currentView)) renderView();
+  if(changed){ state.gearCategory = 'all'; state.gearOwnerFilter = 'all'; state.tripFilter = 'all'; setGearSelecting(false); state.layoutSel = null; state.layoutPick = null; state.layoutHint = null; }   // 공간마다 카테고리·멤버·일정·배치가 다름
+  if(['checklist','gear','settings','templates','pastTrips','layouts'].includes(state.currentView)) renderView();
 }
 function spaceChipsHtml(){
   if(!state.user || !state.groups.length) return '';
@@ -1921,7 +2098,7 @@ function buildBackup(){
   return {
     app:'campbase', version:1, exportedAt: new Date().toISOString(),
     campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists,
-    trips: state.trips, checklistTemplates: state.checklistTemplates,
+    trips: state.trips, checklistTemplates: state.checklistTemplates, layouts: state.layouts,
     cookingChecks: state.cookingChecks,
     settings: { weatherLocation: state.weatherLocation, homeWidgets: state.homeWidgets, gearCategories: myGearCats(), gearCategoryMeta: normCatMeta(state.gearCategoryMeta) },
   };
@@ -1990,6 +2167,8 @@ function parseBackup(text){
     // 일정·템플릿은 새 백업에만 있음 → 예전 백업(필드 없음)을 가져오면 지금 것을 그대로 둔다
     trips: Array.isArray(data.trips) ? withIds(arr(data.trips), 'trip') : null,
     checklistTemplates: Array.isArray(data.checklistTemplates) ? withIds(arr(data.checklistTemplates), 'tpl').map(t=>({...t, items: Array.isArray(t.items) ? t.items : []})) : null,
+    // 사이트 배치도 새 백업에만 있음(없으면 지금 배치 그대로)
+    layouts: Array.isArray(data.layouts) ? withIds(arr(data.layouts), 'lo').map(l=>({...l, items: Array.isArray(l.items) ? l.items : []})) : null,
     cookingChecks: (data.cookingChecks && typeof data.cookingChecks==='object' && !Array.isArray(data.cookingChecks)) ? data.cookingChecks : {},
     settings: (data.settings && typeof data.settings==='object') ? data.settings : {},
   }};
@@ -2004,12 +2183,13 @@ function startImportBackup(){
   confirmModal(`백업 내용(캠핑 기록 ${d.campingLogs.length}개, 장비 ${d.gear.length}개, 체크리스트 ${d.checklists.length}개)으로 바꿀까요? 지금 내 계정의 데이터는 모두 이 내용으로 바뀌어요. (다른 사람의 데이터에는 영향이 없어요)`, '바꾸기', ()=>applyBackup(d));
 }
 function applyBackup(d){
-  const cols = ['campingLogs','gear','checklists', ...['trips','checklistTemplates'].filter(c=>Array.isArray(d[c]))];
+  const cols = ['campingLogs','gear','checklists', ...['trips','checklistTemplates','layouts'].filter(c=>Array.isArray(d[c]))];
   const prev = { campingLogs: state.campingLogs, gear: state.gear, checklists: state.checklists, cookingChecks: state.cookingChecks,
-    trips: state.trips, checklistTemplates: state.checklistTemplates };
+    trips: state.trips, checklistTemplates: state.checklistTemplates, layouts: state.layouts };
   state.campingLogs = d.campingLogs; state.gear = d.gear; state.checklists = d.checklists; state.cookingChecks = d.cookingChecks;
   if(Array.isArray(d.trips)) state.trips = d.trips;
   if(Array.isArray(d.checklistTemplates)) state.checklistTemplates = d.checklistTemplates;
+  if(Array.isArray(d.layouts)){ state.layouts = d.layouts; state.layoutSel = null; state.layoutPick = null; }
   const s = d.settings;
   if(s.homeWidgets && typeof s.homeWidgets==='object'){ state.homeWidgets = normalizeHomeWidgets(s.homeWidgets); }
   if(Array.isArray(s.gearCategories)) state.gearCategories = s.gearCategories.filter(c=>typeof c==='string' && c.trim());
@@ -2036,11 +2216,11 @@ function applyBackup(d){
 }
 
 /* ---- 그룹 백업 (그룹장만): 그룹의 체크리스트·장비·장비 카테고리 ----
- * { app:'campbase-group', version:1, exportedAt, groupName, gearCategories, checklists, gear }
+ * { app:'campbase-group', version:1, exportedAt, groupName, gearCategories, gearCategoryMeta, checklists, gear, layouts? }
  * 가져오기는 그 그룹의 체크리스트·장비·카테고리를 백업 내용으로 교체(멤버·그룹 이름은 그대로). */
 async function readGroupData(gid){
   const gdb = groupDb(gid), out = {};
-  for(const c of ['checklists','gear']){
+  for(const c of ['checklists','gear','layouts']){
     const snap = await gdb.collection(c).get();
     out[c] = snap.docs.map(d=>({ id: d.id, ...unfreeze(d.data()) }));
   }
@@ -2056,7 +2236,7 @@ async function exportGroupBackup(gid){
     const json = JSON.stringify({
       app:'campbase-group', version:1, exportedAt: new Date().toISOString(),
       groupName: g.name, gearCategories: Array.isArray(g.gearCategories) ? g.gearCategories : deriveGearCats(d.gear),
-      gearCategoryMeta: normCatMeta(g.gearCategoryMeta), checklists: d.checklists, gear: d.gear,
+      gearCategoryMeta: normCatMeta(g.gearCategoryMeta), checklists: d.checklists, gear: d.gear, layouts: d.layouts,
     }, null, 2);
     const safeName = g.name.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 30) || 'group';
     showExportModal(`'${g.name}' 그룹 백업 내보내기`, json, 'campbase-group-' + safeName + '-' + new Date().toISOString().slice(0,10) + '.json');
@@ -2097,6 +2277,7 @@ function parseGroupBackup(text){
     gearCategoryMeta: normCatMeta(data.gearCategoryMeta),
     checklists: withIds(arr(data.checklists), 'cl').map(cl=>({...cl, items: Array.isArray(cl.items) ? cl.items : []})),
     gear: gearList,
+    layouts: Array.isArray(data.layouts) ? withIds(arr(data.layouts), 'lo').map(l=>({...l, items: Array.isArray(l.items) ? l.items : []})) : null,   // 예전 백업엔 없음 → 지금 배치 그대로
   }};
 }
 function startImportGroupBackup(gid){
@@ -2109,7 +2290,7 @@ function startImportGroupBackup(gid){
   if(res.error){ toast(res.error, 'fail'); return; }
   const d = res.data;
   const from = d.groupName && d.groupName!==g.name ? ` ('${d.groupName}' 그룹의 백업)` : '';
-  confirmModal(`'${g.name}' 그룹의 데이터를 백업 내용${from}(체크리스트 ${d.checklists.length}개, 장비 ${d.gear.length}개, 장비 카테고리 ${d.gearCategories.length}개)으로 바꿀까요? 지금 그룹에 있는 체크리스트·장비는 모두 이 내용으로 바뀌고, 멤버 모두에게 반영돼요.`, '바꾸기', ()=>applyGroupBackup(gid, d));
+  confirmModal(`'${g.name}' 그룹의 데이터를 백업 내용${from}(체크리스트 ${d.checklists.length}개, 장비 ${d.gear.length}개, 장비 카테고리 ${d.gearCategories.length}개${Array.isArray(d.layouts) ? `, 사이트 배치 ${d.layouts.length}개` : ''})으로 바꿀까요? 지금 그룹에 있는 체크리스트·장비는 모두 이 내용으로 바뀌고, 멤버 모두에게 반영돼요.`, '바꾸기', ()=>applyGroupBackup(gid, d));
 }
 async function applyGroupBackup(gid, d){
   const g = groupById(gid);
@@ -2117,7 +2298,7 @@ async function applyGroupBackup(gid, d){
   const gdb = groupDb(gid);
   try{
     const cur = await readGroupData(gid);
-    for(const c of ['checklists','gear']){
+    for(const c of ['checklists','gear', ...(Array.isArray(d.layouts) ? ['layouts'] : [])]){
       const keep = new Set(d[c].map(x=>x.id));
       cur[c].forEach(old=>{ if(!keep.has(old.id)) safePersist(()=>gdb.collection(c).doc(old.id).delete()); });
       d[c].forEach(x=>safePersist(()=>gdb.collection(c).doc(x.id).set(stripId(x))));
@@ -2125,7 +2306,7 @@ async function applyGroupBackup(gid, d){
     g.gearCategories = d.gearCategories.slice();
     g.gearCategoryMeta = d.gearCategoryMeta;
     safePersist(()=>state.rootDb.doc('groups/' + gid).update({ gearCategories: g.gearCategories, gearCategoryMeta: g.gearCategoryMeta }));
-    if(state.space===gid){ state.groupChecklists = unfreeze(d.checklists); state.groupGear = unfreeze(d.gear); state.gearCategory = 'all'; }
+    if(state.space===gid){ state.groupChecklists = unfreeze(d.checklists); state.groupGear = unfreeze(d.gear); state.gearCategory = 'all'; if(Array.isArray(d.layouts)){ state.groupLayouts = unfreeze(d.layouts); state.layoutSel = null; state.layoutPick = null; } }
     renderView();
     toast(`'${g.name}' 그룹 백업을 가져왔어요. 멤버 모두에게 반영돼요.`, 'ok');
   }catch(e){
@@ -2188,24 +2369,31 @@ function toggleHomeWidget(key){
 // Checklist 하위 메뉴: 지난 일정·템플릿. 데스크톱은 왼쪽 메뉴 Checklist 아래, 휴대폰은 탭바(6개) 그대로 Checklist가 켜진 채
 // 화면 위쪽 하위 탭(subTabsHtml: 체크리스트 | 지난 일정 | 템플릿)으로 들어감
 // 데스크톱 왼쪽 메뉴의 Checklist 옆 화살표(nav-sub-toggle)로 하위 메뉴를 펼치고 접는다(campbase.navSubOpen)
-const SUB_NAV = { checklist: [{ id:'pastTrips', label:'지난 일정', icon:'clock' }, { id:'templates', label:'템플릿', icon:'template' }] };
-const NAV_PARENT = { templates: 'checklist', pastTrips: 'checklist' };
+// Gear 하위 메뉴: 사이트 배치(같은 방식 — 데스크톱 왼쪽 하위 메뉴, 휴대폰은 Gear 화면 맨 위 하위 탭 [장비 | 사이트 배치])
+const SUB_NAV = { gear: [{ id:'layouts', label:'사이트 배치', icon:'layout' }], checklist: [{ id:'pastTrips', label:'지난 일정', icon:'clock' }, { id:'templates', label:'템플릿', icon:'template' }] };
+const NAV_PARENT = { templates: 'checklist', pastTrips: 'checklist', layouts: 'gear' };
 // 화면을 옮길 때(왼쪽 메뉴·탭바·하위 탭): 지난 일정 화면은 목록부터, Checklist로 오면 지난 일정 선택은 풂
 function goView(view){
   state.currentView = view;
   if(view==='pastTrips') state.tripFilter = 'all';
   if(view==='checklist'){ const t = selectedTrip(); if(t && tripPhase(t).kind==='past') state.tripFilter = 'all'; }
   if(state.gearSelecting) setGearSelecting(false);   // 탭을 옮기면 장비 선택 모드는 끝
+  if(view==='layouts') state.layoutSel = null;      // 사이트 배치는 목록부터
+  state.layoutPick = null; state.layoutHint = null;
   renderNav(); renderView();
 }
-function subTabsHtml(){
-  const past = SP.trips.filter(t=>tripPhase(t).kind==='past').length;
-  const tabs = [
+function subTabsHtml(parent){
+  const gear = parent==='gear';
+  const past = gear ? 0 : SP.trips.filter(t=>tripPhase(t).kind==='past').length;
+  const tabs = gear ? [
+    { id:'gear', label:'장비', icon:'gear', n: SP.gear.length },
+    { id:'layouts', label:'사이트 배치', icon:'layout', n: SP.layouts.length },
+  ] : [
     { id:'checklist', label:'체크리스트', icon:'checklist' },
     { id:'pastTrips', label:'지난 일정', icon:'clock', n: past },
     { id:'templates', label:'템플릿', icon:'template', n: SP.templates.length },
   ];
-  return `<nav class="sub-tabs" aria-label="Checklist 하위 메뉴">${tabs.map(t=>`<button type="button" class="sub-tab ${state.currentView===t.id?'active':''}" data-action="sub-nav" data-view="${t.id}" ${state.currentView===t.id?'aria-current="page"':''}>${icon(t.icon)}<span>${t.label}</span>${t.n!==undefined?` <span class="num" style="opacity:.7;">${t.n}</span>`:''}</button>`).join('')}</nav>`;
+  return `<nav class="sub-tabs" aria-label="${gear ? 'Gear' : 'Checklist'} 하위 메뉴">${tabs.map(t=>`<button type="button" class="sub-tab ${state.currentView===t.id?'active':''}" data-action="sub-nav" data-view="${t.id}" ${state.currentView===t.id?'aria-current="page"':''}>${icon(t.icon)}<span>${t.label}</span>${t.n!==undefined?` <span class="num" style="opacity:.7;">${t.n}</span>`:''}</button>`).join('')}</nav>`;
 }
 // 하위 메뉴를 펼쳐 둘지(기기에 기억, 처음엔 펼침)
 const NAV_SUB_OPEN_KEY = 'campbase.navSubOpen';
@@ -2241,19 +2429,29 @@ function navItemHtml(f, sub, childActive){
 
 /* ============================ VIEW DISPATCH ============================ */
 function renderView(){
-  const titles = { ...Object.fromEntries(FEATURE_DEFS.map(f=>[f.id,f.label])), templates: '템플릿', pastTrips: '지난 일정' };
+  // 사이트 배치에서 물건을 끄는 중이면 다시 그리지 않고 놓은 뒤에 그림(끌기가 끊기지 않게)
+  if(_loDrag && _loDrag.moved && state.currentView==='layouts'){ _loDeferredRender = true; return; }
+  const titles = { ...Object.fromEntries(FEATURE_DEFS.map(f=>[f.id,f.label])), templates: '템플릿', pastTrips: '지난 일정', layouts: '사이트 배치' };
   document.getElementById('view-title').textContent = titles[state.currentView] || '';
   const renderers = {
     home: renderHome, camping: renderCamping, gear: renderGear,
     checklist: renderChecklist, cooking: renderCooking, settings: renderSettings,
     templates: ()=>renderTemplatesPage(subTabsHtml() + spaceChipsHtml(), currentGroup()),
     pastTrips: renderPastTripsPage,
+    layouts: renderLayoutsPage,
   };
   // 3-9: Home 대시보드만 넓게, 나머지 탭 본문은 최대 폭 약 780px로 가운데(.view)
   const view = renderers[state.currentView] ? state.currentView : 'home';
-  document.getElementById('main').innerHTML = `<div class="view view-${view}">${bootBanner()}${renderers[view]()}</div>`;
+  // 사이트 배치: 다시 그려도(저장 후 스냅샷 등) 키보드 초점이 있던 물건·줄로 돌아가게
+  const ae = document.activeElement, mainEl = document.getElementById('main');
+  const keepFocus = view==='layouts' && ae && mainEl.contains(ae) ? (ae.getAttribute('data-lo-item') ? `[data-lo-item="${CSS.escape(ae.getAttribute('data-lo-item'))}"]`
+    : (ae.getAttribute('data-action') ? `[data-action="${CSS.escape(ae.getAttribute('data-action'))}"]${ae.getAttribute('data-item') ? `[data-item="${CSS.escape(ae.getAttribute('data-item'))}"]` : ''}${ae.getAttribute('data-id') ? `[data-id="${CSS.escape(ae.getAttribute('data-id'))}"]` : ''}` : null)) : null;
+  mainEl.innerHTML = `<div class="view view-${view}">${bootBanner()}${renderers[view]()}</div>`;
   updateStickyHeads();
   if(view==='camping') markCampClamps();
+  if(view==='layouts') drawLayoutBoard();
+  syncLayoutBar();
+  if(keepFocus){ const el = document.querySelector(keepFocus); if(el && el.focus) el.focus({ preventScroll: true }); }
 }
 
 /* ============================ PIE CHART ============================ */
@@ -2488,6 +2686,7 @@ function renderMyCamping(){
           <div class="row-actions">
             <button class="icon-btn" data-action="camp-edit" data-id="${c.id}" title="수정" aria-label="'${esc(c.name)}' 기록 수정">${icon('edit')}</button>
             ${moreMenuHtml('camp:' + c.id, [
+              parseSiteSize(c.siteSize) ? { action:'camp-layout', attrs:{'data-id':c.id}, icon:'layout', label:'이 사이트로 배치 만들기' } : null,
               { action:'camp-del', attrs:{'data-id':c.id}, icon:'trash', label:'기록 삭제', danger:true },
             ], `'${c.name}' 기록 메뉴`)}
           </div>
@@ -3024,7 +3223,7 @@ function renderGear(){
       + (body ? `<div class="card">${allRow}${body}</div>` : emptyMsg);
   }
   return `
-    ${spaceChipsHtml()}
+    ${subTabsHtml('gear')}${spaceChipsHtml()}
     <div class="section-head">
       <div><h1>${grp ? esc(grp.name) + ' 장비' : '내 장비'}</h1><div class="section-desc">${grp ? '그룹 멤버 모두가 함께 보고 고치는 장비 목록이에요.' : '보유 장비를 카테고리별로 등록하고 한눈에 확인하세요.'}</div></div>
       <div class="gear-head-actions">
@@ -3053,7 +3252,9 @@ function renderGear(){
   `;
 }
 function gearRowHtml(g, grp, selecting, sel){
-  const meta = [g.brand ? esc(g.brand) : '', grp && g.addedBy ? esc(memberName(grp, g.addedBy)) + ' 추가' : ''].filter(Boolean).join(' · ');
+  const fp = normFootprint(g.footprint);
+  const meta = [g.brand ? esc(g.brand) : '', grp && g.addedBy ? esc(memberName(grp, g.addedBy)) + ' 추가' : ''].filter(Boolean).join(' · ')
+    + (fp ? `<span class="num fp-size" title="사이트 배치용 바닥 크기">${esc(fpText(fp))}</span>` : '');
   return `
         <div class="list-row gear-row ${selecting && sel.has(g.id) ? 'picked' : ''}" data-id="${esc(g.id)}" ${selecting ? `data-action="gear-pick" role="checkbox" aria-checked="${sel.has(g.id)}" tabindex="0"` : ''}>
           ${selecting ? `<span class="pick-box" aria-hidden="true">${sel.has(g.id) ? icon('check') : ''}</span>` : ''}
@@ -3115,8 +3316,8 @@ function usedGearBrands(){
   return [...seen].sort((a,b)=>a.localeCompare(b,'ko'));
 }
 // 장비 폼의 카테고리 고르기: 대분류별 묶음(대분류 자체도 고를 수 있음) + 대분류 없는 소분류 + 미분류
-function gearCategoryOptionsHtml(cur){
-  const tree = gearCatTree(SP.gearCategories, SP.gearCategoryMeta, []);
+function gearCategoryOptionsHtml(cur, mine){
+  const tree = mine ? gearCatTree(myGearCats(), state.gearCategoryMeta, []) : gearCatTree(SP.gearCategories, SP.gearCategoryMeta, []);
   const opt = (v, label) => `<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(label)}</option>`;
   const majors = tree.filter(n=>n.kind==='major'), loose = tree.filter(n=>n.kind==='sub');
   const known = new Set(['', ...majors.map(m=>m.name), ...majors.flatMap(m=>m.subs.map(x=>x.name)), ...loose.map(x=>x.name)]);
@@ -3125,9 +3326,15 @@ function gearCategoryOptionsHtml(cur){
     + (loose.length ? (majors.length ? `<optgroup label="대분류 없음">${loose.map(x=>opt(x.name, x.name)).join('')}</optgroup>` : loose.map(x=>opt(x.name, x.name)).join('')) : '')
     + (cur && !known.has(cur) ? opt(cur, cur) : '');
 }
-function gearFormModal(id, presetCat){
-  const g = id ? SP.gear.find(x=>x.id===id) : null;
-  const grp = currentGroup();
+// opts.src 'me': 그룹 공간에서 내 개인 장비 고치기(사이트 배치 "크기 입력"), opts.back(item): 저장한 뒤 돌아갈 곳
+let _gearFormCtx = { src:'space', back:null };
+function gearFormModal(id, presetCat, opts){
+  opts = opts || {};
+  const mine = opts.src==='me' && inGroupSpace();
+  _gearFormCtx = { src: mine ? 'me' : 'space', back: opts.back || null };
+  const g = id ? (mine ? state.gear : SP.gear).find(x=>x.id===id) : null;
+  const grp = mine ? null : currentGroup();
+  const catNow = g ? String(g.category||'').trim() : (presetCat!==undefined ? presetCat : defaultGearCategory());
   openModal(`
     <h3>${g?'장비 수정':'장비 추가'}</h3>
     <div class="field"><label>이름</label><input id="gf-name" value="${g?esc(g.name):''}" placeholder="예: 스텔스 5 텐트"></div>
@@ -3137,7 +3344,7 @@ function gearFormModal(id, presetCat){
         <datalist id="gf-brand-list">${usedGearBrands().map(b=>`<option value="${esc(b)}"></option>`).join('')}</datalist>
       </div>
       <div class="field"><label>카테고리</label>
-        <select id="gf-category">${gearCategoryOptionsHtml(g ? String(g.category||'').trim() : (presetCat!==undefined ? presetCat : defaultGearCategory()))}</select>
+        <select id="gf-category">${gearCategoryOptionsHtml(catNow, mine)}</select>
       </div>
     </div>
     <div class="field"><label for="gf-comment">메모 (Comment)</label><textarea id="gf-comment" rows="3" placeholder="예: 폴대 1개 수리함, 우중 캠핑 때 챙기기">${g?esc(g.comment||''):''}</textarea></div>
@@ -3147,6 +3354,7 @@ function gearFormModal(id, presetCat){
         ${sortedMemberUids(grp).map(u=>`<option value="${esc(u)}" ${g&&g.ownerUid===u?'selected':''}>${esc(memberName(grp,u))}${state.user&&u===state.user.uid?' (나)':''}</option>`).join('')}
         ${g && g.ownerUid && !grp.memberUids.includes(g.ownerUid) ? `<option value="${esc(g.ownerUid)}" selected>${esc(memberName(grp,g.ownerUid))}</option>` : ''}
       </select></div>` : ''}
+    ${fpFieldsHtml(g && g.footprint, catNow)}
     <div class="modal-actions">
       <button class="btn" data-action="modal-close">취소</button>
       <button class="btn btn-primary" data-action="gear-save" data-id="${id||''}">${icon('save')} 저장</button>
@@ -3156,8 +3364,12 @@ function gearFormModal(id, presetCat){
 function saveGearForm(id){
   const name = document.getElementById('gf-name').value.trim();
   if(!name){ toast('장비 이름을 입력해주세요.'); return; }
+  const fpr = readFootprintForm();
+  if(fpr.error){ toast(fpr.error); return; }
+  const mine = _gearFormCtx.src==='me' && inGroupSpace(), back = _gearFormCtx.back;
+  _gearFormCtx = { src:'space', back:null };
   // 수정할 때는 기존 필드(addedBy, ownerUid 등)를 그대로 두고 폼 값만 덮어씀
-  const prev = id ? (SP.gear.find(x=>x.id===id) || {}) : {};
+  const prev = id ? ((mine ? state.gear : SP.gear).find(x=>x.id===id) || {}) : {};
   const item = {
     ...prev,
     id: id || uid('g'),
@@ -3167,12 +3379,58 @@ function saveGearForm(id){
     comment: document.getElementById('gf-comment').value.trim(),
   };
   if(!item.comment) delete item.comment;
+  if(fpr.fp) item.footprint = fpr.fp; else if(fpr.fp===null) delete item.footprint;   // 가로·세로를 둘 다 비우면 배치용 크기 없음
   const ownerEl = document.getElementById('gf-owner');
-  if(inGroupSpace() && ownerEl){ if(ownerEl.value) item.ownerUid = ownerEl.value; else delete item.ownerUid; }
-  if(id){ SP.gear = SP.gear.map(g=>g.id===id?item:g); }
-  else{ SP.gear.push(item); }
-  persistGear(item);
+  if(mine){
+    state.gear = id ? state.gear.map(g=>g.id===id?item:g) : [...state.gear, item];
+    if(state.dbAvailable){ const db = state.db; safePersist(()=>db.collection('gear').doc(item.id).set(stripId(item))); }
+  }else{
+    if(inGroupSpace() && ownerEl){ if(ownerEl.value) item.ownerUid = ownerEl.value; else delete item.ownerUid; }
+    if(id){ SP.gear = SP.gear.map(g=>g.id===id?item:g); }
+    else{ SP.gear.push(item); }
+    persistGear(item);
+  }
+  if(back){ renderView(); back(item); toast('저장했어요.'); return; }
   closeModal(); renderView(); toast('저장했어요.');
+}
+/* ---- 장비 폼: 사이트 배치용 크기(선택) ---- */
+function fpFieldsHtml(fp, cat){
+  const f = normFootprint(fp);
+  const kind = f ? f.kind : fpKindFromCategory(cat), shape = f ? f.shape : 'rect';
+  const chips = (list, cur, action) => list.map(x=>`<button type="button" class="seg-btn ${x.key===cur?'active':''}" data-action="${action}" data-val="${x.key}" aria-pressed="${x.key===cur}">${x.label}</button>`).join('');
+  return `
+    <div class="form-subhead fp-head">사이트 배치용 크기 <span class="fp-opt">(선택)</span></div>
+    <div class="field-hint fp-desc">넣어 두면 '사이트 배치'에 바로 놓을 수 있어요. 제품 설명의 바닥(설치) 크기를 적어 주세요.</div>
+    <div class="field"><label>종류</label><input type="hidden" id="gf-fp-kind" value="${kind}" data-touched="${f ? '1' : ''}">
+      <div class="seg-group" id="gf-fp-kinds">${chips(FP_KINDS, kind, 'gf-fp-kind')}</div></div>
+    <div class="field"><label for="gf-fp-w">바닥 크기 <span class="meta">(m)</span></label>
+      <div class="lo-size-row"><input id="gf-fp-w" inputmode="decimal" autocomplete="off" aria-label="바닥 가로(m)" placeholder="가로" value="${f ? fmtM(f.w) : ''}"><span aria-hidden="true">×</span><input id="gf-fp-d" inputmode="decimal" autocomplete="off" aria-label="바닥 세로(m)" placeholder="세로" value="${f ? fmtM(f.d) : ''}"><span aria-hidden="true">m</span></div></div>
+    <div class="field"><label>모양</label><input type="hidden" id="gf-fp-shape" value="${shape}">
+      <div class="seg-group" id="gf-fp-shapes">${chips(FP_SHAPES, shape, 'gf-fp-shape')}</div></div>
+    <div class="field"><label for="gf-fp-guy">스트링·팩 여유 <span class="meta">(m)</span></label><input id="gf-fp-guy" inputmode="decimal" autocomplete="off" placeholder="예: 0.5" value="${f && f.guy ? fmtM(f.guy) : ''}">
+      <div class="field-hint">보통 텐트 0.5~1m, 타프 1.5~2m. 모르면 비워 두세요.</div></div>`;
+}
+// { fp } | { fp:null }(둘 다 비움 → 없음) | { error }
+function readFootprintForm(){
+  const val = k=>{ const el = document.getElementById(k); return el ? el.value : ''; };
+  if(!document.getElementById('gf-fp-w')) return { fp: undefined };
+  const w = parseMeters(val('gf-fp-w')), d = parseMeters(val('gf-fp-d')), guy = parseMeters(val('gf-fp-guy'));
+  if(w===null && d===null) return { fp: null };
+  if(w===null || d===null) return { error: '배치용 크기는 가로·세로를 둘 다 적어 주세요. (모르면 둘 다 비워 두세요)' };
+  if(!(w >= 0.1 && w <= 30 && d >= 0.1 && d <= 30)) return { error: '바닥 크기는 0.1~30m로 적어 주세요.' };
+  if(guy!==null && !(guy >= 0 && guy <= 5)) return { error: '스트링·팩 여유는 0~5m로 적어 주세요.' };
+  const kind = FP_KIND_LABEL[val('gf-fp-kind')] ? val('gf-fp-kind') : 'item';
+  const fp = { kind, w: loR1(w), d: loR1(d), shape: val('gf-fp-shape')==='round' ? 'round' : 'rect' };
+  if(guy) fp.guy = loR1(guy);
+  return { fp };
+}
+function gfFpChip(kind, val){
+  const isKind = kind==='kind';
+  const inp = document.getElementById(isKind ? 'gf-fp-kind' : 'gf-fp-shape');
+  if(!inp) return;
+  inp.value = val;
+  if(isKind) inp.setAttribute('data-touched', '1');
+  document.querySelectorAll(`#${isKind ? 'gf-fp-kinds' : 'gf-fp-shapes'} .seg-btn`).forEach(b=>{ const on = b.getAttribute('data-val')===val; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
 }
 
 /* ---- 장비 카테고리: 대분류·소분류(G-2·7·8·9) ----
@@ -3676,6 +3934,7 @@ function tripPanelHtml(trip, space, g, lists, filtersHtml, ctx){
         ${moreMenuHtml('trip:' + trip.id, [
           { action:'trip-edit', attrs:{'data-trip':trip.id}, icon:'edit', label:'일정 수정' },
           { action:'cl-new-list', attrs:{}, icon:'plus', label:'새 리스트' },
+          { action:'trip-layout', attrs:{'data-trip':trip.id}, icon:'layout', label:'사이트 배치' },
           { action:'trip-del', attrs:{'data-trip':trip.id}, icon:'trash', label:'일정 삭제', danger:true },
         ], `'${trip.title}' 일정 메뉴`)}
       </div>
@@ -3880,8 +4139,12 @@ function deleteTripConfirm(id){
     const space = spaceKey();
     const linkedIds = SP.checklists.filter(l=>l.tripId===id).map(l=>l.id);
     SP.checklists.forEach(l=>{ if(l.tripId===id){ delete l.tripId; persistChecklist(l); } });
+    // 사이트 배치도 연결(tripId)만 풀고 배치는 남김. 되돌리면 다시 연결
+    const linkedLayouts = SP.layouts.filter(l=>l.tripId===id).map(l=>l.id);
+    linkedLayouts.forEach(lid=>updateLayoutFields(space, lid, { tripId: null }));
     if(state.tripFilter===id) state.tripFilter = 'all';
     deleteDocWithUndo('trips', id, '일정을 삭제했어요.', db=>{
+      linkedLayouts.forEach(lid=>updateLayoutFields(space, lid, { tripId: id }));
       const arr = spaceArray(space, 'checklists');
       linkedIds.forEach(lid=>{
         const l = arr && arr.find(x=>x.id===lid);
@@ -5284,6 +5547,1144 @@ function toggleDishOpen(a){
   if(b) b.focus({ preventScroll: true });
 }
 
+/* ============================ 사이트 배치 (Gear 하위 화면) ============================
+ * 캠핑장 사이트(직사각형, m) 안에 텐트·타프·물건을 실제 크기로 놓아 보고 피칭이 되는지 미리 확인한다.
+ * 장비 footprint(선택) = { kind:'tent'|'tarp'|'item', w, d, shape:'rect'|'round', guy? } — 바닥 가로·세로, 스트링·팩 여유(m, 0.1 단위)
+ * 배치 문서: 개인 users/{uid}/layouts/{id}, 그룹 groups/{gid}/layouts/{id}
+ *   { title, siteW, siteD, siteType?, entrance:'bottom'|'top'|'left'|'right', tripId?, logId?,
+ *     items:[{ id, gearId?, name, kind, shape, w, d, guy, x, y, rot }], createdBy, createdAt, updatedBy, updatedAt }
+ *   x·y = 사이트 왼쪽 위 기준 물건 중심(m), rot = 0|90|180|270(시계 방향). 출입문은 rot 0일 때 아래 변 → 90 왼쪽, 180 위, 270 오른쪽
+ *   items의 크기는 놓을 때의 사본(장비를 고쳐도 그대로, 바뀌면 "새로 불러오기")
+ * 판정은 layoutVerdict() 하나(목록 태그·편집 화면·자동 배치가 같이 씀). 저장은 mutateLayout(space, id, op) — 식단 mutateMeals와 같은 방식.
+ */
+const FP_KINDS = [{ key:'tent', label:'텐트·쉘터' }, { key:'tarp', label:'타프' }, { key:'item', label:'기타' }];
+const FP_KIND_LABEL = { tent:'텐트·쉘터', tarp:'타프', item:'기타' };
+const FP_SHAPES = [{ key:'rect', label:'사각' }, { key:'round', label:'원형·육각' }];
+const LO_ENTRANCES = [{ key:'bottom', label:'아래' }, { key:'top', label:'위' }, { key:'left', label:'왼쪽' }, { key:'right', label:'오른쪽' }];
+const LO_ENT_LABEL = { bottom:'아래', top:'위', left:'왼쪽', right:'오른쪽' };
+const LO_SIDE = { left:'왼쪽', top:'위쪽', right:'오른쪽', bottom:'아래쪽' };
+const LO_ROTS = [0, 90, 180, 270];
+const LO_AISLE_MIN = 0.6, LO_AISLE_PREF = 0.7, LO_OUT_MAX = 2;
+const LO_QUICK = [{ name:'차량', w:4.8, d:1.9 }, { name:'테이블', w:1.2, d:0.8 }, { name:'화로대', w:0.6, d:0.6 }];
+const LO_RANK = { ok:0, warn:1, bad:2 };
+const LO_MARK = { ok:'✓', warn:'⚠', bad:'✕' };
+function loR1(v){ return Math.round(Number(v) * 10) / 10; }
+function loCeil(v){ return Math.ceil(Number(v) * 10 - 1e-6) / 10; }
+function fmtM(v){ const n = loR1(v); return (n === 0 ? 0 : n).toFixed(1); }
+// 숫자 칸(m) 읽기: 비었으면 null, 숫자가 아니면 NaN (쉼표 소수점도 받음)
+function parseMeters(v){ const s = String(v == null ? '' : v).trim().replace(',', '.'); if(!s) return null; const n = Number(s); return isFinite(n) ? n : NaN; }
+// 받침 있는 글자인지(조사 고르기: 와/과, 이/가, 을/를)
+function hasBatchim(word){
+  const s = String(word || '').trim(); const c = s.charCodeAt(s.length - 1);
+  if(c >= 0xAC00 && c <= 0xD7A3) return (c - 0xAC00) % 28 !== 0;
+  return /[013678]$/.test(s);
+}
+function josa(word, withB, withoutB){ return word + (hasBatchim(word) ? withB : withoutB); }
+
+/* ---- 장비의 배치용 크기 ---- */
+function normFootprint(fp){
+  if(!fp || typeof fp !== 'object') return null;
+  const w = Number(fp.w), d = Number(fp.d);
+  if(!(w > 0) || !(d > 0)) return null;
+  return { kind: FP_KIND_LABEL[fp.kind] ? fp.kind : 'item', shape: fp.shape === 'round' ? 'round' : 'rect', w: loR1(w), d: loR1(d), guy: Math.max(0, loR1(Number(fp.guy) || 0)) };
+}
+// 종류 기본값: 카테고리 이름에 '타프'가 있으면 타프, '텐트'·'쉘터'면 텐트, 아니면 기타
+function fpKindFromCategory(cat){ const c = String(cat || ''); if(/타프/.test(c)) return 'tarp'; if(/텐트|쉘터/.test(c)) return 'tent'; return 'item'; }
+function fpText(fp){ return fmtM(fp.w) + '×' + fmtM(fp.d) + 'm'; }
+// 캠핑 기록의 사이트 크기 글 → {w, d}: "5x5m", "5 × 6", "6*8", "6m x 8m", "5.5x7", "6X8". "20평"처럼 못 읽으면 null
+function parseSiteSize(s){
+  const m = String(s || '').match(/(\d+(?:\.\d+)?)\s*(?:m|미터)?\s*[x×X*＊✕]\s*(\d+(?:\.\d+)?)/i);
+  if(!m) return null;
+  const w = loR1(m[1]), d = loR1(m[2]);
+  return (w >= 1 && w <= 50 && d >= 1 && d <= 50) ? { w, d } : null;
+}
+
+/* ---- 배치 문서 읽기 ---- */
+function loItem(raw){
+  const it = (raw && typeof raw === 'object') ? raw : {};
+  const num = (v, dflt) => { const n = Number(v); return isFinite(n) ? n : dflt; };
+  return { ...it, id: String(it.id || ''), name: String(it.name || '물건'), kind: FP_KIND_LABEL[it.kind] ? it.kind : 'item', shape: it.shape === 'round' ? 'round' : 'rect',
+    w: Math.max(0, num(it.w, 0)), d: Math.max(0, num(it.d, 0)), guy: Math.max(0, num(it.guy, 0)), x: num(it.x, 0), y: num(it.y, 0), rot: LO_ROTS.includes(Number(it.rot)) ? Number(it.rot) : 0 };
+}
+function loItems(L){ return (Array.isArray(L && L.items) ? L.items : []).filter(x=>x && typeof x === 'object').map(loItem); }
+function loSite(L){
+  const W = Number(L && L.siteW), D = Number(L && L.siteD);
+  return { W: W > 0 ? W : 1, D: D > 0 ? D : 1, ent: LO_ENT_LABEL[L && L.entrance] ? L.entrance : 'bottom' };
+}
+// 같은 이름 물건이 여럿이면 "돔텐트 1", "돔텐트 2"
+function loNames(items){
+  const cnt = {}, seen = {}, out = {};
+  items.forEach(it=>{ cnt[it.name] = (cnt[it.name] || 0) + 1; });
+  items.forEach(it=>{ if(cnt[it.name] > 1){ seen[it.name] = (seen[it.name] || 0) + 1; out[it.id] = it.name + ' ' + seen[it.name]; } else out[it.id] = it.name; });
+  return out;
+}
+
+/* ---- 모양 계산(m) ---- */
+function loDims(it){ const sw = it.rot === 90 || it.rot === 270; return { w: sw ? it.d : it.w, d: sw ? it.w : it.d }; }
+function loBox(it, pad){ const { w, d } = loDims(it); pad = pad || 0; return { x0: it.x - w/2 - pad, x1: it.x + w/2 + pad, y0: it.y - d/2 - pad, y1: it.y + d/2 + pad }; }
+function loDoorSide(it){ return ({ 0:'bottom', 90:'left', 180:'top', 270:'right' })[it.rot || 0]; }
+function loSolid(it){ return it.kind !== 'tarp'; }
+function loInside(it, pad, px, py){
+  const { w, d } = loDims(it);
+  const rx = w/2 + pad, ry = d/2 + pad;
+  if(rx <= 0 || ry <= 0) return false;
+  const dx = px - it.x, dy = py - it.y;
+  if(it.shape === 'round'){ return (dx*dx)/(rx*rx) + (dy*dy)/(ry*ry) <= 1; }
+  return Math.abs(dx) <= rx && Math.abs(dy) <= ry;
+}
+function loRectOv(A, B){
+  const iw = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0), ih = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+  return (iw > 1e-6 && ih > 1e-6) ? Math.min(iw, ih) : 0;
+}
+function loRectArea(A, B){
+  const iw = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0), ih = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+  return (iw > 1e-6 && ih > 1e-6) ? iw * ih : 0;
+}
+// 두 물건(각각 pad만큼 늘린 모양)이 겹치는 깊이(m). 원형(타원)이 끼면 0.05m 격자로 겹치는 점을 찾아 그 범위로 어림
+function loOverlap(a, pa, b, pb){
+  const A = loBox(a, pa), B = loBox(b, pb);
+  const ix0 = Math.max(A.x0, B.x0), ix1 = Math.min(A.x1, B.x1), iy0 = Math.max(A.y0, B.y0), iy1 = Math.min(A.y1, B.y1);
+  const iw = ix1 - ix0, ih = iy1 - iy0;
+  if(iw <= 1e-6 || ih <= 1e-6) return 0;
+  if(a.shape !== 'round' && b.shape !== 'round') return Math.min(iw, ih);
+  const st = Math.max(0.05, Math.max(iw, ih) / 200);
+  let hit = false, mx0 = Infinity, mx1 = -Infinity, my0 = Infinity, my1 = -Infinity;
+  for(let y = iy0 + st/2; y < iy1; y += st){
+    for(let x = ix0 + st/2; x < ix1; x += st){
+      if(loInside(a, pa, x, y) && loInside(b, pb, x, y)){ hit = true; if(x < mx0) mx0 = x; if(x > mx1) mx1 = x; if(y < my0) my0 = y; if(y > my1) my1 = y; }
+    }
+  }
+  return hit ? Math.max(st, Math.min(mx1 - mx0 + st, my1 - my0 + st)) : 0;
+}
+function loOutside(box, W, D){ return { left: Math.max(0, -box.x0), top: Math.max(0, -box.y0), right: Math.max(0, box.x1 - W), bottom: Math.max(0, box.y1 - D) }; }
+function loOutText(out){ return Object.keys(LO_SIDE).filter(k=>out[k] > 0.001).map(k=>`${LO_SIDE[k]} ${fmtM(Math.max(0.1, loCeil(out[k])))}m`).join(', '); }
+function loOutMax(out){ return Math.max(0.1, loCeil(Math.max(out.left, out.top, out.right, out.bottom))); }
+// 진입로 경계에서 가장 가까운 텐트·기타 본체까지(통로 폭)
+function loEntDist(b, W, D, ent){ return ent === 'bottom' ? D - b.y1 : ent === 'top' ? b.y0 : ent === 'left' ? b.x0 : W - b.x1; }
+function loAisle(items, W, D, ent){
+  const across = ent === 'left' || ent === 'right';
+  let best = across ? W : D, id = null;
+  items.filter(it=>loSolid(it) && it.w > 0 && it.d > 0).forEach(it=>{
+    const b = loBox(it, 0);
+    if(across ? !(b.y1 > 0 && b.y0 < D) : !(b.x1 > 0 && b.x0 < W)) return;
+    const dist = Math.max(0, loEntDist(b, W, D, ent));
+    if(dist < best - 1e-9 || id === null && dist <= best){ best = dist; id = it.id; }
+  });
+  return { dist: best, id };
+}
+// 남는 바닥 비율: 사이트 넓이 중 텐트·기타 본체(합집합)가 덮지 않는 부분(타프 제외)
+function loFreeRatio(items, W, D){
+  const solids = items.filter(it=>loSolid(it) && it.w > 0 && it.d > 0);
+  if(!solids.length) return 1;
+  const st = Math.max(0.05, Math.sqrt(W * D / 40000));
+  let cov = 0, tot = 0;
+  for(let y = st/2; y < D; y += st) for(let x = st/2; x < W; x += st){ tot++; if(solids.some(it=>loInside(it, 0, x, y))) cov++; }
+  return tot ? 1 - cov / tot : 1;
+}
+// 다 넣으려면 사이트가 얼마나 커야 하는지(텐트·기타를 한 줄로 늘어놓는 어림, 스트링 여유 포함). 들어갈 것 같으면 null
+function loNeed(items, W, D){
+  const its = items.filter(it=>loSolid(it) && it.w > 0 && it.d > 0);
+  if(!its.length) return null;
+  const maxG = Math.max(0, ...its.map(it=>it.guy || 0));
+  const pack = along => {
+    let sum = 0, cross = 0;
+    its.forEach(it=>{
+      const g = it.guy || 0;
+      const opts = [[it.w, it.d], [it.d, it.w]];   // [가로, 세로]
+      const fits = opts.filter(o=> along === 'x' ? o[1] + 2*g <= D + 1e-6 : o[0] + 2*g <= W + 1e-6);
+      const pick = (fits.length ? fits : opts).slice().sort((a, b)=> fits.length ? (along === 'x' ? a[0] - b[0] : a[1] - b[1]) : (along === 'x' ? a[1] - b[1] : a[0] - b[0]))[0];
+      if(along === 'x'){ sum += pick[0] + g; cross = Math.max(cross, pick[1] + 2*g); }
+      else { sum += pick[1] + g; cross = Math.max(cross, pick[0] + 2*g); }
+    });
+    sum += maxG;
+    return along === 'x' ? { w: sum, d: cross } : { w: cross, d: sum };
+  };
+  const c = [pack('x'), pack('y')].map(n=>({ ...n, short: Math.max(0, n.w - W) + Math.max(0, n.d - D) }))
+    .sort((a, b)=> a.short - b.short || a.w * a.d - b.w * b.d)[0];
+  if(c.short < 0.05) return null;
+  const parts = [c.w - W > 0.04 ? `가로 ${fmtM(loCeil(c.w - W))}m` : '', c.d - D > 0.04 ? `세로 ${fmtM(loCeil(c.d - D))}m` : ''].filter(Boolean);
+  const w = loCeil(Math.max(W, c.w)), d = loCeil(Math.max(D, c.d));
+  return { w, d, short: parts.join(' · ') + ' 부족', min: `사이트가 최소 ${fmtM(w)} × ${fmtM(d)}m 필요` };
+}
+
+/* ---- 판정: ✕ 어려움 / ⚠ 확인 필요 / ✓ 가능 ----
+ * ✕ ① 텐트·기타 본체가 사이트 밖 ② 텐트·기타 본체끼리 겹침 ③ 타프 본체가 사이트 밖
+ * ⚠ ④ 스트링 영역이 사이트 밖 ⑤ 스트링 영역이 다른 텐트·기타 본체와 겹침 ⑥ 진입로 쪽 통로 0.6m 미만 ⑦ 크기가 0인 물건
+ * 타프는 텐트·기타와 겹쳐도 됨(타프끼리도), 스트링 영역끼리 겹치는 것도 괜찮음. 결과 = 가장 나쁜 단계 */
+function layoutVerdict(L, opts){
+  const { W, D, ent } = loSite(L);
+  const items = loItems(L);
+  const names = loNames(items);
+  const nm = it => names[it.id] || it.name;
+  const issues = [], per = {};
+  items.forEach(it=>{ per[it.id] = { level:'ok', notes:[], guyBad:false }; });
+  const add = (level, code, list, text, short, notes) => {
+    issues.push({ level, code, ids: list.map(it=>it.id), itemId: list[0] ? list[0].id : null, text, short });
+    list.forEach((it, i)=>{
+      const p = per[it.id]; if(!p) return;
+      if(LO_RANK[level] > LO_RANK[p.level]) p.level = level;
+      const n = Array.isArray(notes) ? notes[i] : notes;
+      if(n) p.notes.push({ level, text: n });
+      if(code === 'guyOut' || (code === 'guyHit' && i === 0)) p.guyBad = true;
+    });
+  };
+  const sized = items.filter(it=>it.w > 0 && it.d > 0);
+  items.filter(it=>!(it.w > 0 && it.d > 0)).forEach(it=>add('warn', 'zero', [it], `${nm(it)} 크기가 0이에요`, `${nm(it)} 크기 0`, '크기 0'));
+  const bodyOut = {};
+  sized.forEach(it=>{
+    const out = loOutside(loBox(it, 0), W, D), t = loOutText(out);
+    bodyOut[it.id] = out;
+    if(t) add('bad', 'out', [it], `${nm(it)} 본체가 ${t} 밖이에요`, `${nm(it)} ${t} 밖`, `${fmtM(loOutMax(out))}m 밖`);
+  });
+  const solids = sized.filter(loSolid);
+  for(let i = 0; i < solids.length; i++) for(let j = i + 1; j < solids.length; j++){
+    const a = solids[i], b = solids[j], ov = loOverlap(a, 0, b, 0);
+    if(ov > 0){ const t = fmtM(Math.max(0.1, loCeil(ov))); add('bad', 'overlap', [a, b], `${josa(nm(a), '과', '와')} ${josa(nm(b), '이', '가')} ${t}m 겹쳐요`, `${nm(a)}·${nm(b)} 겹침`, [`${josa(nm(b), '과', '와')} 겹침 ${t}m`, `${josa(nm(a), '과', '와')} 겹침 ${t}m`]); }
+  }
+  sized.filter(it=>it.guy > 0).forEach(it=>{
+    const out = loOutside(loBox(it, it.guy), W, D), bo = bodyOut[it.id];
+    Object.keys(out).forEach(k=>{ if(bo[k] > 0.001) out[k] = 0; });
+    const t = loOutText(out);
+    if(t) add('warn', 'guyOut', [it], `${nm(it)} 스트링·팩이 ${t} 밖으로 나가요`, `${nm(it)} 스트링 ${t} 밖`, `스트링 ${fmtM(loOutMax(out))}m 밖`);
+  });
+  sized.filter(it=>it.guy > 0).forEach(a=>{
+    solids.forEach(b=>{
+      if(b.id === a.id || loOverlap(a, 0, b, 0) > 0) return;   // 본체끼리 겹침(이미 어려움) · 타프가 위를 덮음은 따로 안 셈
+      if(loOverlap(a, a.guy, b, 0) > 0) add('warn', 'guyHit', [a, b], `${nm(a)} 스트링·팩이 ${nm(b)} 자리에 걸려요`, `${nm(a)} 스트링이 ${nm(b)}에 걸림`, [`스트링이 ${nm(b)}에 걸림`, `${nm(a)} 스트링이 걸림`]);
+    });
+  });
+  const aisle = loAisle(sized, W, D, ent);
+  if(aisle.id && aisle.dist < LO_AISLE_MIN - 1e-6){
+    const it = sized.find(x=>x.id === aisle.id);
+    add('warn', 'aisle', [it], `진입로 쪽 통로가 ${fmtM(aisle.dist)}m예요 — 0.6m 이상 남겨 두세요`, `통로 ${fmtM(aisle.dist)}m`, `통로 ${fmtM(aisle.dist)}m`);
+  }
+  issues.sort((a, b)=> LO_RANK[b.level] - LO_RANK[a.level]);
+  const level = issues.length ? issues[0].level : 'ok';
+  return { level, issues, per, names, W, D, ent, count: items.length, aisle: aisle.dist,
+    free: opts && opts.free ? loFreeRatio(items, W, D) : null,
+    need: level === 'bad' ? loNeed(sized, W, D) : null };
+}
+function loVerdictTag(v){
+  if(!v.count) return { cls:'none', text:'물건 없음' };
+  if(v.level === 'bad') return { cls:'bad', text:`✕ 어려움 · ${v.issues[0].short}` };
+  if(v.level === 'warn') return { cls:'warn', text:`⚠ 가능 · 확인 ${v.issues.length}` };
+  return { cls:'ok', text:'✓ 가능' };
+}
+
+/* ---- 자동 배치 ----
+ * 텐트·쉘터(큰 것부터) → 기타 → 타프 순서로, rot 0/90(텐트는 문 방향 때문에 4방향)·격자 위치를 시도해 판정상 문제가 가장 적은 자리.
+ * 선호: 진입로 반대쪽(안쪽)부터, 진입로 쪽 통로 0.7m 이상, 텐트 출입문은 진입로 쪽·빈 공간 쪽, 스트링도 사이트 안.
+ * 타프는 가장 큰 텐트의 출입문 앞에 붙여 보고, 안 되면 남은 곳. 처음엔 0.25m(큰 사이트는 더 넓게) 간격으로 찾고 0.1m로 다듬음 */
+const LO_BAD = 10000, LO_WARN = 300;
+function loDoorZone(b, side, len){
+  return side === 'bottom' ? { x0: b.x0, x1: b.x1, y0: b.y1, y1: b.y1 + len } : side === 'top' ? { x0: b.x0, x1: b.x1, y0: b.y0 - len, y1: b.y0 }
+    : side === 'left' ? { x0: b.x0 - len, x1: b.x0, y0: b.y0, y1: b.y1 } : { x0: b.x1, x1: b.x1 + len, y0: b.y0, y1: b.y1 };
+}
+function loSpotCost(c, placed, site, front){
+  const { W, D, ent } = site;
+  const b = loBox(c, 0), g = loBox(c, c.guy || 0);
+  const outSum = box => { const o = loOutside(box, W, D); return o.left + o.top + o.right + o.bottom; };
+  let cost = 0;
+  const ob = outSum(b);
+  if(ob > 1e-6) cost += LO_BAD + 1000 * ob;
+  if(c.guy > 0){ const og = outSum(g) - ob; if(og > 1e-6) cost += LO_WARN + 100 * og; }
+  const solid = loSolid(c);
+  placed.forEach(p=>{
+    if(!(p.w > 0 && p.d > 0)) return;
+    const pb = loBox(p, 0), bodyOv = loRectOv(b, pb), pSolid = loSolid(p);
+    if(solid && pSolid){
+      if(bodyOv > 0){ cost += LO_BAD + 1000 * bodyOv; return; }
+      if(c.guy > 0 && loRectOv(g, pb) > 0) cost += LO_WARN;
+      if(p.guy > 0 && loRectOv(loBox(p, p.guy), b) > 0) cost += LO_WARN;
+    }else if(solid || pSolid){
+      if(bodyOv > 0){ if(!solid) cost += 0.5 * loRectArea(b, pb); return; }   // 타프가 덮는 건 괜찮음(덜 겹치는 쪽을 조금 더 좋게)
+      const tarp = solid ? p : c, s = solid ? c : p;
+      if(tarp.guy > 0 && loRectOv(loBox(tarp, tarp.guy), loBox(s, 0)) > 0) cost += LO_WARN;
+    }
+  });
+  if(solid){
+    const dist = loEntDist(b, W, D, ent);
+    if(dist < LO_AISLE_MIN - 1e-6) cost += LO_WARN + 100 * (LO_AISLE_MIN - dist);
+    else if(dist < LO_AISLE_PREF - 1e-6) cost += 20;
+    const back = ent === 'bottom' ? b.y0 : ent === 'top' ? D - b.y1 : ent === 'left' ? W - b.x1 : b.x0;
+    cost += 2 * Math.max(0, back);
+    cost += 0.3 * Math.max(0, (ent === 'bottom' || ent === 'top') ? b.x0 : b.y0);
+    if(c.kind === 'tent'){
+      const side = loDoorSide(c);
+      if(loEntDist(b, W, D, side) < 1.0) cost += 40;   // 문 앞이 바로 사이트 끝(벽)
+      if(side !== ent) cost += 4;
+      const zone = loDoorZone(b, side, 1.0);
+      if(placed.some(p=>loSolid(p) && p.w > 0 && loRectOv(zone, loBox(p, 0)) > 0)) cost += 30;
+    }
+    placed.forEach(p=>{ if(p.kind === 'tent' && p.w > 0 && loRectOv(loDoorZone(loBox(p, 0), loDoorSide(p), 1.0), b) > 0) cost += 30; });   // 놓인 텐트 문 앞을 막지 않게
+  }else if(front){
+    cost += Math.hypot(c.x - front.x, c.y - front.y);   // 타프: 가장 큰 텐트 출입문 앞에 가까울수록
+  }
+  return cost;
+}
+function loBestSpot(it, placed, site, extra, front){
+  const { W, D } = site;
+  const rots = it.kind === 'tent' ? LO_ROTS : (Math.abs(it.w - it.d) < 1e-6 ? [0] : [0, 90]);
+  let best = null;
+  const tryAt = (x, y, rot) => {
+    const c = { ...it, x: loR1(x), y: loR1(y), rot };
+    const cost = loSpotCost(c, placed, site, front);
+    if(!best || cost < best.cost - 1e-9) best = { x: c.x, y: c.y, rot, cost };
+  };
+  // 0.1m 격자 위의 중심 후보(본체가 사이트 안에 들어가게 안쪽으로 맞춤). 사이트보다 크면 가운데
+  const range = (len, size, step) => {
+    const lo = Math.ceil((size/2) * 10 - 1e-6) / 10, hi = Math.floor((len - size/2) * 10 + 1e-6) / 10;
+    if(hi < lo) return [loR1(len/2)];
+    const out = [];
+    for(let v = lo; v <= hi + 1e-9; v += step) out.push(loR1(v));
+    if(out[out.length - 1] < hi - 1e-9) out.push(hi);
+    return out;
+  };
+  (extra || []).forEach(c=>tryAt(c.x, c.y, c.rot));
+  const step = Math.max(0.25, Math.max(W, D) / 60);
+  rots.forEach(rot=>{
+    const dm = loDims({ ...it, rot });
+    const xs = range(W, dm.w, step), ys = range(D, dm.d, step);
+    xs.forEach(x=>ys.forEach(y=>tryAt(x, y, rot)));
+  });
+  // 0.1m로 다듬기
+  const b0 = { ...best };
+  for(let dx = -step; dx <= step + 1e-9; dx += 0.1) for(let dy = -step; dy <= step + 1e-9; dy += 0.1) tryAt(b0.x + dx, b0.y + dy, b0.rot);
+  return best;
+}
+// 타프 후보: 가장 큰 텐트의 출입문 앞(문 쪽 변에 붙이거나 조금 덮게)
+function loTarpCandidates(tarp, tent){
+  if(!tent) return [];
+  const tb = loBox(tent, 0), side = loDoorSide(tent), out = [];
+  [0, 90].forEach(rot=>{
+    const dm = loDims({ ...tarp, rot });
+    [0, 0.3, 0.6].forEach(ov=>{
+      for(let s = -1; s <= 1.001; s += 0.25){
+        if(side === 'bottom') out.push({ x: tent.x + s, y: tb.y1 - ov + dm.d/2, rot });
+        else if(side === 'top') out.push({ x: tent.x + s, y: tb.y0 + ov - dm.d/2, rot });
+        else if(side === 'left') out.push({ x: tb.x0 + ov - dm.w/2, y: tent.y + s, rot });
+        else out.push({ x: tb.x1 - ov + dm.w/2, y: tent.y + s, rot });
+      }
+    });
+  });
+  return out;
+}
+function loTarpFront(tarp, tent){
+  if(!tent) return null;
+  const tb = loBox(tent, 0), side = loDoorSide(tent), h = Math.min(tarp.w, tarp.d) / 2;
+  return side === 'bottom' ? { x: tent.x, y: tb.y1 + h } : side === 'top' ? { x: tent.x, y: tb.y0 - h } : side === 'left' ? { x: tb.x0 - h, y: tent.y } : { x: tb.x1 + h, y: tent.y };
+}
+// ids를 주면 그 물건만 빈 곳에(나머지는 그대로), 없으면 전부 다시 놓기. 결과 { pos: {id:{x,y,rot}}, failed:[물건] }
+function loAutoArrange(L, ids){
+  const site = loSite(L);
+  const all = loItems(L);
+  const set = ids ? new Set(ids) : null;
+  const moving = all.filter(it=>!set || set.has(it.id));
+  const placed = all.filter(it=>set && !set.has(it.id));
+  const area = it => it.w * it.d;
+  const byArea = list => list.sort((a, b)=> area(b) - area(a));
+  const order = [...byArea(moving.filter(it=>it.kind === 'tent')), ...byArea(moving.filter(it=>it.kind === 'item')), ...byArea(moving.filter(it=>it.kind === 'tarp'))];
+  const pos = {}, failed = [];
+  order.forEach(it=>{
+    let spot;
+    if(!(it.w > 0 && it.d > 0)) spot = { x: loR1(site.W/2), y: loR1(site.D/2), rot: 0, cost: 0 };
+    else{
+      const mainTent = it.kind === 'tarp' ? byArea(placed.filter(p=>p.kind === 'tent' && p.w > 0))[0] : null;
+      spot = loBestSpot(it, placed, site, loTarpCandidates(it, mainTent), loTarpFront(it, mainTent));
+      if(spot.cost >= LO_BAD){ failed.push(it); if(set) spot = { x: loR1(site.W/2), y: loR1(site.D/2), rot: it.rot || 0 }; }
+    }
+    pos[it.id] = { x: spot.x, y: spot.y, rot: spot.rot };
+    placed.push({ ...it, ...pos[it.id] });
+  });
+  return { pos, failed };
+}
+
+/* ---- 저장: 편집 동작(op) 단위 ----
+ * op(items 배열을 고치는 함수, 여러 번 적용해도 같은 결과)를 내 화면에 먼저, 그다음 저장소의 최신 문서에 다시 적용해
+ * update({ items, updatedBy, updatedAt }) — items는 id 기준이라 두 사람이 다른 물건을 동시에 옮겨도 둘 다 남는다.
+ * 최근 8초 op는 replayLayoutOps()가 배치 스냅샷마다 다시 적용해 빠졌으면 다시 저장(거의 동시에 다른 기기가 덮어쓴 경우). 끄는 도중에는 저장하지 않는다. */
+const loOps = {
+  add: items=>arr=>{ items.forEach(it=>{ if(!arr.some(x=>x && x.id === it.id)) arr.push(unfreeze(it)); }); },
+  insert: (it, idx)=>arr=>{ if(!arr.some(x=>x && x.id === it.id)) arr.splice(Math.min(idx, arr.length), 0, unfreeze(it)); },
+  remove: id=>arr=>{ const i = arr.findIndex(x=>x && x.id === id); if(i >= 0) arr.splice(i, 1); },
+  set: (id, fields)=>arr=>{ const x = arr.find(y=>y && y.id === id); if(x) Object.assign(x, unfreeze(fields)); },
+  setMany: map=>arr=>{ arr.forEach(x=>{ if(x && map[x.id]) Object.assign(x, unfreeze(map[x.id])); }); },
+};
+function layoutsOf(space){ return space === 'me' ? state.layouts : (state.space === space ? state.groupLayouts : []); }
+function findLayout(space, id){ return (layoutsOf(space) || []).find(l=>l.id === id) || null; }
+function loRawItems(d){ return Array.isArray(d && d.items) ? d.items.filter(x=>x && typeof x === 'object') : []; }
+function mutateLayout(space, id, op){
+  const L = findLayout(space, id);
+  if(L){
+    const local = unfreeze(loRawItems(L));
+    op(local);
+    L.items = local;
+    if(state.user) L.updatedBy = state.user.uid;
+    L.updatedAt = new Date().toISOString();
+    renderView();
+  }
+  if(!state.dbAvailable || !state.user) return;
+  const ref = spaceDbOf(space).collection('layouts').doc(id);
+  const write = items=>{
+    const cur = findLayout(space, id);
+    if(cur) cur.items = items;
+    return ref.update({ items, updatedBy: state.user.uid, updatedAt: new Date().toISOString() });
+  };
+  rememberLayoutOp(space, id, op);
+  safePersist(()=>ref.get().then(snap=>{
+    if(!snap.exists) return;   // 그 사이 배치가 지워짐
+    const latest = unfreeze(loRawItems(snap.data()));
+    op(latest);
+    return write(latest);
+  }, ()=>{ if(L) return write(unfreeze(L.items)); }));
+}
+const _layoutPending = {};
+function rememberLayoutOp(space, id, op){
+  const k = space + '|' + id;
+  (_layoutPending[k] = _layoutPending[k] || []).push({ op, until: Date.now() + 8000, tries: 0 });
+}
+function replayLayoutOps(space){
+  if(!state.dbAvailable || !state.user) return;
+  const now = Date.now();
+  Object.keys(_layoutPending).forEach(k=>{
+    const [sp, id] = k.split('|');
+    if(sp !== space) return;
+    const list = _layoutPending[k].filter(p=>p.until > now && p.tries < 3);
+    const L = findLayout(sp, id);
+    if(!list.length || !L){ delete _layoutPending[k]; return; }
+    _layoutPending[k] = list;
+    const next = unfreeze(loRawItems(L));
+    list.forEach(p=>p.op(next));
+    if(JSON.stringify(next) === JSON.stringify(loRawItems(L))) return;
+    list.forEach(p=>{ p.tries++; });
+    L.items = next;
+    const ref = spaceDbOf(sp).collection('layouts').doc(id);
+    safePersist(()=>ref.update({ items: next, updatedBy: state.user.uid, updatedAt: new Date().toISOString() }));
+  });
+}
+// 이름·사이트 크기·진입로·일정 연결 같은 필드만 바꾸기(null이면 필드 삭제). items는 건드리지 않음
+function updateLayoutFields(space, id, fields){
+  const L = findLayout(space, id);
+  const now = new Date().toISOString(), me = state.user ? state.user.uid : null;
+  if(L){ Object.entries(fields).forEach(([k, v])=>{ if(v === null || v === undefined) delete L[k]; else L[k] = v; }); if(me) L.updatedBy = me; L.updatedAt = now; }
+  if(!state.dbAvailable || !me) return;
+  const db = spaceDbOf(space), data = { updatedBy: me, updatedAt: now };
+  Object.entries(fields).forEach(([k, v])=>{ data[k] = (v === null || v === undefined) ? db.deleteField() : v; });
+  safePersist(()=>db.collection('layouts').doc(id).update(data));
+}
+function persistLayout(L){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('layouts').doc(L.id).set(stripId(L))); }
+function deleteLayoutRemote(id){ if(!state.dbAvailable) return; const db = spaceDb(); safePersist(()=>db.collection('layouts').doc(id).delete()); }
+
+/* ---- 화면: 목록 / 편집 ---- */
+state.layouts = []; state.groupLayouts = [];
+state.layoutSel = null;    // 편집 중인 배치 id(없으면 목록)
+state.layoutPick = null;   // 고른 물건 id
+state.layoutHint = null;   // 자동 배치 결과 안내 { id, text }
+let _loView = null;        // 배치판 축척·위치 { scale, minX, minY, pads, width, height } — 끄는 동안은 고정
+let _loDrag = null;        // 끌기 중: { pointerId, id, sx, sy, moved, space, layoutId, off, orig }
+let _loDeferredRender = false;
+function loCurrent(){
+  if(state.currentView !== 'layouts' || !state.layoutSel) return null;
+  return SP.layouts.find(l=>l.id === state.layoutSel) || null;
+}
+function loPicked(L){
+  L = L || loCurrent();
+  if(!L || !state.layoutPick) return null;
+  return loItems(L).find(it=>it.id === state.layoutPick) || null;
+}
+// 놓을 때 사본으로 저장한 크기와 장비의 지금 크기가 다르면 "새로 불러오기"
+function loGearOf(it){ return it.gearId ? (SP.gear.find(g=>g.id === it.gearId) || state.gear.find(g=>g.id === it.gearId) || null) : null; }
+function loStale(it){
+  const g = loGearOf(it), fp = g && normFootprint(g.footprint);
+  if(!fp) return null;
+  return (fp.kind !== it.kind || fp.shape !== it.shape || Math.abs(fp.w - it.w) > 1e-6 || Math.abs(fp.d - it.d) > 1e-6 || Math.abs(fp.guy - it.guy) > 1e-6) ? fp : null;
+}
+function loSiteLine(L){
+  const { W, D, ent } = loSite(L);
+  return [`사이트 ${fmtM(W)} × ${fmtM(D)}m`, L.siteType || '', `진입로 ${LO_ENT_LABEL[ent]}`].filter(Boolean).join(' · ');
+}
+function loTripOf(L){ return L && L.tripId ? (SP.trips.find(t=>t.id === L.tripId) || null) : null; }
+function loPreviewSvg(L){
+  const { W, D } = loSite(L);
+  const pad = Math.max(W, D) * 0.05;
+  const items = loItems(L).filter(it=>it.w > 0 && it.d > 0);
+  const order = [...items.filter(it=>it.kind === 'item'), ...items.filter(it=>it.kind === 'tent'), ...items.filter(it=>it.kind === 'tarp')];
+  return `<svg class="lo-prev" viewBox="${-pad} ${-pad} ${W + 2*pad} ${D + 2*pad}" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+    <rect class="lo-site" x="0" y="0" width="${W}" height="${D}" vector-effect="non-scaling-stroke"/>
+    ${order.map(it=>{ const b = loBox(it, 0); const w = b.x1 - b.x0, h = b.y1 - b.y0;
+      return it.shape === 'round' ? `<ellipse class="lo-pv lo-pv-${it.kind}" cx="${it.x}" cy="${it.y}" rx="${w/2}" ry="${h/2}" vector-effect="non-scaling-stroke"/>`
+        : `<rect class="lo-pv lo-pv-${it.kind}" x="${b.x0}" y="${b.y0}" width="${w}" height="${h}" vector-effect="non-scaling-stroke"/>`; }).join('')}
+  </svg>`;
+}
+function renderLayoutsPage(){
+  const top = subTabsHtml('gear') + spaceChipsHtml();
+  const L = state.layoutSel ? SP.layouts.find(l=>l.id === state.layoutSel) : null;
+  if(state.layoutSel && !L){ state.layoutSel = null; state.layoutPick = null; }
+  return top + (L ? layoutEditorHtml(L) : layoutListHtml());
+}
+function layoutListHtml(){
+  const grp = currentGroup();
+  const list = [...SP.layouts].sort((a, b)=> String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+  const canFromLog = state.campingLogs.some(c=>parseSiteSize(c.siteSize));
+  const head = `
+    <div class="section-head">
+      <div style="min-width:0;flex:1;"><h1>${grp ? esc(grp.name) + ' 사이트 배치' : '사이트 배치'}</h1><div class="section-desc">사이트 크기 안에 텐트·타프를 실제 크기로 놓아 보고, 피칭이 되는지 미리 확인해요.${grp ? ' 그룹 멤버 모두가 함께 보고 고쳐요.' : ''}</div></div>
+      <button class="btn btn-accent" data-action="lo-new">${icon('plus')} 배치 만들기</button>
+    </div>`;
+  if(!list.length){
+    return head + `
+      <div class="card placeholder-card lo-empty">
+        ${icon('layout')}
+        <h2>사이트 크기에 우리 텐트가 들어가는지 미리 놓아 봐요</h2>
+        <p>장비에 바닥 크기를 넣어 두면 텐트 2동, 타프까지 실제 크기로 놓고 "가능 · 확인 필요 · 어려움"을 바로 볼 수 있어요.</p>
+        <button class="btn btn-accent lo-empty-btn" data-action="lo-new">${icon('plus')} 배치 만들기</button>
+      </div>
+      ${canFromLog ? `<button type="button" class="card lo-from-log" data-action="lo-from-log">${icon('camping')}<span><b>지난 캠핑 후기의 사이트 크기로 시작할 수 있어요</b><span class="meta">후기에서 불러오기</span></span>${icon('chev', 'chev-mini')}</button>` : ''}`;
+  }
+  return head + list.map(L=>{
+    const v = layoutVerdict(L), tag = loVerdictTag(v), trip = loTripOf(L);
+    const its = loItems(L);
+    const names = [...new Set(its.map(it=>it.name))];
+    const what = names.length ? names.slice(0, 4).join(', ') + (names.length > 4 ? ` 외 ${names.length - 4}개` : '') : '아직 놓은 물건이 없어요';
+    return `
+      <div class="card lo-card" data-action="lo-open" data-id="${esc(L.id)}">
+        ${loPreviewSvg(L)}
+        <div class="lo-card-main">
+          <div class="lo-card-title">${esc(L.title || '배치')}</div>
+          <div class="lo-card-meta"><span class="num">${fmtM(loSite(L).W)} × ${fmtM(loSite(L).D)}m</span> · ${esc(what)}</div>
+          <div class="lo-card-tags">
+            <span class="tag lo-tag lo-tag-${tag.cls}">${esc(tag.text)}</span>
+            ${trip ? `<span class="tag trip-tag">${icon('calendar')}${esc(trip.title)}</span>` : ''}
+            ${grp && L.createdBy ? `<span class="owner-tag lo-owner" title="만든 사람">${memberAvatarHtml(grp, L.createdBy)}${esc(memberName(grp, L.createdBy))}</span>` : ''}
+          </div>
+        </div>
+        ${moreMenuHtml('lo:' + L.id, [
+          { action:'lo-meta', attrs:{ 'data-id': L.id }, icon:'edit', label:'이름·사이트 크기 바꾸기' },
+          { action:'lo-dup', attrs:{ 'data-id': L.id }, icon:'template', label:'복제' },
+          { action:'lo-trip', attrs:{ 'data-id': L.id }, icon:'calendar', label:'일정 연결/해제' },
+          { action:'lo-del', attrs:{ 'data-id': L.id }, icon:'trash', label:'배치 삭제', danger:true },
+        ], `'${L.title || '배치'}' 배치 메뉴`)}
+      </div>`;
+  }).join('');
+}
+function layoutEditorHtml(L){
+  const v = layoutVerdict(L, { free:true });
+  const its = loItems(L);
+  const trip = loTripOf(L);
+  const pick = loPicked(L);
+  return `
+    <div class="lo-top">
+      <button class="icon-btn lo-back" data-action="lo-back" aria-label="배치 목록" title="배치 목록">${icon('chev', 'chev-back')}</button>
+      <h1 class="lo-title">${esc(L.title || '배치')}</h1>
+      ${moreMenuHtml('lo:' + L.id, [
+        { action:'lo-meta', attrs:{ 'data-id': L.id }, icon:'edit', label:'이름·사이트 크기 바꾸기' },
+        { action:'lo-trip', attrs:{ 'data-id': L.id }, icon:'calendar', label:'일정 연결/해제' },
+        { action:'lo-dup', attrs:{ 'data-id': L.id }, icon:'template', label:'복제' },
+        { action:'lo-del', attrs:{ 'data-id': L.id }, icon:'trash', label:'배치 삭제', danger:true },
+      ], `'${L.title || '배치'}' 배치 메뉴`)}
+    </div>
+    <div class="lo-siteline">사이트 <span class="num">${fmtM(loSite(L).W)} × ${fmtM(loSite(L).D)}m</span>${L.siteType ? ' · ' + esc(L.siteType) : ''} · 진입로 ${esc(LO_ENT_LABEL[loSite(L).ent])} · <button class="link-btn lo-size-link" data-action="lo-meta" data-id="${esc(L.id)}">크기 바꾸기</button>${trip ? ` <span class="tag trip-tag">${icon('calendar')}${esc(trip.title)}</span>` : ''}</div>
+    ${layoutVerdictHtml(L, v)}
+    <div class="lo-actions">
+      <button class="btn btn-accent" data-action="lo-place">${icon('plus')} 장비 놓기</button>
+      <button class="btn" data-action="lo-auto" ${its.length ? '' : 'disabled'}>${icon('wand')} 자동 배치</button>
+    </div>
+    <div class="card lo-board-card"><div class="lo-board" id="lo-board" aria-label="배치판"></div>
+      <div class="lo-legend" aria-hidden="true"><span class="lo-lg lo-lg-tent"></span>텐트·쉘터 <span class="lo-lg lo-lg-tarp"></span>타프 <span class="lo-lg lo-lg-item"></span>기타 <span class="lo-lg lo-lg-guy"></span>스트링 여유 <span class="lo-lg lo-lg-door"></span>출입문</div>
+    </div>
+    <div class="card lo-list">
+      <div class="lo-list-head"><b>놓은 물건</b> <span class="tag num">${its.length}</span><span class="lo-list-tip">누르면 골라서 옮기기·돌리기</span></div>
+      ${its.length ? its.map(it=>{
+        const p = v.per[it.id] || { level:'ok', notes:[] }, st = loStale(it), dm = loDims(it);
+        const note = p.notes[0];
+        return `<div class="lo-row-wrap">
+          <button type="button" class="lo-row ${pick && pick.id === it.id ? 'on' : ''}" data-action="lo-pick" data-item="${esc(it.id)}" aria-pressed="${!!(pick && pick.id === it.id)}">
+            <span class="lo-st lo-st-${p.level}" aria-hidden="true">${LO_MARK[p.level]}</span>
+            <span class="lo-row-main"><span class="lo-row-name">${esc(v.names[it.id] || it.name)}</span>
+              <span class="lo-row-meta">${esc(FP_KIND_LABEL[it.kind])}${it.shape === 'round' ? ' · 원형' : ''} · <span class="num">${fmtM(dm.w)}×${fmtM(dm.d)}m</span>${it.guy ? ` · 스트링 <span class="num">${fmtM(it.guy)}m</span>` : ''}</span>
+              ${note ? `<span class="lo-row-note lo-n-${note.level}">${esc(note.text)}</span>` : ''}</span>
+            <span class="sr-only">${p.level === 'ok' ? '문제 없음' : (p.level === 'bad' ? '어려움' : '확인 필요')}</span>
+          </button>
+          ${st ? `<div class="lo-stale">장비 크기가 바뀌었어요 <span class="num">(${esc(fpText(st))})</span> · <button class="link-btn" data-action="lo-refresh" data-item="${esc(it.id)}">새로 불러오기</button></div>` : ''}
+        </div>`;
+      }).join('') : `<div class="empty">아직 놓은 물건이 없어요. "+ 장비 놓기"로 텐트를 놓아 보세요.</div>`}
+    </div>
+    ${pick ? layoutBarHtml(L, pick, v) : ''}`;
+}
+function layoutVerdictHtml(L, v){
+  const big = !v.count ? '아직 놓은 물건이 없어요' : (v.level === 'bad' ? '어려움' : v.level === 'warn' ? '확인 필요' : '가능');
+  const sub = !v.count ? '장비를 놓으면 들어가는지 바로 알려 드려요.'
+    : v.level === 'bad' ? '이대로는 피칭하기 어려워요. 아래 이유를 눌러 그 물건을 옮겨 보세요.'
+    : v.level === 'warn' ? `피칭은 되지만 ${v.issues.length}가지를 확인해 보세요.` : '모두 사이트 안에 들어가고 서로 걸리지 않아요.';
+  const hint = state.layoutHint && state.layoutHint.id === L.id ? state.layoutHint.text : (v.need ? `모두 놓기엔 ${v.need.short} — ${v.need.min}` : '');
+  const lv = v.count ? v.level : 'none';
+  return `
+    <section class="card lo-verdict lo-v-${lv}" id="lo-verdict" aria-live="polite" aria-label="판정">
+      <div class="lo-v-big">${v.count ? `<span class="lo-v-ico" aria-hidden="true">${LO_MARK[v.level]}</span>` : ''}<span>${esc(big)}</span></div>
+      <div class="lo-v-sub">${esc(sub)}</div>
+      ${hint ? `<div class="lo-v-hint">${esc(hint)}</div>` : ''}
+      ${v.issues.length ? `<ul class="lo-issues">${v.issues.map(x=>`<li><button type="button" class="lo-issue lo-is-${x.level}" data-action="lo-issue" data-item="${esc(x.itemId || '')}"><span class="lo-is-ico" aria-hidden="true">${LO_MARK[x.level]}</span><span class="sr-only">${x.level === 'bad' ? '어려움:' : '확인:'}</span><span>${esc(x.text)}</span></button></li>`).join('')}</ul>` : ''}
+      ${v.count ? `<div class="lo-v-info">남는 바닥 <b class="num">${Math.round((v.free == null ? 1 : v.free) * 100)}%</b> · 진입로 쪽 통로 <b class="num">${fmtM(v.aisle)}m</b> · 물건 <b class="num">${v.count}</b>개</div>` : ''}
+    </section>`;
+}
+// 고른 물건과 사이트 경계 사이 거리: 왼쪽·오른쪽 중 가까운 쪽 + 위·아래 중 가까운 쪽(밖이면 "0.3m 밖")
+function loDistParts(L, it){
+  const { W, D } = loSite(L), b = loBox(it, 0);
+  const h = (b.x0 <= W - b.x1) ? { side:'left', v: b.x0 } : { side:'right', v: W - b.x1 };
+  const vv = (b.y0 <= D - b.y1) ? { side:'top', v: b.y0 } : { side:'bottom', v: D - b.y1 };
+  return [h, vv];
+}
+function loDistText(L, it){
+  return loDistParts(L, it).map(p=>`${LO_ENT_LABEL[p.side]} ${p.v < -0.001 ? fmtM(-p.v) + 'm 밖' : fmtM(Math.max(0, p.v)) + 'm'}`).join(' · ');
+}
+function layoutBarHtml(L, it, v){
+  const dm = loDims(it);
+  return `
+    <div class="select-bar lo-bar" id="lo-bar" role="toolbar" aria-label="고른 물건 도구">
+      <span class="lo-bar-info"><b>${esc(v.names[it.id] || it.name)}</b> <span class="num">${fmtM(dm.w)} × ${fmtM(dm.d)}m</span><span class="lo-bar-dist num" id="lo-bar-dist">${esc(loDistText(L, it))}</span></span>
+      <span class="lo-bar-btns">
+        <button class="btn btn-sm" data-action="lo-rot" aria-label="90° 돌리기">${icon('rotate')} 90°</button>
+        <button class="btn btn-sm" data-action="lo-pos">${icon('move')} 위치</button>
+        <button class="btn btn-sm" data-action="lo-del-item">${icon('trash')} 빼기</button>
+        <button class="icon-btn lo-unpick" data-action="lo-unpick" aria-label="선택 해제" title="선택 해제">${icon('close')}</button>
+      </span>
+    </div>`;
+}
+// 도구 막대가 떠 있는 동안 본문 아래 여백을 막대 높이만큼 늘림(아래 목록이 가려지지 않게)
+function syncLayoutBar(){
+  const bar = document.getElementById('lo-bar');
+  document.body.classList.toggle('lo-selecting', !!bar);
+  if(bar) document.body.style.setProperty('--lo-bar-h', Math.ceil(bar.getBoundingClientRect().height) + 'px');
+}
+
+/* ---- 배치판(SVG, px 단위로 그림) ---- */
+function loPads(ent){
+  const hr = ent === 'top' ? 'bottom' : 'top', vr = ent === 'left' ? 'right' : 'left';
+  const p = { top: 12, right: 12, bottom: 12, left: 12 };
+  p[hr] = 22; p[vr] = 30; p[ent] = 30;
+  return { pads: p, hr, vr };
+}
+function loComputeView(L, box){
+  const { W, D, ent } = loSite(L);
+  let minX = 0, minY = 0, maxX = W, maxY = D;
+  loItems(L).forEach(it=>{ if(!(it.w > 0 && it.d > 0)) return; const b = loBox(it, it.guy); minX = Math.min(minX, b.x0); minY = Math.min(minY, b.y0); maxX = Math.max(maxX, b.x1); maxY = Math.max(maxY, b.y1); });
+  const lim = LO_OUT_MAX + 1.5;
+  minX = Math.max(minX, -lim); minY = Math.max(minY, -lim); maxX = Math.min(maxX, W + lim); maxY = Math.min(maxY, D + lim);
+  const { pads, hr, vr } = loPads(ent);
+  const cw = Math.max(240, (box && box.clientWidth) || 320);
+  const maxH = Math.max(260, Math.round((window.innerHeight || 800) * 0.65));
+  let scale = Math.min((cw - pads.left - pads.right) / (maxX - minX), (maxH - pads.top - pads.bottom) / (maxY - minY));
+  scale = Math.max(3, Math.min(scale, 120));
+  return { scale, minX, minY, maxX, maxY, pads, hr, vr,
+    width: Math.round((maxX - minX) * scale + pads.left + pads.right), height: Math.round((maxY - minY) * scale + pads.top + pads.bottom) };
+}
+function loAria(L, it, v){
+  const b = loBox(it, 0), dm = loDims(it), p = v.per[it.id];
+  return `${v.names[it.id] || it.name} ${fmtM(dm.w)}×${fmtM(dm.d)}m, 왼쪽 ${fmtM(b.x0)}m 위 ${fmtM(b.y0)}m${p && p.notes.length ? ', 문제: ' + p.notes.map(n=>n.text).join(', ') : ''}`;
+}
+function drawLayoutBoard(freeze){
+  const box = document.getElementById('lo-board');
+  const L = loCurrent();
+  if(!box || !L) return;
+  const { W, D, ent } = loSite(L);
+  const items = loItems(L);
+  const v = layoutVerdict(L);
+  const view = (freeze && _loView) ? _loView : loComputeView(L, box);
+  _loView = view;
+  const s = view.scale;
+  const X = m => Math.round((view.pads.left + (m - view.minX) * s) * 10) / 10;
+  const Y = m => Math.round((view.pads.top + (m - view.minY) * s) * 10) / 10;
+  const parts = [];
+  // 사이트 + 1m 격자
+  parts.push(`<rect class="lo-site" x="${X(0)}" y="${Y(0)}" width="${Math.round(W * s * 10) / 10}" height="${Math.round(D * s * 10) / 10}"/>`);
+  const gstep = s >= 10 ? 1 : 5;
+  for(let x = gstep; x < W - 1e-6; x += gstep) parts.push(`<line class="lo-grid" x1="${X(x)}" y1="${Y(0)}" x2="${X(x)}" y2="${Y(D)}"/>`);
+  for(let y = gstep; y < D - 1e-6; y += gstep) parts.push(`<line class="lo-grid" x1="${X(0)}" y1="${Y(y)}" x2="${X(W)}" y2="${Y(y)}"/>`);
+  // 눈금(0, 1, 2…m — 좁으면 2m·5m 간격)
+  const tstep = s >= 40 ? 1 : s >= 18 ? 2 : 5;
+  const ticks = (len) => { const out = []; for(let t = 0; t <= len + 1e-6; t += tstep) out.push(loR1(t)); if(len - out[out.length - 1] > tstep * 0.45) out.push(loR1(len)); return out; };
+  const hy = view.hr === 'top' ? view.pads.top - 7 : view.height - view.pads.bottom + 15;
+  const ey = view.hr === 'top' ? Y(0) : Y(D);
+  ticks(W).forEach((t, i, arr)=>{ parts.push(`<line class="lo-tick" x1="${X(t)}" y1="${ey}" x2="${X(t)}" y2="${ey + (view.hr === 'top' ? -4 : 4)}"/><text class="lo-ruler" x="${X(t)}" y="${hy}" text-anchor="middle">${t}${i === arr.length - 1 ? 'm' : ''}</text>`); });
+  const vx = view.vr === 'left' ? view.pads.left - 6 : view.width - view.pads.right + 6;
+  const ex = view.vr === 'left' ? X(0) : X(W);
+  ticks(D).forEach((t, i, arr)=>{ parts.push(`<line class="lo-tick" x1="${ex}" y1="${Y(t)}" x2="${ex + (view.vr === 'left' ? -4 : 4)}" y2="${Y(t)}"/><text class="lo-ruler" x="${vx}" y="${Y(t) + 3.5}" text-anchor="${view.vr === 'left' ? 'end' : 'start'}">${t}${i === arr.length - 1 ? 'm' : ''}</text>`); });
+  // 진입로 띠(사이트 바깥, 진입로 쪽)
+  const band = 18, arrow = { bottom:'▲', top:'▼', left:'▶', right:'◀' }[ent];
+  if(ent === 'bottom' || ent === 'top'){
+    const by = ent === 'bottom' ? view.height - view.pads.bottom + 6 : view.pads.top - 6 - band;
+    parts.push(`<g class="lo-ent"><rect x="${X(0)}" y="${by}" width="${Math.round(W * s)}" height="${band}" rx="4"/><text x="${X(W/2)}" y="${by + 13}" text-anchor="middle">진입로 ${arrow}</text></g>`);
+  }else{
+    const bx = ent === 'right' ? view.width - view.pads.right + 6 : view.pads.left - 6 - band;
+    parts.push(`<g class="lo-ent"><rect x="${bx}" y="${Y(0)}" width="${band}" height="${Math.round(D * s)}" rx="4"/><text x="${bx + band/2 + 4}" y="${Y(D/2)}" text-anchor="middle" transform="rotate(${ent === 'right' ? 90 : -90} ${bx + band/2} ${Y(D/2)})">진입로 ${arrow}</text></g>`);
+  }
+  // 물건: 기타 → 텐트 → 타프(반투명, 위에) 순서, 고른 물건은 맨 위
+  const pick = state.layoutPick;
+  const order = [...items.filter(it=>it.kind === 'item'), ...items.filter(it=>it.kind === 'tent'), ...items.filter(it=>it.kind === 'tarp')]
+    .sort((a, b)=> (a.id === pick ? 1 : 0) - (b.id === pick ? 1 : 0));
+  order.forEach(it=>{
+    const p = v.per[it.id] || { level:'ok', notes:[] };
+    const b = loBox(it, 0), dm = loDims(it);
+    const x0 = X(b.x0), y0 = Y(b.y0), pw = Math.max(1, dm.w * s), ph = Math.max(1, dm.d * s);
+    const body = it.shape === 'round'
+      ? `<ellipse class="lo-body" cx="${X(it.x)}" cy="${Y(it.y)}" rx="${pw/2}" ry="${ph/2}"/>`
+      : `<rect class="lo-body" x="${x0}" y="${y0}" width="${pw}" height="${ph}" rx="${Math.min(4, pw/6, ph/6)}"/>`;
+    let guy = '';
+    if(it.guy > 0){
+      const g = loBox(it, it.guy), gw = (g.x1 - g.x0) * s, gh = (g.y1 - g.y0) * s;
+      guy = it.shape === 'round' ? `<ellipse class="lo-guy ${p.guyBad ? 'bad' : ''}" cx="${X(it.x)}" cy="${Y(it.y)}" rx="${gw/2}" ry="${gh/2}"/>`
+        : `<rect class="lo-guy ${p.guyBad ? 'bad' : ''}" x="${X(g.x0)}" y="${Y(g.y0)}" width="${gw}" height="${gh}" rx="3"/>`;
+    }
+    let door = '';
+    if(it.kind === 'tent'){
+      const side = loDoorSide(it), horiz = side === 'bottom' || side === 'top';
+      const len = Math.min(0.9 * s, (horiz ? pw : ph) * 0.4) / 2;
+      const cx = X(it.x), cy = Y(it.y);
+      door = horiz ? `<line class="lo-door" x1="${cx - len}" y1="${side === 'bottom' ? y0 + ph : y0}" x2="${cx + len}" y2="${side === 'bottom' ? y0 + ph : y0}"/>`
+        : `<line class="lo-door" x1="${side === 'right' ? x0 + pw : x0}" y1="${cy - len}" x2="${side === 'right' ? x0 + pw : x0}" y2="${cy + len}"/>`;
+    }
+    // 이름 + "2.7 × 2.4m"(작으면 이름만, 더 작으면 없음)
+    const name = v.names[it.id] || it.name;
+    let label = '';
+    if(pw >= 30 && ph >= 15){
+      const maxCh = Math.max(2, Math.floor((pw - 6) / 12));
+      const shown = name.length > maxCh ? name.slice(0, Math.max(1, maxCh - 1)) + '…' : name;
+      const showSize = ph >= 34 && pw >= 58;
+      const ty = it.kind === 'tarp' ? y0 + 15 : Y(it.y) + (showSize ? -2 : 4);
+      label = `<text class="lo-name" x="${X(it.x)}" y="${ty}" text-anchor="middle">${esc(shown)}</text>${showSize ? `<text class="lo-size" x="${X(it.x)}" y="${ty + 13}" text-anchor="middle">${fmtM(dm.w)} × ${fmtM(dm.d)}m</text>` : ''}`;
+    }
+    const note = p.notes[0];
+    const badge = note && p.level !== 'ok' ? `<text class="lo-badge ${p.level}" x="${X(it.x)}" y="${y0 > 16 ? y0 - 5 : y0 + ph + 13}" text-anchor="middle">${LO_MARK[p.level]} ${esc(note.text)}</text>` : '';
+    const sel = it.id === pick;
+    let selHtml = '';
+    if(sel){
+      const dots = [[x0, y0], [x0 + pw, y0], [x0, y0 + ph], [x0 + pw, y0 + ph]].map(([a, c])=>`<rect class="lo-dot" x="${a - 3.5}" y="${c - 3.5}" width="7" height="7" rx="1.5"/>`).join('');
+      const dist = loDistParts(L, it).map(dp=>{
+        if(dp.v <= 0.001) return '';
+        const t = fmtM(dp.v) + 'm';
+        if(dp.side === 'left' || dp.side === 'right'){
+          const yy = Y(Math.min(Math.max(it.y, 0), D)), xa = dp.side === 'left' ? X(0) : x0 + pw, xb = dp.side === 'left' ? x0 : X(W);
+          return `<line class="lo-dist" x1="${xa}" y1="${yy}" x2="${xb}" y2="${yy}"/><text class="lo-dist-t" x="${(xa + xb)/2}" y="${yy - 5}" text-anchor="middle">${t}</text>`;
+        }
+        const xx = X(Math.min(Math.max(it.x, 0), W)), ya = dp.side === 'top' ? Y(0) : y0 + ph, yb = dp.side === 'top' ? y0 : Y(D);
+        return `<line class="lo-dist" x1="${xx}" y1="${ya}" x2="${xx}" y2="${yb}"/><text class="lo-dist-t" x="${xx + 5}" y="${(ya + yb)/2 + 4}">${t}</text>`;
+      }).join('');
+      selHtml = dots + dist;
+    }
+    parts.push(`<g class="lo-it lo-k-${it.kind} lo-lv-${p.level} ${sel ? 'lo-sel' : ''}" data-lo-item="${esc(it.id)}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(loAria(L, it, v))}">${guy}${body}${door}${label}${badge}${selHtml}</g>`);
+  });
+  box.innerHTML = `<svg class="lo-svg" width="${view.width}" height="${view.height}" viewBox="0 0 ${view.width} ${view.height}" role="group" aria-label="사이트 ${fmtM(W)} × ${fmtM(D)}m 배치판, 물건 ${items.length}개">${parts.join('')}</svg>`;
+}
+// 누른 자리(m)의 물건: 고른 물건 → 텐트·기타(위에 그린 것) → 타프 순서
+function loHit(L, mx, my, tol){
+  const items = loItems(L).filter(it=>it.w > 0 && it.d > 0);
+  const inside = it => loInside(it, tol, mx, my);
+  const pick = items.find(it=>it.id === state.layoutPick && inside(it));
+  if(pick) return pick;
+  const solids = [...items.filter(it=>it.kind === 'item'), ...items.filter(it=>it.kind === 'tent')].reverse();
+  return solids.find(inside) || items.filter(it=>it.kind === 'tarp').reverse().find(inside) || null;
+}
+// 사이트 밖으로는 2m까지. round: 끌기는 0.1m(기본), 키보드는 0.05m(위치 창에서 적은 값이 흐트러지지 않게)
+function loClampPos(L, it, x, y, round){
+  const { W, D } = loSite(L), dm = loDims(it);
+  const rr = round || loR1;
+  const cl = (val, lo, hi) => Math.min(Math.max(val, Math.min(lo, hi)), Math.max(lo, hi));
+  return { x: rr(cl(x, Math.ceil((-LO_OUT_MAX + dm.w/2) * 10 - 1e-6) / 10, Math.floor((W + LO_OUT_MAX - dm.w/2) * 10 + 1e-6) / 10)),
+           y: rr(cl(y, Math.ceil((-LO_OUT_MAX + dm.d/2) * 10 - 1e-6) / 10, Math.floor((D + LO_OUT_MAX - dm.d/2) * 10 + 1e-6) / 10)) };
+}
+function loPointToM(e){
+  const box = document.getElementById('lo-board'), svg = box && box.querySelector('svg');
+  if(!svg || !_loView) return null;
+  const r = svg.getBoundingClientRect();
+  return { x: _loView.minX + (e.clientX - r.left - _loView.pads.left) / _loView.scale, y: _loView.minY + (e.clientY - r.top - _loView.pads.top) / _loView.scale };
+}
+// 끌어서 옮기기(Pointer Events — 마우스·터치 공통). 끄는 동안은 배치판만 다시 그리고 저장은 놓을 때 한 번
+function loPointerDown(e){
+  const box = e.target.closest && e.target.closest('#lo-board');
+  if(!box || (e.button !== undefined && e.button > 0)) return;
+  const L = loCurrent(), m = loPointToM(e);
+  if(!L || !m) return;
+  const hit = loHit(L, m.x, m.y, 6 / _loView.scale);
+  _loDrag = { pointerId: e.pointerId, id: hit ? hit.id : null, sx: e.clientX, sy: e.clientY, moved: false, space: spaceKey(), layoutId: L.id,
+    off: hit ? { x: m.x - hit.x, y: m.y - hit.y } : null, orig: hit ? { x: hit.x, y: hit.y } : null };
+  try{ box.setPointerCapture(e.pointerId); }catch(err){}
+  if(hit) e.preventDefault();
+}
+function loPointerMove(e){
+  const d = _loDrag;
+  if(!d || e.pointerId !== d.pointerId || !d.id) return;
+  if(!d.moved && Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 4) return;
+  const L = loCurrent();
+  const raw = L && L.id === d.layoutId ? loRawItems(L).find(x=>x.id === d.id) : null;
+  const m = loPointToM(e);
+  if(!raw || !m){ _loDrag = null; return; }
+  e.preventDefault();
+  if(!d.moved){ d.moved = true; state.layoutPick = d.id; }
+  const p = loClampPos(L, loItem(raw), m.x - d.off.x, m.y - d.off.y);
+  raw.x = p.x; raw.y = p.y;
+  drawLayoutBoard(true);
+  const dist = document.getElementById('lo-bar-dist');
+  if(dist) dist.textContent = loDistText(L, loItem(raw));
+}
+function loPointerUp(e){
+  const d = _loDrag;
+  if(!d || e.pointerId !== d.pointerId) return;
+  _loDrag = null;
+  const L = loCurrent();
+  const raw = L && L.id === d.layoutId && d.id ? loRawItems(L).find(x=>x.id === d.id) : null;
+  if(!d.moved || !raw){
+    _loDeferredRender = false;
+    const was = state.layoutPick;
+    state.layoutPick = d.id || null;
+    if(was !== state.layoutPick || !d.id) renderView();
+    return;
+  }
+  if(e.type === 'pointercancel'){ raw.x = d.orig.x; raw.y = d.orig.y; _loDeferredRender = false; renderView(); return; }
+  _loDeferredRender = false;
+  state.layoutHint = null;
+  if(Math.abs(raw.x - d.orig.x) < 1e-9 && Math.abs(raw.y - d.orig.y) < 1e-9){ renderView(); return; }
+  mutateLayout(d.space, d.layoutId, loOps.set(d.id, { x: raw.x, y: raw.y }));
+}
+function loFocusItem(id){
+  const el = id && document.querySelector(`[data-lo-item="${CSS.escape(id)}"]`);
+  if(el && el.focus) el.focus({ preventScroll: true });
+}
+// 키보드: 화살표 0.1m(Shift 0.5m), R 회전, Delete 빼기, Esc 선택 해제, Enter·Space 고르기
+function loKeydown(e, el){
+  const id = el.getAttribute('data-lo-item');
+  const L = loCurrent();
+  const it = L && loItems(L).find(x=>x.id === id);
+  if(!it) return false;
+  const step = e.shiftKey ? 0.5 : 0.1;
+  const mv = { ArrowLeft:[-step, 0], ArrowRight:[step, 0], ArrowUp:[0, -step], ArrowDown:[0, step] }[e.key];
+  if(mv){
+    e.preventDefault();
+    state.layoutPick = id; state.layoutHint = null;
+    const p = loClampPos(L, it, it.x + mv[0], it.y + mv[1], v=>Math.round(v * 20) / 20);
+    mutateLayout(spaceKey(), L.id, loOps.set(id, p));
+    loFocusItem(id);
+    return true;
+  }
+  if(e.key === 'r' || e.key === 'R' || e.key === 'ㄱ'){ e.preventDefault(); state.layoutPick = id; loRotate(); loFocusItem(id); return true; }
+  if(e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); state.layoutPick = id; loRemovePicked(); return true; }
+  if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); state.layoutPick = state.layoutPick === id ? null : id; renderView(); loFocusItem(id); return true; }
+  if(e.key === 'Escape' && state.layoutPick){ e.preventDefault(); state.layoutPick = null; renderView(); loFocusItem(id); return true; }
+  return false;
+}
+
+/* ---- 편집 동작 ---- */
+function loRotate(){
+  const L = loCurrent(), it = loPicked(L);
+  if(!it) return;
+  state.layoutHint = null;
+  mutateLayout(spaceKey(), L.id, loOps.set(it.id, { rot: (it.rot + 90) % 360 }));
+}
+function loRemovePicked(){
+  const L = loCurrent(), it = loPicked(L);
+  if(!it) return;
+  const space = spaceKey(), lid = L.id;
+  const raw = loRawItems(L), idx = raw.findIndex(x=>x.id === it.id), copy = unfreeze(raw[idx]);
+  const name = layoutVerdict(L).names[it.id] || it.name;
+  state.layoutPick = null; state.layoutHint = null;
+  mutateLayout(space, lid, loOps.remove(it.id));
+  undoToast(`${josa(name, '을', '를')} 뺐어요.`, ()=>{ mutateLayout(space, lid, loOps.insert(copy, idx)); toast('되돌렸어요.', 'ok'); });
+}
+// 정확한 위치: 왼쪽 위 모서리(사이트 왼쪽 위에서 x, y m)를 숫자로
+function fmtPos(v){ return String(Math.round(Number(v) * 100) / 100); }
+function loPosModal(){
+  const L = loCurrent(), it = loPicked(L);
+  if(!it) return;
+  const { W, D } = loSite(L), dm = loDims(it), b = loBox(it, 0);
+  const name = layoutVerdict(L).names[it.id] || it.name;
+  openModal(`
+    <h3>위치 정하기</h3>
+    <p class="lf-note">'${esc(name)}'의 <b>왼쪽 위 모서리</b>가 사이트 왼쪽 위에서 얼마나 떨어져 있는지 m로 적어요.</p>
+    <div class="lo-pos-row">
+      <div class="field"><label for="lpos-x">왼쪽에서 (x)</label><input id="lpos-x" inputmode="decimal" autocomplete="off" value="${esc(fmtPos(b.x0))}"></div>
+      <div class="field"><label for="lpos-y">위에서 (y)</label><input id="lpos-y" inputmode="decimal" autocomplete="off" value="${esc(fmtPos(b.y0))}"></div>
+    </div>
+    <div class="field-hint">사이트 <span class="num">${fmtM(W)} × ${fmtM(D)}m</span> · 물건 <span class="num">${fmtM(dm.w)} × ${fmtM(dm.d)}m</span> — 오른쪽 끝에 붙이려면 x = <span class="num">${fmtPos(W - dm.w)}</span></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="lo-pos-save">${icon('save')} 옮기기</button>
+    </div>`);
+}
+function loPosSave(){
+  const L = loCurrent(), it = loPicked(L);
+  if(!it){ closeModal(); return; }
+  const x0 = parseMeters((document.getElementById('lpos-x') || {}).value), y0 = parseMeters((document.getElementById('lpos-y') || {}).value);
+  const { W, D } = loSite(L), dm = loDims(it);
+  if(x0 === null || y0 === null || isNaN(x0) || isNaN(y0)){ toast('x, y를 숫자(m)로 적어 주세요.'); return; }
+  if(x0 < -LO_OUT_MAX - 1e-6 || y0 < -LO_OUT_MAX - 1e-6 || x0 + dm.w > W + LO_OUT_MAX + 1e-6 || y0 + dm.d > D + LO_OUT_MAX + 1e-6){ toast(`사이트 밖으로는 ${LO_OUT_MAX}m까지만 놓을 수 있어요.`); return; }
+  // 적은 모서리 값이 그대로 남게 중심은 0.05m까지 저장
+  const r2 = v => Math.round(v * 20) / 20;
+  closeModal();
+  state.layoutHint = null;
+  mutateLayout(spaceKey(), L.id, loOps.set(it.id, { x: r2(x0 + dm.w / 2), y: r2(y0 + dm.d / 2) }));
+}
+function loRefreshItem(itemId){
+  const L = loCurrent(); const it = L && loItems(L).find(x=>x.id === itemId);
+  const fp = it && loStale(it);
+  if(!fp) return;
+  mutateLayout(spaceKey(), L.id, loOps.set(itemId, { kind: fp.kind, shape: fp.shape, w: fp.w, d: fp.d, guy: fp.guy }));
+  toast('장비의 새 크기로 바꿨어요.', 'ok');
+}
+function runAutoLayout(){
+  const L = loCurrent();
+  if(!L) return;
+  const items = loItems(L);
+  if(!items.length){ toast('먼저 장비를 놓아 주세요.'); return; }
+  const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+  const r = loAutoArrange(L);
+  state.loAutoMs = ((window.performance && performance.now) ? performance.now() : Date.now()) - t0;
+  const prev = {};
+  items.forEach(it=>{ prev[it.id] = { x: it.x, y: it.y, rot: it.rot }; });
+  const space = spaceKey(), lid = L.id;
+  let hint = null;
+  if(r.failed.length){
+    const after = { ...L, items: loRawItems(L).map(x=>({ ...x, ...(r.pos[x.id] || {}) })) };
+    const need = loNeed(loItems(after), loSite(L).W, loSite(L).D);
+    hint = { id: lid, text: `${josa(r.failed[0].name, '을', '를')} 놓을 자리가 없어요 — ${need ? need.short + ', ' + need.min : '끌어서 옮기거나 돌려 보세요.'}` };
+  }
+  state.layoutHint = hint;
+  mutateLayout(space, lid, loOps.setMany(r.pos));
+  undoToast('자동으로 놓았어요.', ()=>{ state.layoutHint = null; mutateLayout(space, lid, loOps.setMany(prev)); toast('되돌렸어요.', 'ok'); });
+}
+
+/* ---- 배치 만들기·고치기 ---- */
+function openLayout(id){
+  state.layoutSel = id; state.layoutPick = null; state.layoutHint = null;
+  if(state.currentView !== 'layouts'){ state.currentView = 'layouts'; if(state.gearSelecting) setGearSelecting(false); renderNav(); }
+  renderView();
+  const m = document.getElementById('main'); if(m) m.scrollTop = 0;
+}
+function layoutTripOptionsHtml(cur){
+  const trips = sortTrips(SP.trips).filter(t=>tripPhase(t).kind !== 'past' || t.id === cur);
+  return `<option value="">연결 안 함</option>` + trips.map(t=>`<option value="${esc(t.id)}" ${t.id === cur ? 'selected' : ''}>${esc(t.title)}${t.startDate ? ' · ' + esc(fmtTripDates(t)) : ''}</option>`).join('');
+}
+function layoutFormModal(id, pf){
+  pf = pf || {};
+  const L = id ? SP.layouts.find(l=>l.id === id) : null;
+  if(id && !L) return;
+  const g = currentGroup();
+  const log = pf.logId ? state.campingLogs.find(c=>c.id === pf.logId) : null;
+  const ls = log ? parseSiteSize(log.siteSize) : null;
+  const init = L ? { title: L.title || '', w: loSite(L).W, d: loSite(L).D, type: L.siteType || '', ent: loSite(L).ent, tripId: L.tripId || '', logId: L.logId || '' }
+    : { title: pf.title || (log ? log.name : '새 배치'), w: ls ? ls.w : '', d: ls ? ls.d : '', type: log && SITE_TYPES.includes(log.siteType) ? log.siteType : '', ent: 'bottom', tripId: pf.tripId || '', logId: log ? log.id : '' };
+  const logs = [...state.campingLogs].sort((a, b)=> String(b.date || '').localeCompare(String(a.date || '')));
+  const hasTrips = sortTrips(SP.trips).some(t=>tripPhase(t).kind !== 'past' || t.id === init.tripId);
+  const sizeHint = log && !ls ? `후기의 사이트 크기${log.siteSize ? `('${log.siteSize}')` : ''}를 읽지 못했어요. 가로·세로를 직접 적어 주세요.` : '예: 6 × 8. 1~50m까지 적을 수 있어요.';
+  openModal(`
+    <h3>${L ? '배치 이름·사이트 크기' : '사이트 배치 만들기'}</h3>
+    <p class="lf-note">${g ? `<b>${esc(g.name)}</b> 그룹 배치예요. 멤버 모두가 함께 보고 고쳐요.` : '내 공간 배치예요. 나만 보여요.'}</p>
+    ${!L && logs.length ? `<div class="field"><label for="lf-log">후기에서 불러오기</label>
+      <select id="lf-log"><option value="">직접 입력</option>${logs.map(c=>{ const sz = parseSiteSize(c.siteSize); return `<option value="${esc(c.id)}" ${c.id === init.logId ? 'selected' : ''}>${esc(c.name || '이름 없음')}${c.date ? ' · ' + esc(c.date) : ''} · ${sz ? esc(fmtM(sz.w) + ' × ' + fmtM(sz.d) + 'm') : '크기 직접 입력'}</option>`; }).join('')}</select>
+      <div class="field-hint">고르면 캠핑장 이름·사이트 크기·바닥 종류를 채워요.</div></div>` : ''}
+    <input type="hidden" id="lf-logid" value="${esc(init.logId)}">
+    <div class="field"><label for="lf-title">이름</label><input id="lf-title" maxlength="60" value="${esc(init.title)}" placeholder="예: 홍천 A-12"></div>
+    <div class="field"><label for="lf-w">사이트 크기 <span class="meta">(m)</span></label>
+      <div class="lo-size-row"><input id="lf-w" inputmode="decimal" autocomplete="off" aria-label="사이트 가로(m)" placeholder="가로" value="${init.w !== '' ? esc(fmtM(init.w)) : ''}"><span aria-hidden="true">×</span><input id="lf-d" inputmode="decimal" autocomplete="off" aria-label="사이트 세로(m)" placeholder="세로" value="${init.d !== '' ? esc(fmtM(init.d)) : ''}"><span aria-hidden="true">m</span></div>
+      <div class="field-hint" id="lf-size-hint">${esc(sizeHint)}</div></div>
+    <div class="field"><label>바닥 종류 <span class="meta">(선택)</span></label><input type="hidden" id="lf-type" value="${esc(init.type)}">
+      <div class="seg-group" id="lf-types">${SITE_TYPES.map(t=>`<button type="button" class="seg-btn ${t === init.type ? 'active' : ''}" data-action="lf-type" data-val="${esc(t)}" aria-pressed="${t === init.type}">${esc(t)}</button>`).join('')}</div></div>
+    <div class="field"><label>진입로 쪽</label><input type="hidden" id="lf-ent" value="${esc(init.ent)}">
+      <div class="seg-group" id="lf-ents">${LO_ENTRANCES.map(x=>`<button type="button" class="seg-btn ${x.key === init.ent ? 'active' : ''}" data-action="lf-ent" data-val="${x.key}" aria-pressed="${x.key === init.ent}">${x.label}</button>`).join('')}</div>
+      <div class="field-hint">차나 사람이 들어오는 쪽이에요. 자동 배치가 이쪽에 통로를 남겨요.</div></div>
+    ${hasTrips ? `<div class="field"><label for="lf-trip">일정 연결 <span class="meta">(선택)</span></label><select id="lf-trip">${layoutTripOptionsHtml(init.tripId)}</select></div>` : ''}
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="lo-save" data-id="${L ? esc(L.id) : ''}">${icon('save')} ${L ? '저장' : '만들기'}</button>
+    </div>`);
+}
+// 후기를 고르면 이름·사이트 크기·바닥 종류 채움(크기를 못 읽으면 안내)
+function layoutFormPickLog(logId){
+  const c = state.campingLogs.find(x=>x.id === logId);
+  const set = (k, v)=>{ const el = document.getElementById(k); if(el) el.value = v; };
+  set('lf-logid', c ? c.id : '');
+  const hint = document.getElementById('lf-size-hint');
+  if(!c){ if(hint) hint.textContent = '예: 6 × 8. 1~50m까지 적을 수 있어요.'; return; }
+  set('lf-title', c.name || '');
+  const sz = parseSiteSize(c.siteSize);
+  if(sz){ set('lf-w', fmtM(sz.w)); set('lf-d', fmtM(sz.d)); if(hint) hint.textContent = `후기의 사이트 크기(${c.siteSize})로 채웠어요.`; }
+  else if(hint) hint.textContent = `후기의 사이트 크기${c.siteSize ? `('${c.siteSize}')` : ''}를 읽지 못했어요. 가로·세로를 직접 적어 주세요.`;
+  if(SITE_TYPES.includes(c.siteType)) layoutChip('lf-type', 'lf-types', c.siteType, true);
+}
+// 칩 하나 고르기(바닥 종류는 다시 누르면 해제)
+function layoutChip(valId, groupId, val, force){
+  const inp = document.getElementById(valId);
+  if(!inp) return;
+  const next = (!force && valId === 'lf-type' && inp.value === val) ? '' : val;
+  inp.value = next;
+  document.querySelectorAll(`#${groupId} .seg-btn`).forEach(b=>{ const on = b.getAttribute('data-val') === next; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); });
+}
+function saveLayoutForm(id){
+  const val = k=>{ const el = document.getElementById(k); return el ? el.value.trim() : ''; };
+  const title = val('lf-title') || '새 배치';
+  const w = parseMeters(val('lf-w')), d = parseMeters(val('lf-d'));
+  if(w === null || d === null){ toast('사이트 가로·세로를 적어 주세요.'); return; }
+  if(!(w >= 1 && w <= 50 && d >= 1 && d <= 50)){ toast('사이트 크기는 1~50m로 적어 주세요.'); return; }
+  const type = SITE_TYPES.includes(val('lf-type')) ? val('lf-type') : '';
+  const ent = LO_ENT_LABEL[val('lf-ent')] ? val('lf-ent') : 'bottom';
+  const tripId = SP.trips.some(t=>t.id === val('lf-trip')) ? val('lf-trip') : '';
+  const logId = state.campingLogs.some(c=>c.id === val('lf-logid')) ? val('lf-logid') : '';
+  if(id){
+    updateLayoutFields(spaceKey(), id, { title, siteW: loR1(w), siteD: loR1(d), entrance: ent, siteType: type || null, tripId: tripId || null });
+    closeModal(); renderView(); toast('배치를 고쳤어요.');
+    return;
+  }
+  const me = state.user ? state.user.uid : '', now = new Date().toISOString();
+  const L = { id: uid('lo'), title, siteW: loR1(w), siteD: loR1(d), entrance: ent, ...(type ? { siteType: type } : {}), ...(tripId ? { tripId } : {}), ...(logId ? { logId } : {}),
+    items: [], createdBy: me, createdAt: now, updatedBy: me, updatedAt: now };
+  SP.layouts = [...SP.layouts, L];
+  persistLayout(L);
+  closeModal();
+  openLayout(L.id);
+  toast(`'${title}' 배치를 만들었어요. "+ 장비 놓기"로 텐트를 놓아 보세요.`, 'ok');
+}
+function duplicateLayout(id){
+  const L = SP.layouts.find(l=>l.id === id);
+  if(!L) return;
+  const me = state.user ? state.user.uid : '', now = new Date().toISOString();
+  const copy = { ...unfreeze(stripId(L)), id: uid('lo'), title: (L.title || '배치') + ' 복사', createdBy: me, createdAt: now, updatedBy: me, updatedAt: now };
+  SP.layouts = [...SP.layouts, copy];
+  persistLayout(copy);
+  renderView();
+  toast(`'${copy.title}'을(를) 만들었어요.`, 'ok');
+}
+function layoutTripModal(id){
+  const L = SP.layouts.find(l=>l.id === id);
+  if(!L) return;
+  openModal(`
+    <h3>일정 연결</h3>
+    <p class="lf-note">'${esc(L.title || '배치')}' 배치를 같은 공간의 캠핑 일정과 연결해요. 일정 패널 ⋯ 메뉴의 "사이트 배치"로 바로 열 수 있어요.</p>
+    <div class="field"><label for="lt-trip">일정</label><select id="lt-trip">${layoutTripOptionsHtml(L.tripId || '')}</select></div>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="lo-trip-save" data-id="${esc(L.id)}">${icon('save')} 저장</button>
+    </div>`);
+}
+function saveLayoutTrip(id){
+  const sel = document.getElementById('lt-trip');
+  const v = sel && SP.trips.some(t=>t.id === sel.value) ? sel.value : '';
+  updateLayoutFields(spaceKey(), id, { tripId: v || null });
+  closeModal(); renderView();
+  toast(v ? '일정과 연결했어요.' : '일정 연결을 풀었어요.');
+}
+function deleteLayoutConfirm(id){
+  const L = SP.layouts.find(l=>l.id === id);
+  if(!L) return;
+  confirmModal(`'${L.title || '배치'}' 배치를 삭제할까요? 삭제한 뒤 잠깐 동안은 되돌릴 수 있어요.`, '삭제', ()=>{
+    if(state.layoutSel === id){ state.layoutSel = null; state.layoutPick = null; }
+    deleteDocWithUndo('layouts', id, '배치를 삭제했어요.');
+  });
+}
+// 일정 패널 ⋯ "사이트 배치": 연결된 배치가 있으면 열고, 없으면 이 일정으로 배치 만들기(같은 캠핑장 후기에 크기가 있으면 채움)
+function openLayoutForTrip(tripId){
+  const t = SP.trips.find(x=>x.id === tripId);
+  if(!t) return;
+  const L = SP.layouts.find(l=>l.tripId === tripId);
+  if(L){ openLayout(L.id); return; }
+  goView('layouts');
+  const key = normName(t.campsiteName);
+  const log = key ? state.campingLogs.filter(c=>normName(c.name) === key && parseSiteSize(c.siteSize)).sort((a, b)=> String(b.date || '').localeCompare(String(a.date || '')))[0] : null;
+  layoutFormModal(null, { title: t.title, tripId: t.id, logId: log ? log.id : '' });
+}
+// Camping 내 기록 ⋯ "이 사이트로 배치 만들기"
+function layoutFromLog(logId){
+  const c = state.campingLogs.find(x=>x.id === logId);
+  if(!c) return;
+  goView('layouts');
+  layoutFormModal(null, { logId });
+}
+
+/* ---- 장비 놓기 창 ---- */
+let _lpk = { src:'space' };
+function layoutGearModal(src, preselect){
+  const L = loCurrent();
+  if(!L) return;
+  const grp = currentGroup();
+  src = grp && src === 'me' ? 'me' : 'space';
+  _lpk = { src };
+  const base = src === 'me' ? state.gear : SP.gear;
+  const kOrder = { tent:0, tarp:1, item:2 };
+  const withFp = base.filter(g=>normFootprint(g.footprint)).sort((a, b)=> kOrder[normFootprint(a.footprint).kind] - kOrder[normFootprint(b.footprint).kind] || String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+  const noFp = base.filter(g=>!normFootprint(g.footprint)).sort((a, b)=> String(a.name || '').localeCompare(String(b.name || ''), 'ko'));
+  const pre = new Set(preselect || []);
+  const its = loItems(L);
+  const placedN = id => its.filter(it=>it.gearId === id).length;
+  openModal(`
+    <h3>장비 놓기</h3>
+    <p class="lf-note">고른 장비를 실제 크기로 빈 곳에 놓아요. 놓은 뒤 끌어서 옮기거나 돌릴 수 있어요. 같은 장비를 두 번 놓아도 돼요.</p>
+    ${grp ? `<div class="seg-group seg-sm gpk-src" role="group" aria-label="놓을 장비">
+      <div class="seg-btn ${src === 'space' ? 'active' : ''}" data-action="lpk-src" data-src="space">그룹 장비 <span class="num" style="opacity:.65;">${SP.gear.length}</span></div>
+      <div class="seg-btn ${src === 'me' ? 'active' : ''}" data-action="lpk-src" data-src="me">내 장비 <span class="num" style="opacity:.65;">${state.gear.length}</span></div>
+    </div>` : ''}
+    <div class="send-list lpk-list">
+      ${withFp.map(g=>{ const fp = normFootprint(g.footprint), n = placedN(g.id);
+        return `<label class="send-row lpk-row"><input type="checkbox" class="lpk-item" value="${esc(g.id)}" ${pre.has(g.id) ? 'checked' : ''}> <span class="sr-name">${esc(g.name)}</span>${n ? ` <span class="tag">놓음 ${n}</span>` : ''} <span class="tag">${esc(FP_KIND_LABEL[fp.kind])}</span> <span class="num lpk-size">${esc(fpText(fp))}</span></label>`; }).join('')}
+      ${noFp.map(g=>`<div class="send-row lpk-row is-nofp"><span class="sr-name">${esc(g.name)}</span><span class="lpk-nofp-t">크기 없음</span><button type="button" class="btn btn-sm" data-action="lpk-size" data-id="${esc(g.id)}">크기 입력</button></div>`).join('')}
+      ${!base.length ? `<div class="empty" style="padding:16px 8px;">${src === 'me' ? '내 장비가 없어요.' : '장비가 없어요.'} 아래 "직접 추가"로 놓을 수 있어요.</div>` : ''}
+    </div>
+    ${base.length && !withFp.length ? `<div class="field-hint">아직 배치용 크기를 넣은 장비가 없어요. "크기 입력"을 누르면 장비 수정 창에서 넣을 수 있어요.</div>` : ''}
+    <details class="lpk-custom" ${withFp.length ? '' : 'open'}>
+      <summary>직접 추가 <span class="meta">(차량·테이블·화로대 등)</span></summary>
+      <div class="seg-group seg-sm lpk-quick" role="group" aria-label="빠른 선택">${LO_QUICK.map((q, i)=>`<button type="button" class="seg-btn" data-action="lpk-quick" data-i="${i}">${esc(q.name)} <span class="num">${fmtM(q.w)}×${fmtM(q.d)}</span></button>`).join('')}</div>
+      <div class="field"><label for="lpk-name">이름</label><input id="lpk-name" maxlength="40" placeholder="예: 차량"></div>
+      <div class="field"><label for="lpk-w">크기 <span class="meta">(m)</span></label><div class="lo-size-row"><input id="lpk-w" inputmode="decimal" autocomplete="off" aria-label="가로(m)" placeholder="가로"><span aria-hidden="true">×</span><input id="lpk-d" inputmode="decimal" autocomplete="off" aria-label="세로(m)" placeholder="세로"><span aria-hidden="true">m</span></div></div>
+      <div class="field"><label>종류</label><input type="hidden" id="lpk-kind" value="item"><div class="seg-group" id="lpk-kinds">${FP_KINDS.map(k=>`<button type="button" class="seg-btn ${k.key === 'item' ? 'active' : ''}" data-action="lpk-kind" data-val="${k.key}" aria-pressed="${k.key === 'item'}">${k.label}</button>`).join('')}</div></div>
+      <div class="field"><label for="lpk-guy">스트링·팩 여유 <span class="meta">(m, 선택)</span></label><input id="lpk-guy" inputmode="decimal" autocomplete="off" placeholder="0"></div>
+      <button type="button" class="btn btn-sm lpk-custom-btn" data-action="lpk-custom">${icon('plus')} 직접 추가해서 놓기</button>
+    </details>
+    <div class="modal-actions">
+      <button class="btn" data-action="modal-close">취소</button>
+      <button class="btn btn-primary" data-action="lpk-go">${icon('layout')} 놓기</button>
+    </div>`);
+}
+function lpkQuick(i){
+  const q = LO_QUICK[i]; if(!q) return;
+  const set = (k, v)=>{ const el = document.getElementById(k); if(el) el.value = v; };
+  set('lpk-name', q.name); set('lpk-w', fmtM(q.w)); set('lpk-d', fmtM(q.d)); set('lpk-guy', '');
+  layoutChip('lpk-kind', 'lpk-kinds', 'item', true);
+}
+function lpkCustomItem(){
+  const val = k=>{ const el = document.getElementById(k); return el ? el.value.trim() : ''; };
+  const name = val('lpk-name'), w = parseMeters(val('lpk-w')), d = parseMeters(val('lpk-d')), guy = parseMeters(val('lpk-guy'));
+  const touched = !!(name || w !== null || d !== null);
+  if(!touched) return { touched:false };
+  if(!name) return { touched, error:'직접 추가할 물건 이름을 적어 주세요.' };
+  if(!(w >= 0.1 && w <= 30 && d >= 0.1 && d <= 30)) return { touched, error:'크기는 가로·세로 0.1~30m로 적어 주세요.' };
+  if(guy !== null && !(guy >= 0 && guy <= 5)) return { touched, error:'스트링·팩 여유는 0~5m로 적어 주세요.' };
+  const kind = FP_KIND_LABEL[val('lpk-kind')] ? val('lpk-kind') : 'item';
+  return { touched, item: { id: uid('it'), name, kind, shape:'rect', w: loR1(w), d: loR1(d), guy: guy ? loR1(guy) : 0, x: 0, y: 0, rot: 0 } };
+}
+function layoutPlaceGo(customOnly){
+  const L = loCurrent();
+  if(!L){ closeModal(); return; }
+  const src = _lpk.src === 'me' ? state.gear : SP.gear;
+  const ids = customOnly ? [] : Array.from(document.querySelectorAll('.lpk-item:checked')).map(el=>el.value);
+  const news = [];
+  ids.forEach(gid=>{
+    const g = src.find(x=>x.id === gid), fp = g && normFootprint(g.footprint);
+    if(fp) news.push({ id: uid('it'), gearId: g.id, name: String(g.name || '장비'), kind: fp.kind, shape: fp.shape, w: fp.w, d: fp.d, guy: fp.guy, x: 0, y: 0, rot: 0 });
+  });
+  const c = lpkCustomItem();
+  if(c.error && (customOnly || c.touched)){ toast(c.error); return; }
+  if(c.item) news.push(c.item);
+  if(!news.length){ toast(customOnly ? '직접 추가할 물건의 이름과 크기를 적어 주세요.' : '놓을 장비를 고르거나 직접 추가해 주세요.'); return; }
+  const r = loAutoArrange({ ...L, items: [...loRawItems(L), ...news] }, news.map(n=>n.id));
+  news.forEach(n=>Object.assign(n, r.pos[n.id]));
+  closeModal();
+  state.layoutPick = news[news.length - 1].id; state.layoutHint = null;
+  mutateLayout(spaceKey(), L.id, loOps.add(news));
+  if(r.failed.length) toast(`${news.length}개를 놓았어요. ${r.failed.map(x=>x.name).join(', ')}은(는) 빈 자리가 없어 가운데에 놓았어요.`);
+  else toast(`${news.length}개를 놓았어요. 끌어서 옮기거나 돌릴 수 있어요.`, 'ok');
+}
+// "크기 입력": 그 장비 수정 창 → 저장하면 장비 놓기 창으로 돌아와 바로 고를 수 있게
+function lpkEditSize(gearId){
+  const src = _lpk.src;
+  gearFormModal(gearId, undefined, { src, back: item=>{ if(loCurrent()) layoutGearModal(src, normFootprint(item.footprint) ? [item.id] : []); } });
+}
+
 /* ============================ MODAL / TOAST ============================ */
 /* ---- 모달 규칙(CLAUDE.md "화면 규칙") ----
  * 모든 모달: 오른쪽 위 닫기(X), Esc로 닫기, 나타남/사라짐 효과(동작 줄이기 설정이면 없음).
@@ -5495,7 +6896,7 @@ function runUndo(){
 }
 // 삭제한 그 공간('me' 또는 gid)의 화면 데이터 배열. 지금 다른 공간을 보고 있으면 null.
 function spaceKey(){ return inGroupSpace() ? state.space : 'me'; }
-const GROUP_SPACE_ARRAYS = { checklists:'groupChecklists', gear:'groupGear', checklistTemplates:'groupTemplates' };
+const GROUP_SPACE_ARRAYS = { checklists:'groupChecklists', gear:'groupGear', checklistTemplates:'groupTemplates', layouts:'groupLayouts' };
 function spaceArray(space, kind){
   if(space==='me') return state[kind];
   if(kind==='trips') return state.groupTrips[space] || null;
@@ -5519,7 +6920,7 @@ function deleteDocWithUndo(kind, id, msg, after){
   const db = state.dbAvailable ? (space==='me' ? state.db : groupDb(space)) : null;
   setSpaceArray(space, kind, arr.filter(x=>x.id!==id));
   ({campingLogs: deleteCampingRemote, gear: deleteGearRemote, checklists: deleteChecklistRemote,
-    trips: deleteTripRemote, checklistTemplates: deleteTemplateRemote})[kind](id);
+    trips: deleteTripRemote, checklistTemplates: deleteTemplateRemote, layouts: deleteLayoutRemote})[kind](id);
   renderView(); refreshTripModalTemplates();
   undoToast(msg, ()=>{
     const now = spaceArray(space, kind);
@@ -5611,6 +7012,46 @@ function wireGlobalActions(){
         break;
       }
       case 'gear-save': saveGearForm(id); break;
+      case 'gf-fp-kind': gfFpChip('kind', a.getAttribute('data-val')); break;
+      case 'gf-fp-shape': gfFpChip('shape', a.getAttribute('data-val')); break;
+
+      // 사이트 배치
+      case 'lo-new': layoutFormModal(null, {}); break;
+      case 'lo-from-log': layoutFormModal(null, {}); break;
+      case 'lo-open': openLayout(id); break;
+      case 'lo-back': state.layoutSel = null; state.layoutPick = null; state.layoutHint = null; renderView(); break;
+      case 'lo-meta': layoutFormModal(id); break;
+      case 'lo-save': saveLayoutForm(id); break;
+      case 'lf-type': layoutChip('lf-type', 'lf-types', a.getAttribute('data-val')); break;
+      case 'lf-ent': layoutChip('lf-ent', 'lf-ents', a.getAttribute('data-val')); break;
+      case 'lo-dup': duplicateLayout(id); break;
+      case 'lo-trip': layoutTripModal(id); break;
+      case 'lo-trip-save': saveLayoutTrip(id); break;
+      case 'lo-del': deleteLayoutConfirm(id); break;
+      case 'lo-place': layoutGearModal(); break;
+      case 'lpk-src': layoutGearModal(a.getAttribute('data-src')); break;
+      case 'lpk-size': lpkEditSize(id); break;
+      case 'lpk-kind': layoutChip('lpk-kind', 'lpk-kinds', a.getAttribute('data-val')); break;
+      case 'lpk-quick': lpkQuick(Number(a.getAttribute('data-i'))); break;
+      case 'lpk-custom': layoutPlaceGo(true); break;
+      case 'lpk-go': layoutPlaceGo(false); break;
+      case 'lo-auto': runAutoLayout(); break;
+      case 'lo-pick': case 'lo-issue': {
+        const it = a.getAttribute('data-item');
+        state.layoutPick = (action==='lo-pick' && state.layoutPick===it) ? null : (it || null);
+        renderView();
+        const again = document.querySelector(`[data-action="${action}"][data-item="${CSS.escape(it || '')}"]`);
+        if(again) again.focus({ preventScroll: true });
+        break;
+      }
+      case 'lo-unpick': state.layoutPick = null; renderView(); break;
+      case 'lo-rot': loRotate(); break;
+      case 'lo-pos': loPosModal(); break;
+      case 'lo-pos-save': loPosSave(); break;
+      case 'lo-del-item': loRemovePicked(); break;
+      case 'lo-refresh': loRefreshItem(a.getAttribute('data-item')); break;
+      case 'trip-layout': openLayoutForTrip(a.getAttribute('data-trip')); break;
+      case 'camp-layout': layoutFromLog(id); break;
 
       case 'gear-cat-manage': categoryManageModal(); break;
       case 'gear-cat-add': {
@@ -5879,12 +7320,15 @@ function wireGlobalActions(){
       setStarValue(next, true);
       return;
     }
+    const loEl = e.target.closest && e.target.closest('[data-lo-item]');
+    if(loEl && state.currentView==='layouts' && !document.getElementById('modal-backdrop') && loKeydown(e, loEl)) return;
     const pick = e.target.closest && e.target.closest('[data-action="gear-pick"]');
     if(pick && (e.key==='Enter' || e.key===' ')){ e.preventDefault(); toggleGearPick(pick.getAttribute('data-id')); return; }
     if(e.key==='Escape'){
       const open = document.querySelector('.more-menu:not([hidden])');
       if(open){ e.preventDefault(); const b = open.closest('.more').querySelector('.more-btn'); closeAllMenus(); if(b) b.focus(); return; }
-      if(document.getElementById('modal-backdrop')){ e.preventDefault(); closeModal(); }
+      if(document.getElementById('modal-backdrop')){ e.preventDefault(); closeModal(); return; }
+      if(state.currentView==='layouts' && state.layoutPick){ e.preventDefault(); state.layoutPick = null; renderView(); }
       return;
     }
     if(e.key==='Tab' && document.getElementById('modal-backdrop')) trapModalTab(e);
@@ -5909,7 +7353,12 @@ function wireGlobalActions(){
   document.addEventListener('focusin', kbdCheck);
   document.addEventListener('focusout', ()=>setTimeout(kbdCheck, 50));
   if(window.visualViewport) window.visualViewport.addEventListener('resize', kbdCheck);
-  window.addEventListener('resize', ()=>{ if(state.currentView==='camping') markCampClamps(); });
+  window.addEventListener('resize', ()=>{ if(state.currentView==='camping') markCampClamps(); if(state.currentView==='layouts' && !_loDrag){ drawLayoutBoard(); syncLayoutBar(); } });
+  // 사이트 배치판: 끌어서 옮기기(Pointer Events — 마우스·터치 공통)
+  document.addEventListener('pointerdown', e=>{ try{ loPointerDown(e); }catch(err){ console.error('[layout:pointer]', err); } });
+  document.addEventListener('pointermove', e=>{ try{ loPointerMove(e); }catch(err){ console.error('[layout:pointer]', err); } }, { passive: false });
+  document.addEventListener('pointerup', e=>{ try{ loPointerUp(e); }catch(err){ console.error('[layout:pointer]', err); } });
+  document.addEventListener('pointercancel', e=>{ try{ loPointerUp(e); }catch(err){ console.error('[layout:pointer]', err); } });
   if(window.visualViewport) window.visualViewport.addEventListener('scroll', kbdCheck);
   kbdCheck();
   document.addEventListener('input', (e)=>{ if(e.target && e.target.id==='mp-search') mpFilter(); });
@@ -5931,6 +7380,12 @@ function wireGlobalActions(){
     }
     if(e.target.matches && e.target.matches('[data-action="gpk-toggle"]')){ gpkSync(e.target); return; }
     if(e.target.id==='cf-trip'){ campFormPickTrip(e.target.value); return; }
+    if(e.target.id==='lf-log'){ layoutFormPickLog(e.target.value); return; }
+    if(e.target.id==='gf-category'){   // 장비 폼: 배치용 종류를 직접 고르지 않았으면 카테고리 이름으로 기본값
+      const k = document.getElementById('gf-fp-kind');
+      if(k && !k.getAttribute('data-touched')){ const v = fpKindFromCategory(e.target.value); k.value = v; document.querySelectorAll('#gf-fp-kinds .seg-btn').forEach(b=>{ const on = b.getAttribute('data-val')===v; b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); }); }
+      return;
+    }
     if(e.target.id==='ncl-tpl'){   // 새 리스트: 템플릿을 고르면 비어 있는 이름 칸에 템플릿 이름
       const t = SP.templates.find(x=>x.id===e.target.value), inp = document.getElementById('ncl-title');
       if(t && inp && !inp.value.trim()) inp.value = t.title || '';
