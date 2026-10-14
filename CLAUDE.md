@@ -55,8 +55,12 @@
 
 ## 캠핑 일정 (새 탭 없음: Checklist 탭 위쪽 + Home 카드)
 - 일정: 개인 `users/{uid}/trips/{id}`, 그룹 `groups/{gid}/trips/{id}` =
-  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, description?(메모, 비우면 필드 삭제), memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
+  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, description?(메모, 비우면 필드 삭제), address?(캠핑장 주소), waypoints?(경유지 주소 배열), memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
   메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
+- **주소·경유지**(사용자 요청 R, 출발할 때 네비게이션에 붙여넣는 용도 — 검색 없음): 창의 `#tf-address`(비우면 필드 삭제), 경유지 줄 `#tf-wps .tf-wp`(들르는 순서대로, `TRIP_WP_MAX` 5곳, `tf-wp-add`/`tf-wp-del` — 창을 다시 그리지 않고 줄만 바꿈, 빈 칸은 저장 안 함).
+  있을 때만 일정 패널 장소 줄 아래 `tripRouteRowHtml()`(`.tp-route`: "경유 n곳 · 주소" + 버튼) — 없는 일정은 예전과 똑같음(첫 준비물 위치 테스트 영향 없음).
+  Home 다음 캠핑 카드 아래 `.next-trip-route`. 둘 다 `trip-route` → `tripRouteAction()`: 경유지가 없으면 바로 주소 복사(`copyText`), 있으면 `tripRouteModal()`
+  ("길 안내 주소": 경유 1 → … → 도착 순서, 줄마다 `route-copy`, 2줄 이상이면 "전체 복사"(여러 줄)). 그룹 일정도 같은 필드라 멤버 모두 보임.
 - 체크리스트의 선택 필드 `tripId` = 연결된 일정. 없는 리스트도 그대로 보인다. 일정을 보는 중에 만든 새 리스트는 그 일정에 연결.
 - 템플릿: `users/{uid}/checklistTemplates/{id}`, `groups/{gid}/checklistTemplates/{id}` = `{ title, items:[{ label, group }], createdBy? }`(체크 상태·담당자 없음).
   **Checklist 하위 화면**: 지난 일정(`pastTrips`)·템플릿(`templates`). 데스크톱은 왼쪽 메뉴 Checklist 아래 하위 메뉴(`SUB_NAV`, `.nav-sub`) —
@@ -315,7 +319,7 @@
   서명은 워크플로가 `android/app/build.gradle`에 `signingConfigs.debug`(이 파일 직접 지정)를 덧붙여서 한다. `~/.android/debug.keystore`에 복사하는 방식은 Actions에서 무시돼 build-9까지 매번 다른 키로 서명됐었다. 빌드 후 APK의 SHA-1을 검사해 다르면 빌드를 멈춘다.
 - `window.__FIREBASE_MODULES__`(가짜 SDK 주입)와 `window.__FIREBASE_EMULATOR__`(에뮬레이터 연결)는 테스트 전용 훅이다. 지우지 말 것.
 
-## 테스트 (변경할 때마다 아래 열여섯 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
+## 테스트 (변경할 때마다 아래 열일곱 개는 꼭 실행(`npm test`), 새 기능에는 테스트 추가)
 ```
 node tests/shared-app.test.js   # 로그인 화면/로그인 유지/로그아웃, 사용자 A·B 개인 공간 분리, 같은 계정 두 기기 실시간 동기화,
                                 # 위젯(계정 기준), 백업, legacy 가져오기(중복 건너뛰기), APK 네이티브 로그인 경로, 오프라인/권한/미리보기 모드,
@@ -339,12 +343,13 @@ node tests/meals.test.js        # 식단·장보기: 끼니 칸(2박·1박·당�
                                 # 장보기 만들기·Checklist 표시·자동 맞춤(체크·담당·고친 양·집에 있음·직접 추가 유지, 빠진 재료), 그룹(실시간·담당·동시 수정·공간과 무관 저장),
                                 # 일정 패널·Home·지난 일정 연결, 레시피 탭 없음·메뉴 직접 입력(이름·재료 → 장보기, 고치기), 일정 삭제 되돌리기·백업 왕복·예전 백업, 일정 없음 안내
 node tests/gear-g.test.js       # Gear 보완(G): 글꼴 통일, 카테고리 순서·대분류/소분류·설명, 기본값 잠금 없음, 브랜드 직접 입력, 메모, 묶음 접기, 고른 카테고리 기본값, 그룹 대분류
+node tests/trip-route-r.test.js # 일정 주소·경유지(R): 만들기·수정(더하기·빼기·순서·5곳·비우면 삭제), 일정 패널 주소 줄(바로 복사·길 안내 창·각각/전체 복사), Home 주소 줄, 그룹 멤버, 예전 일정 그대로
 node tests/layouts-q.test.js    # 사이트 배치(Q): 장비 배치용 크기(저장·수정·비우기·하나만 막기·종류 기본값·목록 표시·보내기·백업), parseSiteSize, 후기에서 배치 만들기,
                                 # 하위 메뉴(데스크톱·휴대폰)·빈 화면, 장비 놓기(크기 입력 이어가기·직접 추가·빠른 칩), 끌기·0.1m·회전·위치·빼기(되돌리기)·키보드·터치,
                                 # 판정 규칙(겹침·밖·스트링·타프·통로·원형·회전), 자동 배치(가능·어려움+부족·되돌리기·1초), 그룹(실시간·동시 수정·내 장비·비멤버·백업·삭제), 연결, 390px 도구 막대, 대비·앰버
 ```
 - `playwright`가 필요하다. 없으면 `npm i --no-save playwright` 후, 브라우저가 없으면 `npx playwright install chromium`. 크롬 경로는 `CHROMIUM_PATH`.
-- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780~8783, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
+- 테스트마다 `python3 -m http.server`를 고정 포트(8765~8778·8780~8784, 스크린샷 8779)로 띄운다(끝날 때 `process.on('exit')`로 서버 종료). 테스트를 강제로 멈추면(timeout 등) 서버가 남아서 **다음 실행이 예전 코드를 받는다** → `pgrep -fa http.server`로 확인해서 정리.
 - 테스트는 `docs/`를 임시 폴더에 복사하고 테스트용 설정값으로 바꿔서 실행하므로 실제 Firebase에 접속하지 않는다.
 - 가짜 SDK(`tests/fake-firestore.js`)는 Auth(로그인 사용자 주입, localStorage 유지), `query/where`, `updateDoc`(arrayUnion 등), 규칙(users/{uid}는 본인만, 그룹 규칙)도 흉내 낸다.
 - 규칙·실제 SDK 테스트(Java 11+ 필요, Firebase 에뮬레이터):

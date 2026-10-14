@@ -46,7 +46,7 @@ function seed() {
   s[A + 'checklists/cl1'] = { title: '기본 캠핑 준비물', items: [
     { id: 'i1', label: '텐트', status: 'packed', group: '텐트/침구' }, { id: 'i2', label: '침낭', status: 'pending', group: '텐트/침구' },
     { id: 'i3', label: '랜턴', status: 'skip', group: '조명/전기' } ] };
-  s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', description: '사이트 A-12 (강 바로 앞)\n장작은 현장 구매, 금요일 6시 출발', createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
+  s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', description: '사이트 A-12 (강 바로 앞)\n장작은 현장 구매, 금요일 6시 출발', address: '강원 홍천군 서면 마곡길 123', waypoints: ['하나로마트 홍천점', '홍천 정육점'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
   s[G] = { name: '캠핑팸', ownerUid: 'uidAlice', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdAt: '1', gearCategories: ['텐트', '타프', '조리용품', '기타'],
     members: { uidAlice: mem('앨리스', 'owner'), uidBob: mem('밥', 'member'), uidCarol: mem('캐롤', 'member') } };
   s[G + '/trips/gt'] = { title: '10월 팸 캠핑', startDate: ymd(3), endDate: ymd(4), campsiteName: '가평 숲속 야영장', region: '가평', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice',
@@ -138,7 +138,10 @@ function seed() {
       if (await tryClick('[data-action="trip-gear-import"]')) { await sleep(200); await tryClick('.gpk-sec-row input'); await sleep(150); }
       await shot('13-modal-gear-pick');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
+      await tryClick('.tp-route [data-action="trip-route"]'); await sleep(250); await shot('35-modal-trip-route');
+      await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('.trip-panel .more-btn'); await tryClick('[data-action="trip-edit"]'); await sleep(200); await shot('14-modal-trip-edit');
+      await p.evaluate(() => { const b = document.querySelector('.modal-body'); if (b) b.scrollTop = 330; }); await shot('14b-modal-trip-edit-route');
       await tryClick('#modal-root [data-action="modal-close"]'); await sleep(250);
       await tryClick('.sub-tab[data-view="pastTrips"]:visible, #nav [data-nav="pastTrips"]:visible'); await sleep(200); await shot('19-checklist-past-trips');
       await tryClick('.past-trip-card'); await sleep(200); await shot('20-checklist-past-trip-panel');
