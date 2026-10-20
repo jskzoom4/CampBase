@@ -37,16 +37,17 @@ function seed() {
   s[A + 'layouts/lo1'] = lo('홍천 A-12', 6, 8, '데크', [it('a', 'g8', '리빙쉘 L', 'tent', 4.5, 3.0, 0.5, 2.8, 2.0), it('b', 'g1', '스텔스 5 텐트', 'tent', 2.7, 2.4, 0.5, 1.9, 5.2), it('c', 'g4', '렉타 타프 L', 'tarp', 3, 3, 0, 4.4, 5.3)], { tripId: 't1', logId: 'c1' });
   s[A + 'layouts/lo2'] = lo('가평 B-3', 5, 6, '흙', [it('a', 'g8', '리빙쉘 L', 'tent', 4.5, 3.0, 0.5, 2.5, 1.9), it('d', '', '테이블', 'item', 1.2, 0.8, 0, 1.2, 5.5)]);
   s[A + 'layouts/lo3'] = lo('좁은 사이트', 5, 5, '파쇄석', [it('a', 'g8', '리빙쉘 L', 'tent', 4.5, 3.0, 0.5, 2.5, 1.6), it('b', 'g1', '스텔스 5 텐트', 'tent', 2.7, 2.4, 0.5, 2.4, 3.8), it('e', '', '차량', 'item', 4.8, 1.9, 0, 2.5, 4.4)]);
-  s[A + 'gear/g2'] = { name: '체어 원', brand: 'Helinox', category: '체어/테이블', price: 139000, weight: 0.9, date: '2024-05-20' };
+  s[A + 'gear/g2'] = { name: '체어 원', brand: 'Helinox', category: '체어/테이블', price: 139000, weight: 0.9, date: '2024-05-20', qty: 4 };
   s[A + 'gear/g3'] = { name: '부스터 플러스1', brand: 'Kovea', category: '조리용품', price: 78000, weight: 0.4, date: '2023-09-02', comment: '가스 카트리지 2개' };
   s[A + 'gear/g4'] = { name: '렉타 타프 L', brand: 'DOD', category: '타프', footprint: { kind: 'tarp', w: 3, d: 3, shape: 'rect' } };
+  s[A + 'gear/g11'] = { name: '전기장판', brand: '일월', category: '침낭', watt: 150, comment: '동계 필수' };
   s[A + 'gear/g5'] = { name: '오로라 침낭', brand: 'Nanga', category: '침낭', comment: '겨울용(-10도)' };
   s[A + 'gear/g6'] = { name: '자충 매트', brand: 'Therm-a-Rest', category: '매트' };
   s[A + 'gear/g7'] = { name: '레일로드 랜턴', brand: 'Barebones', category: '조명' };
   s[A + 'checklists/cl1'] = { title: '기본 캠핑 준비물', items: [
     { id: 'i1', label: '텐트', status: 'packed', group: '텐트/침구' }, { id: 'i2', label: '침낭', status: 'pending', group: '텐트/침구' },
     { id: 'i3', label: '랜턴', status: 'skip', group: '조명/전기' } ] };
-  s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', description: '사이트 A-12 (강 바로 앞)\n장작은 현장 구매, 금요일 6시 출발', address: '강원 홍천군 서면 마곡길 123', waypoints: ['하나로마트 홍천점', '홍천 정육점'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
+  s[A + 'trips/t1'] = { title: '홍천 가을 캠핑', startDate: ymd(6), endDate: ymd(7), campsiteName: '홍천 강변 캠핑장', region: '홍천', description: '사이트 A-12 (강 바로 앞)\n장작은 현장 구매, 금요일 6시 출발', address: '강원 홍천군 서면 마곡길 123', waypoints: ['하나로마트 홍천점', '홍천 정육점'], waypointNames: ['장보기', ''], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice' };
   s[G] = { name: '캠핑팸', ownerUid: 'uidAlice', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdAt: '1', gearCategories: ['텐트', '타프', '조리용품', '기타'],
     members: { uidAlice: mem('앨리스', 'owner'), uidBob: mem('밥', 'member'), uidCarol: mem('캐롤', 'member') } };
   s[G + '/trips/gt'] = { title: '10월 팸 캠핑', startDate: ymd(3), endDate: ymd(4), campsiteName: '가평 숲속 야영장', region: '가평', memberUids: ['uidAlice', 'uidBob', 'uidCarol'], createdBy: 'uidAlice', createdAt: 'x', updatedBy: 'uidAlice',

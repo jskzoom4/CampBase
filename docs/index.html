@@ -247,6 +247,7 @@
   .tf-wp-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
   .tf-wp-row input{flex:1;min-width:0;}
   .field .tf-wp-row input{width:auto;}
+  .tf-wp-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;}
   .tf-wp-no{flex:none;width:44px;font-size:12px;font-weight:600;color:var(--text-dim);}
   .route-list{list-style:none;margin:0;padding:0;}
   .route-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -284,7 +285,7 @@
   .trip-bar-track span{display:block;height:100%;background:var(--good);border-radius:99px;}
   .trip-progress b{color:var(--text);}
 
-  .trip-reviewed svg{width:12px;height:12px;vertical-align:-1px;}
+  .trip-reviewed svg, .tag.done-tag svg{width:12px;height:12px;vertical-align:-1px;}
   .trip-tag{display:inline-flex;align-items:center;gap:3px;font-family:"Work Sans",sans-serif;font-size:11px;vertical-align:middle;}
   .trip-tag svg{width:11px;height:11px;}
   .trip-tpl-chip{height:36px;padding:0 12px;}
@@ -3269,9 +3270,14 @@ function renderGear(){
     </div>` : ''}
   `;
 }
+// 장비의 선택 필드: qty(개수 1~999), watt(소비전력 W). 없거나 이상한 값은 표시 안 함
+function gearQty(g){ const n = Math.round(Number(g && g.qty)); return n >= 1 && n <= 999 ? n : 1; }
+function gearWatt(g){ const n = Number(g && g.watt); return n > 0 && n <= 10000 ? n : 0; }
 function gearRowHtml(g, grp, selecting, sel){
   const fp = normFootprint(g.footprint);
   const meta = [g.brand ? esc(g.brand) : '', grp && g.addedBy ? esc(memberName(grp, g.addedBy)) + ' 추가' : ''].filter(Boolean).join(' · ')
+    + (gearQty(g) > 1 ? `<span class="num fp-size gear-qty" title="개수">×${gearQty(g)}</span>` : '')
+    + (gearWatt(g) ? `<span class="num fp-size gear-watt" title="소비전력">${esc(String(gearWatt(g)))}W</span>` : '')
     + (fp ? `<span class="num fp-size" title="사이트 배치용 바닥 크기">${esc(fpText(fp))}</span>` : '');
   return `
         <div class="list-row gear-row ${selecting && sel.has(g.id) ? 'picked' : ''}" data-id="${esc(g.id)}" ${selecting ? `data-action="gear-pick" role="checkbox" aria-checked="${sel.has(g.id)}" tabindex="0"` : ''}>
@@ -3365,6 +3371,11 @@ function gearFormModal(id, presetCat, opts){
         <select id="gf-category">${gearCategoryOptionsHtml(catNow, mine)}</select>
       </div>
     </div>
+    <div class="field-row">
+      ${itemQtyField(g && g.qty)}
+      <div class="field"><label for="gf-watt">소비전력 W <span class="meta">(선택)</span></label>
+        <input id="gf-watt" type="number" inputmode="decimal" min="0.1" max="10000" step="0.1" value="${g && gearWatt(g) ? esc(String(gearWatt(g))) : ''}" placeholder="예: 60"></div>
+    </div>
     <div class="field"><label for="gf-comment">메모 (Comment)</label><textarea id="gf-comment" rows="3" placeholder="예: 폴대 1개 수리함, 우중 캠핑 때 챙기기">${g?esc(g.comment||''):''}</textarea></div>
     ${grp ? `<div class="field"><label>주인 (누구 장비인지)</label>
       <select id="gf-owner">
@@ -3384,6 +3395,11 @@ function saveGearForm(id){
   if(!name){ toast('장비 이름을 입력해주세요.'); return; }
   const fpr = readFootprintForm();
   if(fpr.error){ toast(fpr.error); return; }
+  const qty = readItemQty();
+  if(qty===undefined){ toast('개수는 1~999로 입력해주세요.'); return; }
+  const wattRaw = document.getElementById('gf-watt').value.trim();
+  const watt = wattRaw ? Math.round(Number(wattRaw) * 10) / 10 : null;
+  if(wattRaw && !(watt >= 0.1 && watt <= 10000)){ toast('소비전력은 0.1~10000W로 입력해주세요.'); return; }
   const mine = _gearFormCtx.src==='me' && inGroupSpace(), back = _gearFormCtx.back;
   _gearFormCtx = { src:'space', back:null };
   // 수정할 때는 기존 필드(addedBy, ownerUid 등)를 그대로 두고 폼 값만 덮어씀
@@ -3397,6 +3413,8 @@ function saveGearForm(id){
     comment: document.getElementById('gf-comment').value.trim(),
   };
   if(!item.comment) delete item.comment;
+  if(qty) item.qty = qty; else delete item.qty;      // 개수·소비전력(W)은 선택값, 비우면 필드 삭제
+  if(watt) item.watt = watt; else delete item.watt;
   if(fpr.fp) item.footprint = fpr.fp; else if(fpr.fp===null) delete item.footprint;   // 가로·세로를 둘 다 비우면 배치용 크기 없음
   const ownerEl = document.getElementById('gf-owner');
   if(mine){
@@ -4045,7 +4063,7 @@ function tripFormModal(id){
     <div class="field"><label for="tf-address">캠핑장 주소 <span class="meta">(선택)</span></label><input id="tf-address" maxlength="200" autocomplete="off" value="${t ? esc(t.address||'') : ''}" placeholder="예: 강원 홍천군 서면 마곡길 123">
       <div class="field-hint">예약할 때 받은 주소를 적어 두면, 출발할 때 복사해서 네비게이션에 붙여넣을 수 있어요.</div></div>
     <div class="field"><label>경유지 <span class="meta">(선택, 들르는 순서대로)</span></label>
-      <div id="tf-wps">${(t ? tripWaypoints(t) : []).map((w, i)=>tripWaypointRowHtml(w, i)).join('')}</div>
+      <div id="tf-wps">${(t ? tripWaypointList(t) : []).map((w, i)=>tripWaypointRowHtml(w, i)).join('')}</div>
       <button type="button" class="btn btn-sm" data-action="tf-wp-add" ${t && tripWaypoints(t).length >= TRIP_WP_MAX ? 'hidden' : ''}>${icon('plus')} 경유지 추가</button></div>
     <div class="field"><label for="tf-desc">메모 (Description)</label><textarea id="tf-desc" rows="3" maxlength="1000" placeholder="예: 사이트 A-12, 장작은 현장 구매, 금요일 6시 출발">${t ? esc(t.description||'') : ''}</textarea></div>
     ${g ? `<div class="field"><label>참가 멤버</label>
@@ -4113,12 +4131,18 @@ function newListFromTemplate(tpl, tripId){
   };
 }
 /* ---- 일정 주소·경유지: 출발할 때 네비게이션에 붙여넣을 수 있게 복사 ----
- * 일정의 선택 필드 address(캠핑장 주소), waypoints: ['주소', ...](들르는 순서대로, 5곳까지). 검색은 없음(예약 때 받은 주소를 적음). */
+ * 일정의 선택 필드 address(캠핑장 주소), waypoints: ['주소', ...](들르는 순서대로, 5곳까지). 검색은 없음(예약 때 받은 주소를 적음).
+ * waypointNames?: ['이름', ...] = 같은 순서의 경유지 이름(없으면 ''). 이름만 적은 줄은 이름을 주소 자리에 넣고 이름 칸은 비움(네비에서 이름으로 검색). */
 const TRIP_WP_MAX = 5;
-function tripWaypoints(t){ return (Array.isArray(t && t.waypoints) ? t.waypoints : []).map(w=>String(w || '').trim()).filter(Boolean); }
+function tripWaypointList(t){
+  const names = Array.isArray(t && t.waypointNames) ? t.waypointNames : [];
+  return (Array.isArray(t && t.waypoints) ? t.waypoints : []).map((w, i)=>({ address: String(w || '').trim(), name: String(names[i] || '').trim() })).filter(w=>w.address);
+}
+function tripWaypoints(t){ return tripWaypointList(t).map(w=>w.address); }
 function tripHasRoute(t){ return !!(t && (String(t.address || '').trim() || tripWaypoints(t).length)); }
 function tripWaypointRowHtml(v, i){
-  return `<div class="tf-wp-row"><span class="tf-wp-no">경유 ${i + 1}</span><input class="tf-wp" maxlength="200" autocomplete="off" value="${esc(v || '')}" placeholder="예: 하나로마트 홍천점" aria-label="경유지 ${i + 1} 주소"><button type="button" class="icon-btn" data-action="tf-wp-del" aria-label="경유지 ${i + 1} 빼기" title="빼기">${icon('close')}</button></div>`;
+  v = v || {};
+  return `<div class="tf-wp-row"><span class="tf-wp-no">경유 ${i + 1}</span><div class="tf-wp-fields"><input class="tf-wp-name" maxlength="60" autocomplete="off" value="${esc(v.name || '')}" placeholder="이름 (예: 장보기 마트)" aria-label="경유지 ${i + 1} 이름"><input class="tf-wp" maxlength="200" autocomplete="off" value="${esc(v.address || '')}" placeholder="주소 (예: 하나로마트 홍천점)" aria-label="경유지 ${i + 1} 주소"></div><button type="button" class="icon-btn" data-action="tf-wp-del" aria-label="경유지 ${i + 1} 빼기" title="빼기">${icon('close')}</button></div>`;
 }
 // 경유지 줄 더하기·빼기: 창을 다시 그리지 않고 줄만(다른 칸 입력값 유지)
 function tripWaypointRows(values, focusIdx){
@@ -4127,11 +4151,11 @@ function tripWaypointRows(values, focusIdx){
   box.innerHTML = values.map((v, i)=>tripWaypointRowHtml(v, i)).join('');
   const add = document.querySelector('[data-action="tf-wp-add"]');
   if(add) add.hidden = values.length >= TRIP_WP_MAX;
-  const inputs = box.querySelectorAll('.tf-wp');
+  const inputs = box.querySelectorAll('.tf-wp-name');
   if(focusIdx !== undefined && inputs[focusIdx]) inputs[focusIdx].focus();
   else if(focusIdx !== undefined && add && !add.hidden) add.focus();
 }
-function tripWaypointValues(){ return Array.from(document.querySelectorAll('#tf-wps .tf-wp')).map(el=>el.value); }
+function tripWaypointValues(){ return Array.from(document.querySelectorAll('#tf-wps .tf-wp-row')).map(r=>({ name: r.querySelector('.tf-wp-name').value, address: r.querySelector('.tf-wp').value })); }
 // 일정 패널·Home의 주소 줄: 경유지가 없으면 바로 복사, 있으면 순서대로 보여 주는 창
 function tripRouteAction(space, tripId){
   const t = findTrip(space, tripId);
@@ -4141,8 +4165,8 @@ function tripRouteAction(space, tripId){
   tripRouteModal(t);
 }
 function tripRouteModal(t){
-  const wps = tripWaypoints(t), addr = String(t.address || '').trim();
-  const rows = [...wps.map((w, i)=>({ tag:`경유 ${i + 1}`, text:w })), ...(addr ? [{ tag:'도착', text:addr, sub: t.campsiteName || '' }] : [])];
+  const wps = tripWaypointList(t), addr = String(t.address || '').trim();
+  const rows = [...wps.map((w, i)=>({ tag:`경유 ${i + 1}`, text:w.address, sub:w.name })), ...(addr ? [{ tag:'도착', text:addr, sub: t.campsiteName || '' }] : [])];
   const all = rows.map(r=>`${r.tag}: ${r.text}`).join('\n');
   openModal(`
     <h3>길 안내 주소</h3>
@@ -4177,8 +4201,11 @@ function saveTripForm(id){
   // 주소·경유지(선택): 비우면 필드 삭제. 경유지는 적은 순서 그대로
   const address = val('tf-address');
   if(address) trip.address = address; else delete trip.address;
-  const wps = Array.from(document.querySelectorAll('#tf-wps .tf-wp')).map(el=>el.value.trim()).filter(Boolean).slice(0, TRIP_WP_MAX);
-  if(wps.length) trip.waypoints = wps; else delete trip.waypoints;
+  const wps = tripWaypointValues().map(w=>({ name: w.name.trim(), address: w.address.trim() }))
+    .filter(w=>w.name || w.address).slice(0, TRIP_WP_MAX)
+    .map(w=>w.address ? w : { name:'', address: w.name });   // 이름만 적으면 이름을 주소 자리에(네비에서 이름으로 검색)
+  if(wps.length) trip.waypoints = wps.map(w=>w.address); else delete trip.waypoints;
+  if(wps.some(w=>w.name)) trip.waypointNames = wps.map(w=>w.name); else delete trip.waypointNames;
   if(g){
     const picked = Array.from(document.querySelectorAll('.tf-member:checked')).map(el=>el.value);
     if(!picked.length){ toast('참가 멤버를 한 명 이상 골라주세요.'); return; }
@@ -4598,6 +4625,7 @@ function addGearItemsToList(list, gearArr, ids, fromMine){
     if(!key || have.has(key)){ skipped++; return; }
     have.add(key);
     const item = { id: uid('i'), label: gr.name, status:'pending', group: String(gr.category || '').trim() || '기타' };
+    if(gearQty(gr) > 1) item.qty = gearQty(gr);   // 장비 개수 → 준비물 개수
     if(grp){
       if(me) item.addedBy = me;
       if(fromMine && me) item.assigneeUid = me;
@@ -7235,7 +7263,7 @@ function wireGlobalActions(){
       case 'trip-save': saveTripForm(id); break;
       case 'trip-del': deleteTripConfirm(a.getAttribute('data-trip')); break;
       case 'trip-start-pick': pickTripStartMethod(a.getAttribute('data-val')); break;
-      case 'tf-wp-add': { const v = tripWaypointValues(); if(v.length < TRIP_WP_MAX){ v.push(''); tripWaypointRows(v, v.length - 1); } break; }
+      case 'tf-wp-add': { const v = tripWaypointValues(); if(v.length < TRIP_WP_MAX){ v.push({ name:'', address:'' }); tripWaypointRows(v, v.length - 1); } break; }
       case 'tf-wp-del': { const rows = [...document.querySelectorAll('#tf-wps .tf-wp-row')], i = rows.indexOf(a.closest('.tf-wp-row')); const v = tripWaypointValues(); if(i >= 0){ v.splice(i, 1); tripWaypointRows(v, v.length ? Math.min(i, v.length - 1) : -1); } break; }
       case 'trip-route': tripRouteAction(a.getAttribute('data-space'), a.getAttribute('data-trip')); break;
       case 'route-copy': copyText(a.getAttribute('data-text') || '', a.getAttribute('data-all') ? '경유지·도착 주소를 모두 복사했어요.' : '주소를 복사했어요. 네비게이션에 붙여넣으세요.'); break;
