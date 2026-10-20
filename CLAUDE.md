@@ -55,9 +55,9 @@
 
 ## 캠핑 일정 (새 탭 없음: Checklist 탭 위쪽 + Home 카드)
 - 일정: 개인 `users/{uid}/trips/{id}`, 그룹 `groups/{gid}/trips/{id}` =
-  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, description?(메모, 비우면 필드 삭제), address?(캠핑장 주소), waypoints?(경유지 주소 배열), memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
+  `{ title, startDate, endDate (YYYY-MM-DD), campsiteName, region, description?(메모, 비우면 필드 삭제), address?(캠핑장 주소), waypoints?(경유지 주소 배열), waypointNames?(같은 순서의 경유지 이름, 없으면 '' — 이름만 적은 줄은 이름을 주소 자리에, 이름이 하나도 없으면 필드 삭제, 읽기는 `tripWaypointList()`), memberUids(그룹만, 참가 멤버), createdBy, createdAt, updatedBy }`. 저장은 `persistTrip()`.
   메모는 일정 만들기·수정 창의 `#tf-desc`, 일정 패널의 `.tp-desc`(3줄까지).
-- **주소·경유지**(사용자 요청 R, 출발할 때 네비게이션에 붙여넣는 용도 — 검색 없음): 창의 `#tf-address`(비우면 필드 삭제), 경유지 줄 `#tf-wps .tf-wp`(들르는 순서대로, `TRIP_WP_MAX` 5곳, `tf-wp-add`/`tf-wp-del` — 창을 다시 그리지 않고 줄만 바꿈, 빈 칸은 저장 안 함).
+- **주소·경유지**(사용자 요청 R, 출발할 때 네비게이션에 붙여넣는 용도 — 검색 없음): 창의 `#tf-address`(비우면 필드 삭제), 경유지 줄 `#tf-wps .tf-wp-row`(이름 `.tf-wp-name` + 주소 `.tf-wp`, 들르는 순서대로, `TRIP_WP_MAX` 5곳, `tf-wp-add`/`tf-wp-del` — 창을 다시 그리지 않고 줄만 바꿈, 빈 칸은 저장 안 함).
   있을 때만 일정 패널 장소 줄 아래 `tripRouteRowHtml()`(`.tp-route`: "경유 n곳 · 주소" + 버튼) — 없는 일정은 예전과 똑같음(첫 준비물 위치 테스트 영향 없음).
   Home 다음 캠핑 카드 아래 `.next-trip-route`. 둘 다 `trip-route` → `tripRouteAction()`: 경유지가 없으면 바로 주소 복사(`copyText`), 있으면 `tripRouteModal()`
   ("길 안내 주소": 경유 1 → … → 도착 순서, 줄마다 `route-copy`, 2줄 이상이면 "전체 복사"(여러 줄)). 그룹 일정도 같은 필드라 멤버 모두 보임.
@@ -237,7 +237,8 @@
 - 장비 수정(`saveGearForm`)은 기존 필드(`addedBy`, `ownerUid` 등)를 유지하고 폼 값만 덮어쓴다.
 
 ## 장비(Gear)와 카테고리
-- 장비 = `{ name, brand(직접 입력), category, comment?, ownerUid?(그룹), addedBy?, updatedBy?, footprint? }`. `footprint`는 아래 "사이트 배치". 예전 장비의 `price/weight/date`는 지우지 않고 남겨 두지만 화면·폼에서는 안 씀.
+- 장비 = `{ name, brand(직접 입력), category, comment?, qty?(개수 1~999), watt?(소비전력 W, 0.1~10000), ownerUid?(그룹), addedBy?, updatedBy?, footprint? }`.
+  개수는 준비물 항목과 같은 칸(`itemQtyField`/`readItemQty`, `#cli-qty`), W는 `#gf-watt`. 비우면 필드 삭제, 목록 줄 meta 끝에 "×2"(2개 이상일 때)·"60W"(`gearQty`/`gearWatt`). 체크리스트에 넣으면 개수 2 이상이 항목 `qty`로. `footprint`는 아래 "사이트 배치". 예전 장비의 `price/weight/date`는 지우지 않고 남겨 두지만 화면·폼에서는 안 씀.
 - 카테고리는 **대분류/소분류**. `gearCategories` = 소분류 이름 순서(예전 앱도 읽는 목록), 선택 필드 `gearCategoryMeta = { majors:[{name, desc}], subs:[{name, major, desc}] }`
   (대분류 순서·설명, 소분류의 대분류·설명). 장비의 `category`는 소분류 이름 / 대분류 이름(소분류 없이 바로) / `''`(미분류). 대분류·소분류 이름은 서로 겹치지 않게, '미분류'는 이름으로 못 씀.
 - **기본 카테고리·잠금 없음**: 새 사용자·새 그룹은 빈 목록. 저장한 적이 없으면(`null`) 장비에 쓰인 카테고리를 보여준다(`deriveGearCats`). 어떤 카테고리든 지울 수 있고, 장비는 지우지 않고 대분류(있으면) 또는 미분류로 옮긴다.

@@ -1,6 +1,7 @@
 // I. Gear 수정 테스트 (가짜 Firestore/Auth):
 //  1 장비 줄 삭제는 X 버튼(⋯ 없음, 390px 맨 아래 장비도 눌림, 되돌리기), 2 선택 모드에서 카테고리별 전체 선택(묶음·소분류·고른 카테고리, 일부면 mixed),
-//  3 카테고리 관리 버튼이 "장비 추가"와 같은 줄에 바로 보임
+//  3 카테고리 관리 버튼이 "장비 추가"와 같은 줄에 바로 보임, 4 장비 개수·소비전력(W) 입력(저장·수정·비우기·잘못된 값·목록 표시·체크리스트 개수),
+//  5 지난 일정 카드·일정 패널의 "내 후기 작성함" 아이콘 크기(12px)
 // 실행: node tests/gear-i.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
 const { menuClick, gearAction } = require('./ui-helpers');
@@ -32,6 +33,8 @@ const server = {};
   const gear = [['g1', '스텔스 텐트', '텐트'], ['g2', '돔 텐트', '텐트'], ['g3', '렉타 타프', '타프'], ['g4', '오로라 침낭', '침낭'], ['g5', '여름 침낭', '침낭'],
     ['g6', '버너', '조리용품'], ['g7', '코펠', '조리용품'], ['g8', '아이스박스', '조리용품'], ['g9', '랜턴', '조리용품']];
   server[A + 'checklists/cl1'] = { title: '준비물', items: [] };
+  server[A + 'trips/tp1'] = { title: '지난 캠핑', startDate: ymd(-10), endDate: ymd(-9), campsiteName: '숲속캠핑장', region: '강원' };
+  server[A + 'campingLogs/log1'] = { name: '숲속캠핑장', date: ymd(-10), region: '강원', rating: 4, tripRef: { space: 'me', tripId: 'tp1' } };
   gear.forEach(([id, name, category]) => { server[A + 'gear/' + id] = { name, brand: 'B', category, comment: '메모가 조금 긴 장비 ' + name }; });
 })();
 
@@ -130,6 +133,50 @@ const server = {};
   await D.click('[data-action="modal-close"]'); await settle();
   await D.click('[data-action="gear-select-cancel"]').catch(() => {});
   check('2 선택 모드가 아닐 땐 전체 선택 상자 없음', (await D.locator('[data-action="gear-pick-many"]').count()) === 0);
+
+  // ================= 4. 개수·소비전력(W) =================
+  await nav(D, 'gear'); await settle();
+  await D.click('.gear-cat-row [data-action="gear-filter"][data-cat="all"]'); await settle();
+  await D.click('[data-action="gear-edit"][data-id="g9"]'); await settle();
+  check('4 장비 수정 창에 개수(−/+)·소비전력 W 칸', (await D.locator('#cli-qty').count()) === 1 && (await D.locator('#gf-watt').count()) === 1
+    && (await D.locator('[data-action="cli-qty-step"]').count()) === 2);
+  await D.fill('#cli-qty', '0'); await D.click('[data-action="gear-save"]'); await settle();
+  check('4 잘못된 개수(0)는 저장 막음', (await D.locator('#gf-name').count()) === 1 && server['users/uidAlice/gear/g9'].qty === undefined);
+  await D.fill('#cli-qty', '1'); await D.click('[data-action="cli-qty-step"][data-d="1"]');
+  await D.fill('#gf-watt', '-5'); await D.click('[data-action="gear-save"]'); await settle();
+  check('4 잘못된 소비전력(-5)은 저장 막음', (await D.locator('#gf-name').count()) === 1 && server['users/uidAlice/gear/g9'].watt === undefined);
+  await D.fill('#gf-watt', '12.5'); await D.click('[data-action="gear-save"]'); await settle();
+  const g9 = server['users/uidAlice/gear/g9'];
+  check('4 저장: qty 2, watt 12.5, 기존 필드(메모·브랜드) 유지', g9.qty === 2 && g9.watt === 12.5 && g9.brand === 'B' && /메모/.test(g9.comment), g9);
+  const row9 = await D.locator('.gear-row[data-id="g9"] .meta').innerText();
+  check('4 목록 줄에 "×2"·"12.5W"', /×2/.test(row9) && /12\.5W/.test(row9), row9);
+  check('4 개수·W가 없는 장비는 표시 없음', !/×|W/.test(await D.locator('.gear-row[data-id="g8"] .meta').innerText()));
+  await D.click('[data-action="gear-new"]'); await settle();
+  await D.fill('#gf-name', '전기장판'); await D.fill('#gf-watt', '150'); await D.click('[data-action="gear-save"]'); await settle();
+  const ep = Object.entries(server).find(([k, v]) => k.startsWith('users/uidAlice/gear/') && v.name === '전기장판');
+  check('4 새 장비: W만 넣으면 watt만(qty 없음)', ep && ep[1].watt === 150 && ep[1].qty === undefined, ep && ep[1]);
+  // 체크리스트에 추가하면 개수가 준비물 개수로
+  await D.click('[data-action="gear-select"]'); await settle();
+  await D.click('.gear-row[data-id="g9"]'); await D.click('.gear-row[data-id="g8"]');
+  await D.click('.select-bar [data-action="gear-to-checklist"]'); await settle();
+  await D.click('[data-action="g2c-go"]').catch(() => {}); await settle();
+  const items = (server['users/uidAlice/checklists/cl1'].items || []);
+  const lan = items.find(i => i.label === '랜턴'), ice = items.find(i => i.label === '아이스박스');
+  check('4 체크리스트에 추가: 랜턴 qty 2, 아이스박스는 개수 없음', lan && lan.qty === 2 && ice && ice.qty === undefined, items);
+  // 비우면 필드 삭제
+  await nav(D, 'gear'); await settle();
+  await D.click('[data-action="gear-edit"][data-id="g9"]'); await settle();
+  await D.fill('#cli-qty', ''); await D.fill('#gf-watt', ''); await D.click('[data-action="gear-save"]'); await settle();
+  check('4 비우고 저장하면 qty·watt 삭제', !('qty' in server['users/uidAlice/gear/g9']) && !('watt' in server['users/uidAlice/gear/g9']));
+
+  // ================= 5. 내 후기 작성함 아이콘 크기 =================
+  const iconSize = async (p, sel) => p.locator(sel).first().evaluate(el => { const r = el.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; });
+  await D.evaluate(() => goView('pastTrips')); await settle();
+  const s1 = await iconSize(D, '.past-trip-card .done-tag svg');
+  check('5 지난 일정 카드 "내 후기 작성함" 아이콘 12×12', s1[0] === 12 && s1[1] === 12, s1);
+  await D.click('[data-action="past-trip-open"][data-trip="tp1"]'); await settle();
+  const s2 = await iconSize(D, '.trip-reviewed svg');
+  check('5 일정 패널 "내 후기 작성함" 아이콘 12×12', s2[0] === 12 && s2[1] === 12, s2);
 
   const errs = pages.flatMap(p => p.__errors);
   check('페이지 오류·네이티브 대화상자 없음', errs.length === 0, errs);

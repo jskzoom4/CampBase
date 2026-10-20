@@ -1,5 +1,5 @@
 // R. 일정 주소·경유지 테스트 (가짜 Firestore/Auth):
-//  일정 만들기·수정 창의 캠핑장 주소·경유지(더하기·빼기·순서·5곳까지), 저장·비우면 필드 삭제,
+//  일정 만들기·수정 창의 캠핑장 주소·경유지(이름·주소, 더하기·빼기·순서·5곳까지), 저장·비우면 필드 삭제,
 //  일정 패널 주소 줄(경유지 없으면 바로 복사, 있으면 순서대로 보여 주는 창·각각/전체 복사), Home 다음 캠핑 주소 줄, 그룹 멤버에게도 보임, 주소 없는 일정은 그대로
 // 실행: node tests/trip-route-r.test.js   (저장소 루트에서, playwright 필요)
 const { chromium } = require('playwright');
@@ -82,13 +82,15 @@ const server = {};
   await D.fill('#tf-campsite', '홍천 강변 캠핑장');
   await D.fill('#tf-address', '강원 홍천군 서면 마곡길 123');
   await D.click('[data-action="tf-wp-add"]');
-  check('1 경유지 추가 → 줄이 생기고 그 칸에 초점', await D.locator('#tf-wps .tf-wp').count() === 1 && await D.evaluate(() => document.activeElement && document.activeElement.classList.contains('tf-wp')));
-  await D.keyboard.type('하나로마트 홍천점');
-  await D.click('[data-action="tf-wp-add"]'); await D.keyboard.type('지울 경유지');
-  await D.click('[data-action="tf-wp-add"]'); await D.keyboard.type('홍천 정육점');
+  check('1 경유지 추가 → 이름·주소 칸이 생기고 이름 칸에 초점', await D.locator('#tf-wps .tf-wp').count() === 1 && await D.locator('#tf-wps .tf-wp-name').count() === 1
+    && await D.evaluate(() => document.activeElement && document.activeElement.classList.contains('tf-wp-name')));
+  await D.keyboard.type('장보기'); await D.keyboard.press('Tab'); await D.keyboard.type('하나로마트 홍천점');
+  await D.click('[data-action="tf-wp-add"]'); await D.keyboard.press('Tab'); await D.keyboard.type('지울 경유지');
+  await D.click('[data-action="tf-wp-add"]'); await D.keyboard.press('Tab'); await D.keyboard.type('홍천 정육점');
   check('1 경유지 줄 번호(경유 1·2·3)', JSON.stringify(await D.locator('#tf-wps .tf-wp-no').allInnerTexts()) === JSON.stringify(['경유 1', '경유 2', '경유 3']));
   await D.click('#tf-wps .tf-wp-row:nth-child(2) [data-action="tf-wp-del"]');
   check('1 가운데 경유지 빼기 → 나머지는 순서·값 그대로, 번호 다시 매김', JSON.stringify(await D.locator('#tf-wps .tf-wp').evaluateAll(els => els.map(e => e.value))) === JSON.stringify(['하나로마트 홍천점', '홍천 정육점'])
+    && JSON.stringify(await D.locator('#tf-wps .tf-wp-name').evaluateAll(els => els.map(e => e.value))) === JSON.stringify(['장보기', ''])
     && JSON.stringify(await D.locator('#tf-wps .tf-wp-no').allInnerTexts()) === JSON.stringify(['경유 1', '경유 2']) && (await D.inputValue('#tf-title')) === '홍천 가을 캠핑');
   for (let i = 0; i < 3; i++) await D.click('[data-action="tf-wp-add"]');
   check('1 경유지는 5곳까지(다 차면 추가 버튼 숨김)', await D.locator('#tf-wps .tf-wp').count() === 5 && !(await D.locator('[data-action="tf-wp-add"]').isVisible()));
@@ -97,7 +99,8 @@ const server = {};
   await D.click('[data-action="trip-start-pick"][data-val="empty"]');
   await D.click('[data-action="trip-save"]'); await settle();
   let T = tripBy(A, '홍천 가을 캠핑');
-  check('1 저장: address + waypoints(빈 칸은 빼고 순서대로)', T && T.address === '강원 홍천군 서면 마곡길 123' && JSON.stringify(T.waypoints) === JSON.stringify(['하나로마트 홍천점', '홍천 정육점']), T);
+  check('1 저장: address + waypoints(빈 칸은 빼고 순서대로)', T && T.address === '강원 홍천군 서면 마곡길 123' && JSON.stringify(T.waypoints) === JSON.stringify(['하나로마트 홍천점', '홍천 정육점'])
+    && JSON.stringify(T.waypointNames) === JSON.stringify(['장보기', '']), T);
 
   // ================= 2. 일정 패널: 주소 줄 =================
   check('2 일정 패널에 주소 줄(경유 n곳 · 주소) + "주소 보기"', /경유 2곳 · 강원 홍천군 서면 마곡길 123/.test(await D.locator('.trip-panel .tp-route').innerText()) && /주소 보기/.test(await D.locator('.tp-route [data-action="trip-route"]').innerText()));
@@ -105,7 +108,8 @@ const server = {};
   const tags = await D.locator('#modal-root .route-tag').allInnerTexts();
   const texts = await D.locator('#modal-root .route-main > span:first-child').allInnerTexts();
   check('2 경유지가 있으면 "길 안내 주소" 창: 경유 1 → 경유 2 → 도착 순서', JSON.stringify(tags) === JSON.stringify(['경유 1', '경유 2', '도착']) && JSON.stringify(texts) === JSON.stringify(['하나로마트 홍천점', '홍천 정육점', '강원 홍천군 서면 마곡길 123'])
-    && /홍천 강변 캠핑장/.test(await D.locator('#modal-root .route-item:last-child').innerText()), [tags, texts]);
+    && /홍천 강변 캠핑장/.test(await D.locator('#modal-root .route-item:last-child').innerText())
+    && /장보기/.test(await D.locator('#modal-root .route-item:nth-child(1) .meta').innerText()), [tags, texts]);
   await D.click('#modal-root .route-item:nth-child(1) [data-action="route-copy"]'); await settle();
   await D.click('#modal-root .route-item:nth-child(3) [data-action="route-copy"]'); await settle();
   check('2 각 줄 "복사" → 그 주소만 복사 + 안내', JSON.stringify(await copied(D)) === JSON.stringify(['하나로마트 홍천점', '강원 홍천군 서면 마곡길 123']) && /복사했어요/.test(await D.locator('#toast').innerText()));
@@ -117,7 +121,14 @@ const server = {};
 
   // ================= 3. 수정: 경유지 지우면 바로 복사, 모두 비우면 필드 삭제 =================
   await menuClick(D, '.trip-panel [data-action="trip-edit"]'); await settle();
-  check('3 수정 창에 주소·경유지가 채워짐', (await D.inputValue('#tf-address')) === '강원 홍천군 서면 마곡길 123' && JSON.stringify(await D.locator('#tf-wps .tf-wp').evaluateAll(els => els.map(e => e.value))) === JSON.stringify(['하나로마트 홍천점', '홍천 정육점']));
+  check('3 수정 창에 주소·경유지(이름 포함)가 채워짐', (await D.inputValue('#tf-address')) === '강원 홍천군 서면 마곡길 123' && JSON.stringify(await D.locator('#tf-wps .tf-wp').evaluateAll(els => els.map(e => e.value))) === JSON.stringify(['하나로마트 홍천점', '홍천 정육점'])
+    && (await D.inputValue('#tf-wps .tf-wp-name >> nth=0')) === '장보기');
+  // 이름만 적은 경유지 → 이름이 주소 자리로(네비 검색용), 이름 칸은 비움
+  await D.fill('#tf-wps .tf-wp-row:nth-child(1) .tf-wp', '');
+  await D.click('[data-action="trip-save"]'); await settle();
+  T = tripBy(A, '홍천 가을 캠핑');
+  check('3 이름만 적은 경유지는 이름을 주소로 저장, 이름이 하나도 없으면 waypointNames 삭제', JSON.stringify(T.waypoints) === JSON.stringify(['장보기', '홍천 정육점']) && !('waypointNames' in T), T);
+  await menuClick(D, '.trip-panel [data-action="trip-edit"]'); await settle();
   await D.click('#tf-wps .tf-wp-row:nth-child(1) [data-action="tf-wp-del"]');
   await D.fill('#tf-wps .tf-wp', '  ');
   await D.click('[data-action="trip-save"]'); await settle();
